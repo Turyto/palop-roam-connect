@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,13 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				palop: {
+					green: '#00843D',
+					red: '#CE1126',
+					yellow: '#FFCD00',
+					blue: '#0072C6',
+					dark: '#222222',
 				}
 			},
 			borderRadius: {
@@ -84,11 +92,30 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'fade-in': {
+					'0%': { opacity: '0' },
+					'100%': { opacity: '1' }
+				},
+				'slide-from-left': {
+					'0%': { transform: 'translateX(-10%)', opacity: '0' },
+					'100%': { transform: 'translateX(0)', opacity: '1' }
+				},
+				'slide-from-right': {
+					'0%': { transform: 'translateX(10%)', opacity: '0' },
+					'100%': { transform: 'translateX(0)', opacity: '1' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'fade-in': 'fade-in 0.5s ease-out',
+				'slide-from-left': 'slide-from-left 0.5s ease-out',
+				'slide-from-right': 'slide-from-right 0.5s ease-out'
+			},
+			fontFamily: {
+				'sans': ['Inter', 'sans-serif'],
+				'display': ['Montserrat', 'sans-serif'],
 			}
 		}
 	},
