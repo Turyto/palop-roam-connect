@@ -1,39 +1,68 @@
 
 import { Button } from "@/components/ui/button";
 import { ESIMPlan } from "@/pages/Purchase";
+import { Smartphone } from "lucide-react";
 
 interface ESIMPlansProps {
   onSelectPlan: (plan: ESIMPlan) => void;
 }
 
 const ESIMPlans = ({ onSelectPlan }: ESIMPlansProps) => {
-  const plans: ESIMPlan[] = [
+  const dataPackages30Days = [
     {
-      id: "palop-1tb",
-      name: "PALOP Premium",
-      data: "1 TB",
+      id: "palop-1gb-30",
+      name: "Data Package - 30 Days",
+      data: "1 GB",
       days: 30,
-      price: 20.00,
-      currency: "EUR",
+      price: 3.36,
+      currency: "GBP",
       features: [
-        "1 TB of Internet",
+        "1 GB of Internet",
         "For consumption in the first 30 days",
-        "5G where available",
-        "Coverage in all PALOP countries"
+        "Coverage in Portugal + 149 More countries",
+        "5G where available"
       ]
     },
     {
-      id: "palop-500gb",
-      name: "PALOP Standard",
-      data: "500 GB",
-      days: 15,
-      price: 15.00,
-      currency: "EUR",
+      id: "palop-3gb-30",
+      name: "Data Package - 30 Days",
+      data: "3 GB",
+      days: 30,
+      price: 9.73,
+      currency: "GBP",
       features: [
-        "500 GB of Internet",
-        "For consumption in the first 15 days",
-        "5G where available",
-        "Coverage in all PALOP countries"
+        "3 GB of Internet",
+        "For consumption in the first 30 days",
+        "Coverage in Portugal + 149 More countries",
+        "5G where available"
+      ]
+    },
+    {
+      id: "palop-5gb-30",
+      name: "Data Package - 30 Days",
+      data: "5 GB",
+      days: 30,
+      price: 14.98,
+      currency: "GBP",
+      features: [
+        "5 GB of Internet",
+        "For consumption in the first 30 days", 
+        "Coverage in Portugal + 149 More countries",
+        "5G where available"
+      ]
+    },
+    {
+      id: "palop-10gb-30",
+      name: "Data Package - 30 Days",
+      data: "10 GB",
+      days: 30,
+      price: 22.47,
+      currency: "GBP",
+      features: [
+        "10 GB of Internet",
+        "For consumption in the first 30 days",
+        "Coverage in Portugal + 149 More countries",
+        "5G where available"
       ]
     }
   ];
@@ -43,7 +72,7 @@ const ESIMPlans = ({ onSelectPlan }: ESIMPlansProps) => {
       <h2 className="text-2xl font-bold mb-6 text-center">Choose Your eSIM Plan</h2>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {plans.map((plan) => (
+        {dataPackages30Days.map((plan) => (
           <div key={plan.id} className="border rounded-lg overflow-hidden shadow-md">
             {/* Header */}
             <div className="bg-palop-blue p-6 text-white text-center">
@@ -56,7 +85,12 @@ const ESIMPlans = ({ onSelectPlan }: ESIMPlansProps) => {
               <h3 className="text-xl font-semibold mb-2">{plan.name}</h3>
               
               <div className="text-3xl font-bold mb-4">
-                {plan.price.toFixed(2)} <span className="text-sm">{plan.currency}</span>
+                £{plan.price.toFixed(2)}
+              </div>
+              
+              <div className="flex items-center mb-4 bg-white/10 rounded-lg p-2">
+                <Smartphone className="h-5 w-5 mr-2 text-palop-blue" />
+                <span className="text-sm font-semibold">Data Package</span>
               </div>
               
               <ul className="mb-6 space-y-2">
