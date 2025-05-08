@@ -44,7 +44,7 @@ const Purchase = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-grow">
-        <div className="bg-palop-red">
+        <div className="bg-gradient-to-r from-palop-green to-palop-blue">
           <div className="container mx-auto px-4 py-8 text-center">
             <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">PALOP eSIM</h1>
             <p className="text-white text-xl opacity-90">Stay connected across all PALOP countries</p>

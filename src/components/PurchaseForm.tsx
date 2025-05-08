@@ -101,7 +101,7 @@ const PurchaseForm = ({
                         <div className="font-medium">{plan.name}</div>
                         <div className="text-gray-600">{plan.data} for {plan.days} days</div>
                       </td>
-                      <td className="py-4 text-right font-bold text-palop-red">
+                      <td className="py-4 text-right font-bold text-palop-blue">
                         {plan.price.toFixed(2)} {plan.currency}
                       </td>
                     </tr>
@@ -113,7 +113,7 @@ const PurchaseForm = ({
                   <tfoot>
                     <tr>
                       <td className="pt-4 font-bold">TOTAL</td>
-                      <td className="pt-4 text-right font-bold text-palop-red">
+                      <td className="pt-4 text-right font-bold text-palop-blue">
                         {plan.price.toFixed(2)} {plan.currency}
                       </td>
                     </tr>
@@ -218,7 +218,7 @@ const PurchaseForm = ({
               </Button>
               <Button 
                 type="submit"
-                className="bg-palop-red hover:bg-palop-red/90"
+                className="bg-palop-green hover:bg-palop-green/90"
               >
                 {currentStep === "checkout" ? "Continue" : "Complete Purchase"}
               </Button>

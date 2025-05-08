@@ -46,7 +46,7 @@ const ESIMPlans = ({ onSelectPlan }: ESIMPlansProps) => {
         {plans.map((plan) => (
           <div key={plan.id} className="border rounded-lg overflow-hidden shadow-md">
             {/* Header */}
-            <div className="bg-palop-red p-6 text-white text-center">
+            <div className="bg-palop-blue p-6 text-white text-center">
               <div className="text-4xl md:text-5xl font-bold mb-2">{plan.data}</div>
               <div className="text-xl md:text-2xl">{plan.days} DAYS</div>
             </div>
@@ -62,8 +62,8 @@ const ESIMPlans = ({ onSelectPlan }: ESIMPlansProps) => {
               <ul className="mb-6 space-y-2">
                 {plan.features.map((feature, index) => (
                   <li key={index} className="flex items-start">
-                    <div className="mr-2 mt-1 h-4 w-4 rounded-full bg-palop-red/20 flex items-center justify-center">
-                      <div className="h-2 w-2 rounded-full bg-palop-red"></div>
+                    <div className="mr-2 mt-1 h-4 w-4 rounded-full bg-palop-green/20 flex items-center justify-center">
+                      <div className="h-2 w-2 rounded-full bg-palop-green"></div>
                     </div>
                     <span>{feature}</span>
                   </li>
@@ -71,7 +71,7 @@ const ESIMPlans = ({ onSelectPlan }: ESIMPlansProps) => {
               </ul>
               
               <Button 
-                className="w-full bg-palop-red hover:bg-palop-red/90 text-white"
+                className="w-full bg-palop-green hover:bg-palop-green/90 text-white"
                 onClick={() => onSelectPlan(plan)}
               >
                 Buy eSIM

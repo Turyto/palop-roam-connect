@@ -25,7 +25,7 @@ const PurchaseSteps = ({ currentStep }: PurchaseStepsProps) => {
               <div key={step.id} className="flex items-center">
                 {/* Step indicator */}
                 <div className={`relative flex items-center justify-center w-8 h-8 rounded-full border-2 ${
-                  isActive || isComplete ? "border-palop-red bg-palop-red text-white" : "border-gray-300 bg-white text-gray-500"
+                  isActive || isComplete ? "border-palop-green bg-palop-green text-white" : "border-gray-300 bg-white text-gray-500"
                 }`}>
                   {isComplete ? (
                     <Check className="h-4 w-4" />
@@ -36,7 +36,7 @@ const PurchaseSteps = ({ currentStep }: PurchaseStepsProps) => {
                 
                 {/* Step label */}
                 <span className={`ml-2 text-sm hidden md:inline ${
-                  isActive || isComplete ? "text-palop-red font-medium" : "text-gray-500"
+                  isActive || isComplete ? "text-palop-green font-medium" : "text-gray-500"
                 }`}>
                   {step.label}
                 </span>
@@ -44,7 +44,7 @@ const PurchaseSteps = ({ currentStep }: PurchaseStepsProps) => {
                 {/* Connector line */}
                 {index < steps.length - 1 && (
                   <div className={`w-12 md:w-24 h-0.5 mx-2 ${
-                    isComplete ? "bg-palop-red" : "bg-gray-300"
+                    isComplete ? "bg-palop-green" : "bg-gray-300"
                   }`} />
                 )}
               </div>
