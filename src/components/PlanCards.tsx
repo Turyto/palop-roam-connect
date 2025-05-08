@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Globe, Phone, Wifi } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const plans = [
   {
@@ -79,7 +80,9 @@ const PlanCards = () => {
               </div>
             </CardContent>
             <CardFooter>
-              <Button className="w-full bg-palop-green hover:bg-palop-green/90">Select Plan</Button>
+              <Button className="w-full bg-palop-green hover:bg-palop-green/90" asChild>
+                <Link to="/plans">Select Plan</Link>
+              </Button>
             </CardFooter>
           </Card>
         ))}

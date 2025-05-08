@@ -1,5 +1,6 @@
 
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const CtaSection = () => {
   return (
@@ -10,8 +11,8 @@ const CtaSection = () => {
           Join thousands of PALOP community members enjoying seamless connectivity across borders.
         </p>
         <div className="flex flex-col sm:flex-row justify-center gap-4">
-          <Button className="bg-white text-palop-green hover:bg-gray-100">
-            View All Plans
+          <Button className="bg-white text-palop-green hover:bg-gray-100" asChild>
+            <Link to="/plans">View All Plans</Link>
           </Button>
           <Button variant="outline" className="border-white text-white hover:bg-white/10">
             Contact Sales

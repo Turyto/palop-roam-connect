@@ -1,11 +1,12 @@
 
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Menu, X, Globe, Phone } from "lucide-react";
-import { Link } from 'react-router-dom';
+import { Menu, X } from "lucide-react";
+import { Link, useLocation } from 'react-router-dom';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const location = useLocation();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -24,12 +25,32 @@ const Navbar = () => {
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-6">
-          <Link to="/" className="font-medium hover:text-palop-green transition-colors">Home</Link>
-          <Link to="/plans" className="font-medium hover:text-palop-green transition-colors">Plans</Link>
-          <Link to="/countries" className="font-medium hover:text-palop-green transition-colors">Countries</Link>
-          <Link to="/support" className="font-medium hover:text-palop-green transition-colors">Support</Link>
-          <Button className="ml-4 bg-palop-green hover:bg-palop-green/90 text-white">
-            Get Started
+          <Link 
+            to="/" 
+            className={`font-medium hover:text-palop-green transition-colors ${location.pathname === '/' ? 'text-palop-green' : ''}`}
+          >
+            Home
+          </Link>
+          <Link 
+            to="/plans" 
+            className={`font-medium hover:text-palop-green transition-colors ${location.pathname === '/plans' ? 'text-palop-green' : ''}`}
+          >
+            Plans
+          </Link>
+          <Link 
+            to="/countries" 
+            className={`font-medium hover:text-palop-green transition-colors ${location.pathname === '/countries' ? 'text-palop-green' : ''}`}
+          >
+            Countries
+          </Link>
+          <Link 
+            to="/support" 
+            className={`font-medium hover:text-palop-green transition-colors ${location.pathname === '/support' ? 'text-palop-green' : ''}`}
+          >
+            Support
+          </Link>
+          <Button className="ml-4 bg-palop-green hover:bg-palop-green/90 text-white" asChild>
+            <Link to="/plans">Get Started</Link>
           </Button>
         </div>
 
@@ -46,12 +67,36 @@ const Navbar = () => {
       {isMenuOpen && (
         <div className="md:hidden py-4 px-4 bg-white border-t animate-fade-in">
           <div className="flex flex-col space-y-4">
-            <Link to="/" className="font-medium hover:text-palop-green transition-colors px-2 py-1">Home</Link>
-            <Link to="/plans" className="font-medium hover:text-palop-green transition-colors px-2 py-1">Plans</Link>
-            <Link to="/countries" className="font-medium hover:text-palop-green transition-colors px-2 py-1">Countries</Link>
-            <Link to="/support" className="font-medium hover:text-palop-green transition-colors px-2 py-1">Support</Link>
-            <Button className="bg-palop-green hover:bg-palop-green/90 text-white w-full">
-              Get Started
+            <Link 
+              to="/" 
+              className={`font-medium hover:text-palop-green transition-colors px-2 py-1 ${location.pathname === '/' ? 'text-palop-green' : ''}`}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Home
+            </Link>
+            <Link 
+              to="/plans" 
+              className={`font-medium hover:text-palop-green transition-colors px-2 py-1 ${location.pathname === '/plans' ? 'text-palop-green' : ''}`}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Plans
+            </Link>
+            <Link 
+              to="/countries" 
+              className={`font-medium hover:text-palop-green transition-colors px-2 py-1 ${location.pathname === '/countries' ? 'text-palop-green' : ''}`}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Countries
+            </Link>
+            <Link 
+              to="/support" 
+              className={`font-medium hover:text-palop-green transition-colors px-2 py-1 ${location.pathname === '/support' ? 'text-palop-green' : ''}`}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Support
+            </Link>
+            <Button className="bg-palop-green hover:bg-palop-green/90 text-white w-full" asChild>
+              <Link to="/plans" onClick={() => setIsMenuOpen(false)}>Get Started</Link>
             </Button>
           </div>
         </div>
