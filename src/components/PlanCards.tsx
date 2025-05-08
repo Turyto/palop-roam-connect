@@ -81,7 +81,7 @@ const PlanCards = () => {
             </CardContent>
             <CardFooter>
               <Button className="w-full bg-palop-green hover:bg-palop-green/90" asChild>
-                <Link to="/plans">Select Plan</Link>
+                <Link to="/purchase">Select Plan</Link>
               </Button>
             </CardFooter>
           </Card>
