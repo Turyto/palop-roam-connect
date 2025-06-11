@@ -38,6 +38,12 @@ const Navbar = () => {
             Plans
           </Link>
           <Link 
+            to="/community" 
+            className={`font-medium hover:text-palop-green transition-colors ${location.pathname === '/community' ? 'text-palop-green' : ''}`}
+          >
+            Community
+          </Link>
+          <Link 
             to="/countries" 
             className={`font-medium hover:text-palop-green transition-colors ${location.pathname === '/countries' ? 'text-palop-green' : ''}`}
           >
@@ -80,6 +86,13 @@ const Navbar = () => {
               onClick={() => setIsMenuOpen(false)}
             >
               Plans
+            </Link>
+            <Link 
+              to="/community" 
+              className={`font-medium hover:text-palop-green transition-colors px-2 py-1 ${location.pathname === '/community' ? 'text-palop-green' : ''}`}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Community
             </Link>
             <Link 
               to="/countries" 
