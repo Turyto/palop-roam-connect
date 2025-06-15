@@ -10,6 +10,7 @@ const PALOPConnectivityMap = () => {
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapboxToken, setMapboxToken] = useState('');
   const [isTokenSet, setIsTokenSet] = useState(false);
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
 
   // PALOP countries and their coordinates
   const palopCountries = [
@@ -60,128 +61,154 @@ const PALOPConnectivityMap = () => {
   const initializeMap = () => {
     if (!mapContainer.current || !mapboxToken.trim()) return;
 
+    console.log('Initializing map with token:', mapboxToken.substring(0, 10) + '...');
+    
     mapboxgl.accessToken = mapboxToken;
     
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/light-v11',
-      center: [0, 0],
-      zoom: 2,
-      projection: 'naturalEarth'
-    });
+    // Clean up existing map if it exists
+    if (map.current) {
+      map.current.remove();
+    }
+    
+    try {
+      map.current = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: 'mapbox://styles/mapbox/light-v11',
+        center: [0, 0],
+        zoom: 1.5,
+        projection: 'naturalEarth'
+      });
 
-    map.current.on('load', () => {
-      if (!map.current) return;
-
-      // Add connection lines
-      connections.forEach((connection, index) => {
-        const lineId = `connection-${index}`;
+      map.current.on('load', () => {
+        console.log('Map loaded successfully');
+        setIsMapLoaded(true);
         
-        map.current!.addSource(lineId, {
-          type: 'geojson',
-          data: {
-            type: 'Feature',
-            properties: { plan: connection.plan },
-            geometry: {
-              type: 'LineString',
-              coordinates: [
-                [connection.from.lng, connection.from.lat],
-                [connection.to.lng, connection.to.lat]
-              ]
+        if (!map.current) return;
+
+        // Add connection lines
+        connections.forEach((connection, index) => {
+          const lineId = `connection-${index}`;
+          
+          map.current!.addSource(lineId, {
+            type: 'geojson',
+            data: {
+              type: 'Feature',
+              properties: { plan: connection.plan },
+              geometry: {
+                type: 'LineString',
+                coordinates: [
+                  [connection.from.lng, connection.from.lat],
+                  [connection.to.lng, connection.to.lat]
+                ]
+              }
             }
-          }
+          });
+
+          map.current!.addLayer({
+            id: lineId,
+            type: 'line',
+            source: lineId,
+            layout: {
+              'line-join': 'round',
+              'line-cap': 'round'
+            },
+            paint: {
+              'line-color': connection.from.color,
+              'line-width': 2,
+              'line-opacity': 0.7
+            }
+          });
         });
 
-        map.current!.addLayer({
-          id: lineId,
-          type: 'line',
-          source: lineId,
-          layout: {
-            'line-join': 'round',
-            'line-cap': 'round'
-          },
-          paint: {
-            'line-color': connection.from.color,
-            'line-width': 2,
-            'line-opacity': 0.7
-          }
+        // Add PALOP country markers
+        palopCountries.forEach((country, index) => {
+          const el = document.createElement('div');
+          el.className = 'palop-marker';
+          el.style.width = '20px';
+          el.style.height = '20px';
+          el.style.borderRadius = '50%';
+          el.style.backgroundColor = country.color;
+          el.style.border = '3px solid white';
+          el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+          el.style.cursor = 'pointer';
+
+          const popup = new mapboxgl.Popup({ offset: 25 })
+            .setHTML(`
+              <div class="p-2">
+                <h3 class="font-bold text-sm">${country.name}</h3>
+                <p class="text-xs text-gray-600">PALOP Member</p>
+              </div>
+            `);
+
+          new mapboxgl.Marker(el)
+            .setLngLat([country.lng, country.lat])
+            .setPopup(popup)
+            .addTo(map.current!);
         });
+
+        // Add global hub markers
+        globalHubs.forEach((hub, index) => {
+          const el = document.createElement('div');
+          el.className = 'hub-marker';
+          el.style.width = '12px';
+          el.style.height = '12px';
+          el.style.borderRadius = '50%';
+          el.style.backgroundColor = hub.color;
+          el.style.border = '2px solid white';
+          el.style.boxShadow = '0 1px 2px rgba(0,0,0,0.3)';
+          el.style.cursor = 'pointer';
+
+          const popup = new mapboxgl.Popup({ offset: 15 })
+            .setHTML(`
+              <div class="p-2">
+                <h3 class="font-bold text-sm">${hub.name}</h3>
+                <p class="text-xs text-gray-600">Roaming Hub</p>
+              </div>
+            `);
+
+          new mapboxgl.Marker(el)
+            .setLngLat([hub.lng, hub.lat])
+            .setPopup(popup)
+            .addTo(map.current!);
+        });
+
+        // Fit map to show all markers
+        const bounds = new mapboxgl.LngLatBounds();
+        [...palopCountries, ...globalHubs].forEach(location => {
+          bounds.extend([location.lng, location.lat]);
+        });
+        map.current.fitBounds(bounds, { padding: 50 });
       });
 
-      // Add PALOP country markers
-      palopCountries.forEach((country, index) => {
-        const el = document.createElement('div');
-        el.className = 'palop-marker';
-        el.style.width = '20px';
-        el.style.height = '20px';
-        el.style.borderRadius = '50%';
-        el.style.backgroundColor = country.color;
-        el.style.border = '3px solid white';
-        el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
-        el.style.cursor = 'pointer';
-
-        const popup = new mapboxgl.Popup({ offset: 25 })
-          .setHTML(`
-            <div class="p-2">
-              <h3 class="font-bold text-sm">${country.name}</h3>
-              <p class="text-xs text-gray-600">PALOP Member</p>
-            </div>
-          `);
-
-        new mapboxgl.Marker(el)
-          .setLngLat([country.lng, country.lat])
-          .setPopup(popup)
-          .addTo(map.current!);
+      map.current.on('error', (e) => {
+        console.error('Map error:', e);
+        setIsMapLoaded(false);
       });
 
-      // Add global hub markers
-      globalHubs.forEach((hub, index) => {
-        const el = document.createElement('div');
-        el.className = 'hub-marker';
-        el.style.width = '12px';
-        el.style.height = '12px';
-        el.style.borderRadius = '50%';
-        el.style.backgroundColor = hub.color;
-        el.style.border = '2px solid white';
-        el.style.boxShadow = '0 1px 2px rgba(0,0,0,0.3)';
-        el.style.cursor = 'pointer';
-
-        const popup = new mapboxgl.Popup({ offset: 15 })
-          .setHTML(`
-            <div class="p-2">
-              <h3 class="font-bold text-sm">${hub.name}</h3>
-              <p class="text-xs text-gray-600">Roaming Hub</p>
-            </div>
-          `);
-
-        new mapboxgl.Marker(el)
-          .setLngLat([hub.lng, hub.lat])
-          .setPopup(popup)
-          .addTo(map.current!);
-      });
-
-      // Fit map to show all markers
-      const bounds = new mapboxgl.LngLatBounds();
-      [...palopCountries, ...globalHubs].forEach(location => {
-        bounds.extend([location.lng, location.lat]);
-      });
-      map.current.fitBounds(bounds, { padding: 50 });
-    });
-
-    // Add navigation controls
-    map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+      // Add navigation controls
+      map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+      
+    } catch (error) {
+      console.error('Error initializing map:', error);
+      setIsMapLoaded(false);
+    }
   };
 
   const handleTokenSubmit = () => {
     if (mapboxToken.trim()) {
       setIsTokenSet(true);
-      initializeMap();
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        initializeMap();
+      }, 100);
     }
   };
 
   useEffect(() => {
     return () => {
-      map.current?.remove();
+      if (map.current) {
+        map.current.remove();
+      }
     };
   }, []);
 
@@ -196,7 +223,7 @@ const PALOPConnectivityMap = () => {
         <div className="flex gap-2 max-w-md mx-auto">
           <Input
             type="text"
-            placeholder="Enter Mapbox public token"
+            placeholder="Enter Mapbox public token (pk.ey...)"
             value={mapboxToken}
             onChange={(e) => setMapboxToken(e.target.value)}
             className="flex-1"
@@ -211,7 +238,19 @@ const PALOPConnectivityMap = () => {
 
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
-      <div ref={mapContainer} className="w-full h-96" />
+      <div 
+        ref={mapContainer} 
+        className="w-full h-96"
+        style={{ minHeight: '400px' }}
+      />
+      {!isMapLoaded && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-palop-green mx-auto mb-2"></div>
+            <p className="text-gray-600">Loading map...</p>
+          </div>
+        </div>
+      )}
       <div className="p-4">
         <div className="flex flex-wrap gap-4 text-sm">
           <div className="flex items-center gap-2">
