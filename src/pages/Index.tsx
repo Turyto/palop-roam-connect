@@ -1,9 +1,10 @@
 
 import Navbar from "@/components/Navbar";
-import HeroSection from "@/components/HeroSection";
+import EnhancedHeroSection from "@/components/EnhancedHeroSection";
 import PlanCards from "@/components/PlanCards";
 import CountriesSection from "@/components/CountriesSection";
-import TestimonialsSection from "@/components/TestimonialsSection";
+import DynamicTestimonials from "@/components/DynamicTestimonials";
+import TrustIndicators from "@/components/TrustIndicators";
 import CtaSection from "@/components/CtaSection";
 import Footer from "@/components/Footer";
 
@@ -12,10 +13,11 @@ const Index = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-grow">
-        <HeroSection />
+        <EnhancedHeroSection />
         <PlanCards />
         <CountriesSection />
-        <TestimonialsSection />
+        <DynamicTestimonials />
+        <TrustIndicators />
         <CtaSection />
       </main>
       <Footer />

@@ -2,8 +2,8 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SupportHero from "@/components/SupportHero";
-import SupportFAQ from "@/components/SupportFAQ";
-import SupportContact from "@/components/SupportContact";
+import SmartFAQ from "@/components/SmartFAQ";
+import EnhancedSupportContact from "@/components/EnhancedSupportContact";
 
 const Support = () => {
   return (
@@ -11,8 +11,8 @@ const Support = () => {
       <Navbar />
       <main className="flex-grow">
         <SupportHero />
-        <SupportFAQ />
-        <SupportContact />
+        <SmartFAQ />
+        <EnhancedSupportContact />
       </main>
       <Footer />
     </div>
