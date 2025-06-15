@@ -1,7 +1,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Users, Gift, MessageCircle, Shield, Globe, Zap, Heart } from "lucide-react";
+import { Users, Gift, MessageCircle, Shield, Globe, Zap, Heart, Building } from "lucide-react";
 import { ESIMPlan } from "@/pages/Purchase";
 
 interface PlanValuePropositionProps {
@@ -75,6 +75,52 @@ const PlanValueProposition = ({ plan }: PlanValuePropositionProps) => {
             description: "VPN support & enhanced security"
           }
         ];
+      case "ngo":
+        return [
+          {
+            icon: <Building className="h-5 w-5" />,
+            title: "Multi-SIM Management",
+            description: "Centralized control for field teams"
+          },
+          {
+            icon: <Shield className="h-5 w-5" />,
+            title: "Usage Analytics",
+            description: "Real-time monitoring & reporting"
+          },
+          {
+            icon: <Users className="h-5 w-5" />,
+            title: "Partner Integration",
+            description: "Seamless billing & procurement"
+          },
+          {
+            icon: <Globe className="h-5 w-5" />,
+            title: "Field Operations",
+            description: "Optimized for remote locations"
+          }
+        ];
+      case "local-cplp":
+        return [
+          {
+            icon: <Globe className="h-5 w-5" />,
+            title: "CPLP Roaming",
+            description: "Affordable rates across Portuguese-speaking countries"
+          },
+          {
+            icon: <Heart className="h-5 w-5" />,
+            title: "Cultural Bridge",
+            description: "Connect with local communities"
+          },
+          {
+            icon: <Users className="h-5 w-5" />,
+            title: "Regional Partners",
+            description: "Local support in each country"
+          },
+          {
+            icon: <Zap className="h-5 w-5" />,
+            title: "Quick Activation",
+            description: "Instant connectivity upon arrival"
+          }
+        ];
       default:
         return [];
     }
@@ -102,6 +148,26 @@ const PlanValueProposition = ({ plan }: PlanValuePropositionProps) => {
         "Business Networking Opportunities",
         "Professional Development Webinars",
         "Investment & Trade Insights"
+      ];
+    }
+
+    if (planId === "ngo") {
+      return [
+        ...baseBenefits,
+        "NGO Partnership Network",
+        "Development Project Collaboration",
+        "Humanitarian Response Coordination",
+        "Grant Opportunity Alerts"
+      ];
+    }
+
+    if (planId === "local-cplp") {
+      return [
+        ...baseBenefits,
+        "CPLP Cultural Events",
+        "Language Exchange Programs",
+        "Regional Travel Guides",
+        "Local Volunteer Opportunities"
       ];
     }
 
@@ -156,6 +222,12 @@ const PlanValueProposition = ({ plan }: PlanValuePropositionProps) => {
           {plan.id === "core" && (
             <Badge className="mt-4 bg-palop-green/10 text-palop-green border-palop-green/20">
               Most Popular with Diaspora Families
+            </Badge>
+          )}
+          
+          {plan.id === "ngo" && (
+            <Badge className="mt-4 bg-palop-red/10 text-palop-red border-palop-red/20">
+              Trusted by 200+ NGOs
             </Badge>
           )}
         </CardContent>

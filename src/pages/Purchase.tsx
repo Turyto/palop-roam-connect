@@ -72,6 +72,40 @@ const Purchase = () => {
         "Priority support",
         "Business-grade reliability"
       ]
+    },
+    {
+      id: "ngo",
+      name: "NGO Pack",
+      data: "10+ GB",
+      days: 60,
+      price: 35,
+      currency: "EUR",
+      features: [
+        "10+ GB of Internet",
+        "Valid for 30-90 days",
+        "Multi-SIM support",
+        "Usage control dashboard",
+        "Partner integration",
+        "Bulk purchasing options",
+        "Field operations support"
+      ]
+    },
+    {
+      id: "local-cplp",
+      name: "Local CPLP",
+      data: "3-5 GB",
+      days: 22,
+      price: 7.50,
+      currency: "EUR",
+      features: [
+        "3-5 GB of Internet",
+        "Valid for 15-30 days",
+        "CPLP roaming model",
+        "Low-cost parity",
+        "Domestic traveler focus",
+        "Regional partnerships",
+        "Cultural exchange benefits"
+      ]
     }
   ];
 
