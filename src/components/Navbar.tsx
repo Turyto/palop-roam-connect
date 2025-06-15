@@ -3,10 +3,13 @@ import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import UserMenu from './UserMenu';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const { user, loading } = useAuth();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -55,9 +58,21 @@ const Navbar = () => {
           >
             Support
           </Link>
-          <Button className="ml-4 bg-palop-green hover:bg-palop-green/90 text-white" asChild>
-            <Link to="/plans">Get Started</Link>
-          </Button>
+          
+          {!loading && (
+            user ? (
+              <UserMenu />
+            ) : (
+              <>
+                <Button variant="outline" asChild>
+                  <Link to="/auth">Sign In</Link>
+                </Button>
+                <Button className="bg-palop-green hover:bg-palop-green/90 text-white" asChild>
+                  <Link to="/plans">Get Started</Link>
+                </Button>
+              </>
+            )
+          )}
         </div>
 
         {/* Mobile menu button */}
@@ -108,9 +123,23 @@ const Navbar = () => {
             >
               Support
             </Link>
-            <Button className="bg-palop-green hover:bg-palop-green/90 text-white w-full" asChild>
-              <Link to="/plans" onClick={() => setIsMenuOpen(false)}>Get Started</Link>
-            </Button>
+            
+            {!loading && (
+              user ? (
+                <div className="px-2 py-1">
+                  <UserMenu />
+                </div>
+              ) : (
+                <>
+                  <Button variant="outline" className="w-full" asChild>
+                    <Link to="/auth" onClick={() => setIsMenuOpen(false)}>Sign In</Link>
+                  </Button>
+                  <Button className="bg-palop-green hover:bg-palop-green/90 text-white w-full" asChild>
+                    <Link to="/plans" onClick={() => setIsMenuOpen(false)}>Get Started</Link>
+                  </Button>
+                </>
+              )
+            )}
           </div>
         </div>
       )}
