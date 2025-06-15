@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -8,7 +7,7 @@ interface PALOPConnectivityMapProps {
 }
 
 const PALOPConnectivityMap: React.FC<PALOPConnectivityMapProps> = ({ 
-  mapboxToken = "YOUR_MAPBOX_PUBLIC_TOKEN_HERE" // Replace with your actual token
+  mapboxToken = "pk.eyJ1IjoidHVyeXRvIiwiYSI6ImNtYnh6bzNkMDFhNTQyd3MyNmIwbWRkZW4ifQ.TBkW_lOth0qLr8W8aXQd7A"
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -62,8 +61,8 @@ const PALOPConnectivityMap: React.FC<PALOPConnectivityMapProps> = ({
   ];
 
   const initializeMap = () => {
-    if (!mapContainer.current || !mapboxToken || mapboxToken === "YOUR_MAPBOX_PUBLIC_TOKEN_HERE") {
-      setMapError("Please provide a valid Mapbox public token");
+    if (!mapContainer.current || !mapboxToken) {
+      setMapError("Mapbox token not available");
       return;
     }
 
@@ -251,14 +250,10 @@ const PALOPConnectivityMap: React.FC<PALOPConnectivityMapProps> = ({
   };
 
   useEffect(() => {
-    // Auto-initialize map if token is provided
-    if (mapboxToken && mapboxToken !== "YOUR_MAPBOX_PUBLIC_TOKEN_HERE") {
-      setTimeout(() => {
-        initializeMap();
-      }, 100);
-    } else {
-      setMapError("Mapbox token not configured. Please contact support.");
-    }
+    // Auto-initialize map with the hardcoded token
+    setTimeout(() => {
+      initializeMap();
+    }, 100);
 
     return () => {
       if (map.current) {
