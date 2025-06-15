@@ -7,6 +7,7 @@ import ESIMPlans from "@/components/ESIMPlans";
 import PurchaseFormWithOrders from "@/components/PurchaseFormWithOrders";
 import PurchaseSteps from "@/components/PurchaseSteps";
 import PlanValueProposition from "@/components/PlanValueProposition";
+import RealJourneysSection from "@/components/RealJourneysSection";
 
 type PurchaseStep = "plans" | "checkout" | "payment" | "confirmation";
 
@@ -152,7 +153,10 @@ const Purchase = () => {
         
         <div className="container mx-auto px-4 py-8">
           {currentStep === "plans" && (
-            <ESIMPlans onSelectPlan={handlePlanSelection} />
+            <>
+              <ESIMPlans onSelectPlan={handlePlanSelection} />
+              <RealJourneysSection />
+            </>
           )}
           
           {currentStep !== "plans" && selectedPlan && (
