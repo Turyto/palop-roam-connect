@@ -1,5 +1,6 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Check } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -20,8 +21,70 @@ export type ESIMPlan = {
 };
 
 const Purchase = () => {
-  const [currentStep, setCurrentStep] = useState<PurchaseStep>("plans");
+  const [searchParams] = useSearchParams();
+  const planParam = searchParams.get('plan');
+  const [currentStep, setCurrentStep] = useState<PurchaseStep>(planParam ? "checkout" : "plans");
   const [selectedPlan, setSelectedPlan] = useState<ESIMPlan | null>(null);
+  
+  // Pre-defined plans
+  const availablePlans: ESIMPlan[] = [
+    {
+      id: "lite",
+      name: "Lite",
+      data: "1-2 GB",
+      days: 7,
+      price: 6,
+      currency: "EUR",
+      features: [
+        "1-2 GB of Internet",
+        "Valid for 7 days",
+        "QR-code activation",
+        "Airport availability",
+        "Tourist-friendly setup"
+      ]
+    },
+    {
+      id: "core",
+      name: "Core",
+      data: "3-5 GB", 
+      days: 30,
+      price: 12.50,
+      currency: "EUR",
+      features: [
+        "3-5 GB of Internet",
+        "Valid for 30 days",
+        "Diaspora gifting enabled",
+        "SMS welcome pack",
+        "Community support"
+      ]
+    },
+    {
+      id: "plus",
+      name: "Plus",
+      data: "10 GB",
+      days: 30,
+      price: 27.50,
+      currency: "EUR",
+      features: [
+        "10 GB of Internet",
+        "Valid for 30 days",
+        "PALOP+ roaming",
+        "Priority support",
+        "Business-grade reliability"
+      ]
+    }
+  ];
+
+  // Set selected plan based on URL parameter
+  useEffect(() => {
+    if (planParam) {
+      const plan = availablePlans.find(p => p.id === planParam);
+      if (plan) {
+        setSelectedPlan(plan);
+        setCurrentStep("checkout");
+      }
+    }
+  }, [planParam]);
   
   const handlePlanSelection = (plan: ESIMPlan) => {
     setSelectedPlan(plan);

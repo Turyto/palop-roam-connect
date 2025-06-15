@@ -15,7 +15,7 @@ const packages = [
     targetUser: "Tourist",
     data: "1-2 GB",
     duration: "7 days",
-    price: "5-7",
+    price: "6.00",
     icon: <Smartphone className="h-8 w-8" />,
     notes: "QR-code activation, airport availability",
     color: "bg-palop-blue",
@@ -33,7 +33,7 @@ const packages = [
     targetUser: "Diaspora Returnee",
     data: "3-5 GB",
     duration: "30 days",
-    price: "10-15",
+    price: "12.50",
     icon: <Users className="h-8 w-8" />,
     notes: "Diaspora gifting enabled, SMS welcome pack",
     color: "bg-palop-green",
@@ -52,7 +52,7 @@ const packages = [
     targetUser: "Business Traveler",
     data: "10 GB",
     duration: "30 days",
-    price: "25-30",
+    price: "27.50",
     icon: <Briefcase className="h-8 w-8" />,
     notes: "PALOP+ roaming, priority support",
     color: "bg-palop-yellow",
@@ -160,7 +160,7 @@ const Plans = () => {
                 
                 <CardFooter>
                   <Button className="w-full bg-palop-green hover:bg-palop-green/90" asChild>
-                    <Link to="/purchase">Select Plan</Link>
+                    <Link to={`/purchase?plan=${pkg.id}`}>Select Plan</Link>
                   </Button>
                 </CardFooter>
               </Card>
