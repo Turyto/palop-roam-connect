@@ -118,7 +118,7 @@ const Plans = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
             {packages.map((pkg) => (
-              <Card key={pkg.id} className={`card-hover relative ${pkg.popular ? 'border-2 border-palop-green' : ''}`}>
+              <Card key={pkg.id} id={pkg.id} className={`card-hover relative scroll-mt-20 ${pkg.popular ? 'border-2 border-palop-green' : ''}`}>
                 {pkg.popular && (
                   <div className="absolute -top-3 right-4 bg-palop-green text-white px-3 py-1 text-xs font-bold rounded-full">
                     Most Popular

@@ -87,7 +87,7 @@ const PlanCards = () => {
               
               <CardFooter className="pt-4">
                 <Button className="w-full bg-palop-green hover:bg-palop-green/90" asChild>
-                  <Link to="/plans">Choose Plan</Link>
+                  <Link to={`/plans#${plan.id}`}>Choose Plan</Link>
                 </Button>
               </CardFooter>
             </Card>
