@@ -1,7 +1,7 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Users, Gift, Shield, Globe } from "lucide-react";
+import PALOPConnectivityMap from "./PALOPConnectivityMap";
 
 const scenarios = [
   {
@@ -131,36 +131,10 @@ const RealJourneysSection = () => {
           </div>
         </div>
 
-        {/* Country Connection Visual */}
+        {/* Interactive Country Connection Map */}
         <div className="mb-16">
           <h3 className="text-2xl font-semibold mb-8 text-center">PALOP Connectivity Network</h3>
-          <div className="bg-white rounded-lg p-8 shadow-md">
-            <div className="text-center mb-6">
-              <img 
-                src="/lovable-uploads/017bc499-3373-4458-ab12-cd2c5d97ab0c.png" 
-                alt="PALOP Region Map" 
-                className="mx-auto max-w-full h-64 object-contain opacity-80"
-              />
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-              <div className="p-4 bg-palop-blue/10 rounded-lg">
-                <h4 className="font-semibold text-palop-blue mb-2">Cape Verde</h4>
-                <p className="text-sm text-gray-600">Tourism Hub</p>
-              </div>
-              <div className="p-4 bg-palop-green/10 rounded-lg">
-                <h4 className="font-semibold text-palop-green mb-2">Angola</h4>
-                <p className="text-sm text-gray-600">Business Gateway</p>
-              </div>
-              <div className="p-4 bg-palop-yellow/10 rounded-lg">
-                <h4 className="font-semibold text-palop-yellow mb-2">Mozambique</h4>
-                <p className="text-sm text-gray-600">Southern Corridor</p>
-              </div>
-              <div className="p-4 bg-palop-red/10 rounded-lg">
-                <h4 className="font-semibold text-palop-red mb-2">Guinea-Bissau</h4>
-                <p className="text-sm text-gray-600">West Africa Link</p>
-              </div>
-            </div>
-          </div>
+          <PALOPConnectivityMap />
         </div>
 
         {/* Plan Connection Matrix */}
