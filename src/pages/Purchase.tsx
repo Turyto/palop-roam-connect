@@ -4,7 +4,7 @@ import { Check } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ESIMPlans from "@/components/ESIMPlans";
-import PurchaseForm from "@/components/PurchaseForm";
+import PurchaseFormWithOrders from "@/components/PurchaseFormWithOrders";
 import PurchaseSteps from "@/components/PurchaseSteps";
 import PlanValueProposition from "@/components/PlanValueProposition";
 
@@ -182,7 +182,7 @@ const Purchase = () => {
                 
                 {/* Right side - Purchase form */}
                 <div>
-                  <PurchaseForm 
+                  <PurchaseFormWithOrders 
                     plan={selectedPlan} 
                     currentStep={currentStep}
                     onBackToPlans={handleBackToPlans}

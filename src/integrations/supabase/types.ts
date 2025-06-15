@@ -9,6 +9,160 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      esim_activations: {
+        Row: {
+          activated_at: string | null
+          activation_code: string | null
+          created_at: string
+          delivered_at: string | null
+          expires_at: string | null
+          iccid: string | null
+          id: string
+          order_id: string
+          qr_code_data: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activated_at?: string | null
+          activation_code?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          expires_at?: string | null
+          iccid?: string | null
+          id?: string
+          order_id: string
+          qr_code_data?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activated_at?: string | null
+          activation_code?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          expires_at?: string | null
+          iccid?: string | null
+          id?: string
+          order_id?: string
+          qr_code_data?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "esim_activations_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_items: {
+        Row: {
+          created_at: string
+          data_amount: string
+          duration_days: number
+          id: string
+          order_id: string
+          plan_id: string
+          plan_name: string
+          quantity: number
+          total_price: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          data_amount: string
+          duration_days: number
+          id?: string
+          order_id: string
+          plan_id: string
+          plan_name: string
+          quantity?: number
+          total_price: number
+          unit_price: number
+        }
+        Update: {
+          created_at?: string
+          data_amount?: string
+          duration_days?: number
+          id?: string
+          order_id?: string
+          plan_id?: string
+          plan_name?: string
+          quantity?: number
+          total_price?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          currency: string
+          data_amount: string
+          duration_days: number
+          esim_delivered_at: string | null
+          id: string
+          payment_intent_id: string | null
+          payment_status: string | null
+          plan_id: string
+          plan_name: string
+          price: number
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          data_amount: string
+          duration_days: number
+          esim_delivered_at?: string | null
+          id?: string
+          payment_intent_id?: string | null
+          payment_status?: string | null
+          plan_id: string
+          plan_name: string
+          price: number
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          data_amount?: string
+          duration_days?: number
+          esim_delivered_at?: string | null
+          id?: string
+          payment_intent_id?: string | null
+          payment_status?: string | null
+          plan_id?: string
+          plan_name?: string
+          price?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
