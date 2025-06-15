@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Users, Gift, Shield, Globe } from "lucide-react";
@@ -131,10 +132,16 @@ const RealJourneysSection = () => {
           </div>
         </div>
 
-        {/* Interactive Country Connection Map */}
+        {/* Enhanced Interactive Country Connection Map */}
         <div className="mb-16">
           <h3 className="text-2xl font-semibold mb-8 text-center">PALOP Connectivity Network</h3>
-          <PALOPConnectivityMap />
+          <PALOPConnectivityMap mapboxToken="YOUR_MAPBOX_PUBLIC_TOKEN_HERE" />
+          <div className="text-center mt-4">
+            <p className="text-sm text-gray-600">
+              Interactive map showing real-time connectivity between PALOP countries and global hubs. 
+              Hover over markers to see detailed information about each location and available plans.
+            </p>
+          </div>
         </div>
 
         {/* Plan Connection Matrix */}
