@@ -5,6 +5,8 @@ import CommunityHero from "@/components/CommunityHero";
 import PartnersSection from "@/components/PartnersSection";
 import CommunityImpact from "@/components/CommunityImpact";
 import CommunityCallToAction from "@/components/CommunityCallToAction";
+import CommunityEvents from "@/components/CommunityEvents";
+import CommunityStories from "@/components/CommunityStories";
 
 const Community = () => {
   return (
@@ -12,6 +14,8 @@ const Community = () => {
       <Navbar />
       <main className="flex-grow">
         <CommunityHero />
+        <CommunityEvents />
+        <CommunityStories />
         <CommunityImpact />
         <PartnersSection />
         <CommunityCallToAction />
