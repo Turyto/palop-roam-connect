@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Check } from "lucide-react";
@@ -7,6 +6,7 @@ import Footer from "@/components/Footer";
 import ESIMPlans from "@/components/ESIMPlans";
 import PurchaseForm from "@/components/PurchaseForm";
 import PurchaseSteps from "@/components/PurchaseSteps";
+import PlanValueProposition from "@/components/PlanValueProposition";
 
 type PurchaseStep = "plans" | "checkout" | "payment" | "confirmation";
 
@@ -122,13 +122,42 @@ const Purchase = () => {
           )}
           
           {currentStep !== "plans" && selectedPlan && (
-            <PurchaseForm 
-              plan={selectedPlan} 
-              currentStep={currentStep}
-              onBackToPlans={handleBackToPlans}
-              onProceedToPayment={handleProceedToPayment}
-              onConfirmation={handleConfirmation}
-            />
+            <div className="max-w-6xl mx-auto">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Left side - Plan details and value proposition */}
+                <div className="space-y-6">
+                  <div className="bg-white rounded-lg shadow-md p-6">
+                    <div className="text-center mb-6">
+                      <h2 className="text-2xl font-bold text-palop-green mb-2">{selectedPlan.name} Plan</h2>
+                      <div className="text-3xl font-bold text-gray-800">€{selectedPlan.price.toFixed(2)}</div>
+                      <div className="text-gray-600">{selectedPlan.data} for {selectedPlan.days} days</div>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      {selectedPlan.features.map((feature, index) => (
+                        <div key={index} className="flex items-center">
+                          <Check className="h-4 w-4 text-palop-green mr-3" />
+                          <span className="text-sm">{feature}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <PlanValueProposition plan={selectedPlan} />
+                </div>
+                
+                {/* Right side - Purchase form */}
+                <div>
+                  <PurchaseForm 
+                    plan={selectedPlan} 
+                    currentStep={currentStep}
+                    onBackToPlans={handleBackToPlans}
+                    onProceedToPayment={handleProceedToPayment}
+                    onConfirmation={handleConfirmation}
+                  />
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </main>
