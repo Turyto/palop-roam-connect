@@ -1,5 +1,6 @@
 
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const HeroSection = () => {
   return (
@@ -13,11 +14,11 @@ const HeroSection = () => {
             Affordable data and voice roaming plans designed specifically for travelers and communities from Angola, Cape Verde, Guinea-Bissau, Mozambique, and São Tomé and Príncipe.
           </p>
           <div className="flex flex-wrap gap-4 pt-2">
-            <Button className="bg-palop-green hover:bg-palop-green/90 text-white">
-              View Plans
+            <Button className="bg-palop-green hover:bg-palop-green/90 text-white" asChild>
+              <Link to="/plans">View Plans</Link>
             </Button>
-            <Button variant="outline" className="border-palop-green text-palop-green hover:bg-palop-green/10">
-              Learn More
+            <Button variant="outline" className="border-palop-green text-palop-green hover:bg-palop-green/10" asChild>
+              <Link to="/community">Learn More</Link>
             </Button>
           </div>
         </div>
