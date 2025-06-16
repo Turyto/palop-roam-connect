@@ -14,6 +14,7 @@ const Navbar = () => {
   const navigation = [
     { name: "Home", href: "/" },
     { name: "Plans", href: "/plans" },
+    { name: "eSIM Guide", href: "/esim" },
     { name: "Countries", href: "/countries" },
     { name: "Community", href: "/community" },
     { name: "Support", href: "/support" },
