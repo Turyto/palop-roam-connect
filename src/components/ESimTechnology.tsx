@@ -1,6 +1,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Smartphone, Sim, Shield, Clock } from "lucide-react";
+import { Smartphone, CreditCard, Shield, Clock } from "lucide-react";
 
 const ESimTechnology = () => {
   return (
@@ -23,7 +23,7 @@ const ESimTechnology = () => {
             <div className="space-y-4">
               <div className="flex items-start space-x-4">
                 <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                  <Sim className="h-4 w-4 text-gray-600" />
+                  <CreditCard className="h-4 w-4 text-gray-600" />
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-900">Traditional SIM</h4>
@@ -101,7 +101,7 @@ const ESimTechnology = () => {
 
           <Card className="text-center">
             <CardHeader>
-              <Sim className="h-8 w-8 text-palop-red mx-auto mb-2" />
+              <CreditCard className="h-8 w-8 text-palop-red mx-auto mb-2" />
               <CardTitle className="text-lg">Reliable</CardTitle>
             </CardHeader>
             <CardContent>

@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Plans from "./pages/Plans";
+import ESim from "./pages/ESim";
 import Purchase from "./pages/Purchase";
 import Community from "./pages/Community";
 import Countries from "./pages/Countries";
