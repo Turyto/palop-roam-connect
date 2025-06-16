@@ -14,6 +14,7 @@ import Countries from "./pages/Countries";
 import Support from "./pages/Support";
 import Auth from "./pages/Auth";
 import Orders from "./pages/Orders";
+import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
 // Create QueryClient with proper configuration
@@ -44,6 +45,7 @@ const App = () => {
               <Route path="/support" element={<Support />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/orders" element={<Orders />} />
+              <Route path="/admin/dashboard" element={<AdminDashboard />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
