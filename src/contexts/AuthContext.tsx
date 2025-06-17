@@ -40,13 +40,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('Error fetching user role:', error);
-        return 'customer';
+        return null;
       }
 
       return data?.role || 'customer';
     } catch (error) {
       console.error('Error fetching user role:', error);
-      return 'customer';
+      return null;
     }
   };
 
@@ -54,7 +54,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -62,7 +61,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Fetch user role when user is authenticated
           const role = await fetchUserRole(session.user.id);
           setUserRole(role);
-          console.log('User role fetched:', role);
+          
+          // If user is admin and just signed in, redirect to admin dashboard
+          if (event === 'SIGNED_IN' && role === 'admin') {
+            window.location.href = '/admin/dashboard';
+          }
         } else {
           setUserRole(null);
         }
@@ -73,14 +76,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Check for existing session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      console.log('Initial session check:', session?.user?.id);
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
         const role = await fetchUserRole(session.user.id);
         setUserRole(role);
-        console.log('Initial user role:', role);
       }
       
       setLoading(false);
