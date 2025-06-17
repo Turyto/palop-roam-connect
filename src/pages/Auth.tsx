@@ -5,14 +5,19 @@ import { useAuth } from '@/contexts/AuthContext';
 import AuthForm from '@/components/AuthForm';
 
 const Auth = () => {
-  const { user, loading } = useAuth();
+  const { user, userRole, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && user) {
-      navigate('/');
+    if (!loading && user && userRole) {
+      // Redirect admin users to admin dashboard, regular users to homepage
+      if (userRole === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/');
+      }
     }
-  }, [user, loading, navigate]);
+  }, [user, userRole, loading, navigate]);
 
   if (loading) {
     return (

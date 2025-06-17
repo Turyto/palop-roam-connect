@@ -1,10 +1,7 @@
 
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -13,7 +10,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, RefreshCw, Package, CheckCircle, Clock, XCircle } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Search, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Order {
@@ -30,18 +31,17 @@ interface Order {
   profiles: {
     email: string;
     full_name: string | null;
-  };
+  } | null;
 }
 
 const AdminOrdersTable = () => {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [refreshing, setRefreshing] = useState(false);
+  const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const { toast } = useToast();
 
-  const fetchOrders = async () => {
-    try {
+  const { data: orders = [], isLoading, error, refetch } = useQuery({
+    queryKey: ['admin-orders'],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('orders')
         .select(`
@@ -55,77 +55,99 @@ const AdminOrdersTable = () => {
           payment_status,
           created_at,
           esim_delivered_at,
-          profiles!inner(email, full_name)
+          profiles:user_id (
+            email,
+            full_name
+          )
         `)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setOrders(data || []);
-    } catch (error) {
-      console.error('Error fetching orders:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch orders",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+      if (error) {
+        console.error('Error fetching orders:', error);
+        throw error;
+      }
 
+      // Transform the data to match our Order interface
+      return (data || []).map(order => ({
+        ...order,
+        profiles: Array.isArray(order.profiles) ? order.profiles[0] : order.profiles
+      })) as Order[];
+    },
+  });
+
+  // Filter orders based on search term
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    if (!orders) {
+      setFilteredOrders([]);
+      return;
+    }
+
+    const filtered = orders.filter((order) => {
+      const email = order.profiles?.email || '';
+      const planName = order.plan_name || '';
+      const searchLower = searchTerm.toLowerCase();
+      
+      return (
+        email.toLowerCase().includes(searchLower) ||
+        planName.toLowerCase().includes(searchLower)
+      );
+    });
+    
+    setFilteredOrders(filtered);
+  }, [orders, searchTerm]);
 
   const handleRefresh = () => {
-    setRefreshing(true);
-    fetchOrders();
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case 'pending':
-        return <Clock className="h-4 w-4 text-yellow-600" />;
-      case 'failed':
-        return <XCircle className="h-4 w-4 text-red-600" />;
-      default:
-        return <Package className="h-4 w-4 text-gray-600" />;
-    }
+    refetch();
+    toast({
+      title: "Orders refreshed",
+      description: "Order data has been updated.",
+    });
   };
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-      completed: "default",
-      pending: "secondary",
-      failed: "destructive",
-      cancelled: "outline",
+    const statusColors: Record<string, string> = {
+      pending: "bg-yellow-100 text-yellow-800",
+      completed: "bg-green-100 text-green-800",
+      failed: "bg-red-100 text-red-800",
+      cancelled: "bg-gray-100 text-gray-800",
     };
-    return <Badge variant={variants[status] || "outline"}>{status}</Badge>;
+
+    return (
+      <Badge className={statusColors[status] || "bg-gray-100 text-gray-800"}>
+        {status}
+      </Badge>
+    );
   };
 
-  const getESimStatus = (order: Order) => {
-    if (order.esim_delivered_at) {
-      return <Badge variant="default">Delivered</Badge>;
-    }
-    if (order.status === 'completed' && order.payment_status === 'succeeded') {
-      return <Badge variant="secondary">Pending</Badge>;
-    }
-    return <Badge variant="outline">Not Ready</Badge>;
+  const getPaymentStatusBadge = (status: string) => {
+    const statusColors: Record<string, string> = {
+      pending: "bg-yellow-100 text-yellow-800",
+      succeeded: "bg-green-100 text-green-800",
+      failed: "bg-red-100 text-red-800",
+      cancelled: "bg-gray-100 text-gray-800",
+    };
+
+    return (
+      <Badge className={statusColors[status] || "bg-gray-100 text-gray-800"}>
+        {status}
+      </Badge>
+    );
   };
 
-  const filteredOrders = orders.filter(order =>
-    order.profiles.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.plan_name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  if (loading) {
+  if (error) {
     return (
       <Card>
-        <CardContent className="flex items-center justify-center py-12">
-          <div className="text-lg">Loading orders...</div>
+        <CardHeader>
+          <CardTitle className="text-red-600">Error Loading Orders</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-gray-600">
+            Failed to load orders. Please try again later.
+          </p>
+          <Button onClick={handleRefresh} className="mt-4">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Retry
+          </Button>
         </CardContent>
       </Card>
     );
@@ -135,87 +157,85 @@ const AdminOrdersTable = () => {
     <Card>
       <CardHeader>
         <div className="flex justify-between items-center">
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Orders Management
-          </CardTitle>
-          <Button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            variant="outline"
-            size="sm"
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+          <CardTitle>Orders Management</CardTitle>
+          <Button onClick={handleRefresh} variant="outline" size="sm">
+            <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
         </div>
+        <div className="flex items-center space-x-2">
+          <Search className="h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="Search by email or plan name..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="max-w-sm"
+          />
+        </div>
       </CardHeader>
       <CardContent>
-        <div className="mb-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Search by email or plan name..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+        {isLoading ? (
+          <div className="text-center py-8">
+            <div className="text-gray-500">Loading orders...</div>
           </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Customer</TableHead>
-                <TableHead>Plan</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>eSIM Status</TableHead>
-                <TableHead>Date</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredOrders.map((order) => (
-                <TableRow key={order.id}>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{order.profiles.email}</div>
-                      {order.profiles.full_name && (
-                        <div className="text-sm text-gray-500">{order.profiles.full_name}</div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{order.plan_name}</div>
-                      <div className="text-sm text-gray-500">{order.data_amount}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {order.price} {order.currency}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {getStatusIcon(order.status)}
-                      {getStatusBadge(order.status)}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {getESimStatus(order)}
-                  </TableCell>
-                  <TableCell>
-                    {new Date(order.created_at).toLocaleDateString()}
-                  </TableCell>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Customer Email</TableHead>
+                  <TableHead>Customer Name</TableHead>
+                  <TableHead>Plan Name</TableHead>
+                  <TableHead>Data Amount</TableHead>
+                  <TableHead>Price</TableHead>
+                  <TableHead>Order Status</TableHead>
+                  <TableHead>Payment Status</TableHead>
+                  <TableHead>eSIM Status</TableHead>
+                  <TableHead>Order Date</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-
-        {filteredOrders.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            No orders found matching your search.
+              </TableHeader>
+              <TableBody>
+                {filteredOrders.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                      {searchTerm ? 'No orders found matching your search.' : 'No orders found.'}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredOrders.map((order) => (
+                    <TableRow key={order.id}>
+                      <TableCell className="font-medium">
+                        {order.profiles?.email || 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                        {order.profiles?.full_name || 'N/A'}
+                      </TableCell>
+                      <TableCell>{order.plan_name}</TableCell>
+                      <TableCell>{order.data_amount}</TableCell>
+                      <TableCell>
+                        {order.price} {order.currency}
+                      </TableCell>
+                      <TableCell>{getStatusBadge(order.status)}</TableCell>
+                      <TableCell>{getPaymentStatusBadge(order.payment_status)}</TableCell>
+                      <TableCell>
+                        {order.esim_delivered_at ? (
+                          <Badge className="bg-green-100 text-green-800">
+                            Delivered
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-yellow-100 text-yellow-800">
+                            Pending
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(order.created_at).toLocaleDateString()}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </div>
         )}
       </CardContent>
