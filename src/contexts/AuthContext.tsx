@@ -40,54 +40,113 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('Error fetching user role:', error);
-        return null;
+        return 'customer';
       }
 
       return data?.role || 'customer';
     } catch (error) {
       console.error('Error fetching user role:', error);
-      return null;
+      return 'customer';
     }
   };
 
+  // Clear all auth state
+  const clearAuthState = () => {
+    setSession(null);
+    setUser(null);
+    setUserRole(null);
+  };
+
   useEffect(() => {
+    let mounted = true;
+
+    // Initialize auth state
+    const initializeAuth = async () => {
+      try {
+        console.log('Initializing auth...');
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session:', error);
+          if (mounted) {
+            clearAuthState();
+            setLoading(false);
+          }
+          return;
+        }
+
+        console.log('Initial session check:', session?.user?.id || 'No session');
+        
+        if (!mounted) return;
+        
+        if (session?.user) {
+          console.log('User found, setting auth state');
+          setSession(session);
+          setUser(session.user);
+          
+          const role = await fetchUserRole(session.user.id);
+          if (mounted) {
+            setUserRole(role);
+            console.log('User role set:', role);
+          }
+        } else {
+          console.log('No session found, clearing auth state');
+          clearAuthState();
+        }
+        
+        if (mounted) {
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        if (mounted) {
+          clearAuthState();
+          setLoading(false);
+        }
+      }
+    };
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+        console.log('Auth state changed:', event, session?.user?.id || 'No session');
         
-        if (session?.user) {
-          // Fetch user role when user is authenticated
-          const role = await fetchUserRole(session.user.id);
-          setUserRole(role);
-          
-          // If user is admin and just signed in, redirect to admin dashboard
-          if (event === 'SIGNED_IN' && role === 'admin') {
-            window.location.href = '/admin/dashboard';
-          }
-        } else {
-          setUserRole(null);
+        if (!mounted) return;
+        
+        if (event === 'SIGNED_OUT' || !session) {
+          console.log('User signed out or no session, clearing state');
+          clearAuthState();
+          setLoading(false);
+          return;
         }
         
-        setLoading(false);
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          console.log('User signed in or token refreshed');
+          setSession(session);
+          setUser(session.user);
+          
+          if (session.user) {
+            const role = await fetchUserRole(session.user.id);
+            if (mounted) {
+              setUserRole(role);
+              console.log('User role updated:', role);
+            }
+          }
+        }
+        
+        if (mounted) {
+          setLoading(false);
+        }
       }
     );
 
-    // Check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        const role = await fetchUserRole(session.user.id);
-        setUserRole(role);
-      }
-      
-      setLoading(false);
-    });
+    initializeAuth();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log('Cleaning up auth context');
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, fullName?: string) => {
@@ -117,7 +176,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    console.log('Signing out user...');
     const { error } = await supabase.auth.signOut();
+    
+    if (!error) {
+      // Immediately clear local state
+      clearAuthState();
+      console.log('User signed out successfully');
+    }
+    
     return { error };
   };
 
