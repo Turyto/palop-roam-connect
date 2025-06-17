@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AdminOrdersTable from "@/components/admin/AdminOrdersTable";
@@ -16,50 +15,28 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, AlertTriangle } from "lucide-react";
 
 const AdminDashboard = () => {
-  const { user, loading } = useAuth();
+  const { user, userRole, loading } = useAuth();
   const navigate = useNavigate();
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [roleLoading, setRoleLoading] = useState(true);
 
   useEffect(() => {
-    const checkAdminAccess = async () => {
-      if (!loading && !user) {
-        navigate('/auth');
+    console.log('AdminDashboard - user:', user?.id, 'role:', userRole, 'loading:', loading);
+    
+    if (!loading) {
+      if (!user) {
+        console.log('No user, redirecting to auth');
+        navigate('/auth', { replace: true });
         return;
       }
 
-      if (user) {
-        try {
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .single();
-
-          if (error) {
-            console.error('Error fetching user role:', error);
-            navigate('/');
-            return;
-          }
-
-          setUserRole(data?.role || 'customer');
-          
-          if (data?.role !== 'admin') {
-            navigate('/');
-          }
-        } catch (error) {
-          console.error('Error checking admin access:', error);
-          navigate('/');
-        } finally {
-          setRoleLoading(false);
-        }
+      if (userRole && userRole !== 'admin') {
+        console.log('User is not admin, redirecting to home');
+        navigate('/', { replace: true });
+        return;
       }
-    };
+    }
+  }, [user, userRole, loading, navigate]);
 
-    checkAdminAccess();
-  }, [user, loading, navigate]);
-
-  if (loading || roleLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-lg">Loading...</div>
@@ -67,7 +44,15 @@ const AdminDashboard = () => {
     );
   }
 
-  if (!user || userRole !== 'admin') {
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Redirecting to login...</div>
+      </div>
+    );
+  }
+
+  if (userRole !== 'admin') {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card className="w-96">

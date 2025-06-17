@@ -9,12 +9,16 @@ const Auth = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log('Auth page - user:', user?.id, 'role:', userRole, 'loading:', loading);
+    
     if (!loading && user && userRole) {
       // Redirect admin users to admin dashboard, regular users to homepage
       if (userRole === 'admin') {
-        navigate('/admin/dashboard');
+        console.log('Redirecting admin to dashboard');
+        navigate('/admin/dashboard', { replace: true });
       } else {
-        navigate('/');
+        console.log('Redirecting user to homepage');
+        navigate('/', { replace: true });
       }
     }
   }, [user, userRole, loading, navigate]);
@@ -23,6 +27,15 @@ const Auth = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-lg">Loading...</div>
+      </div>
+    );
+  }
+
+  // Don't show auth form if user is already authenticated
+  if (user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Redirecting...</div>
       </div>
     );
   }
