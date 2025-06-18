@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Globe } from "lucide-react";
+import { Menu, X, Globe, Flame } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import UserMenu from "./UserMenu";
 
@@ -38,7 +38,8 @@ const Navbar = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
             <Globe className="h-8 w-8 text-palop-green" />
-            <span className="font-bold text-xl text-gray-900">PALOP eSIM</span>
+            <span className="font-bold text-xl text-gray-900">BuéChama eSIM</span>
+            <Flame className="h-6 w-6 text-orange-500" />
           </Link>
 
           {/* Desktop Navigation */}
