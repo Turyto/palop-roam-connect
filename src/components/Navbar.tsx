@@ -1,7 +1,8 @@
+
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Globe, FlameKindling } from "lucide-react";
+import { Menu, X, FlameKindling } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import UserMenu from "./UserMenu";
 
@@ -36,7 +37,11 @@ const Navbar = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <Globe className="h-8 w-8 text-palop-green" />
+            <img 
+              src="/lovable-uploads/6c73d290-0fa1-422d-9477-66b82e8e14b4.png" 
+              alt="BuéChama Logo" 
+              className="h-8 w-8 object-contain"
+            />
             <span className="font-bold text-xl">
               <span className="gradient-text">BuéChama</span>
               <span className="text-gray-900"> eSIM</span>
