@@ -38,8 +38,11 @@ const Navbar = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
             <Globe className="h-8 w-8 text-palop-green" />
-            <span className="font-bold text-xl text-gray-900">BuéChama eSIM</span>
-            <Flame className="h-6 w-6 text-orange-500" />
+            <span className="font-bold text-xl">
+              <span className="gradient-text">BuéChama</span>
+              <span className="text-gray-900"> eSIM</span>
+            </span>
+            <Flame className="h-6 w-6 text-red-500" />
           </Link>
 
           {/* Desktop Navigation */}
