@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Globe, Flame } from "lucide-react";
+import { Menu, X, Globe, FlameKindling } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import UserMenu from "./UserMenu";
 
@@ -42,7 +42,7 @@ const Navbar = () => {
               <span className="gradient-text">BuéChama</span>
               <span className="text-gray-900"> eSIM</span>
             </span>
-            <Flame className="h-6 w-6 text-red-500" />
+            <FlameKindling className="h-6 w-6 text-red-500" />
           </Link>
 
           {/* Desktop Navigation */}
