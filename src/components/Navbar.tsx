@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -42,7 +41,8 @@ const Navbar = () => {
               <span className="gradient-text">BuéChama</span>
               <span className="text-gray-900"> eSIM</span>
             </span>
-            <FlameKindling className="h-6 w-6 text-red-500" />
+            <FlameKindling className="h-8 w-8 text-red-500" />
+            <FlameKindling className="h-8 w-8 text-red-500" />
           </Link>
 
           {/* Desktop Navigation */}
