@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,11 +10,42 @@ import AdminInventory from "@/components/admin/AdminInventory";
 import AdminLanguageToggle from "@/components/admin/AdminLanguageToggle";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Shield, AlertTriangle, LogOut } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const AdminDashboard = () => {
-  const { user, userRole, loading } = useAuth();
+  const { user, userRole, loading, signOut } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleSignOut = async () => {
+    console.log('AdminDashboard: Starting sign out process');
+    const { error } = await signOut();
+    
+    if (error) {
+      console.error('Admin sign out error:', error);
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      console.log('AdminDashboard: Sign out successful, redirecting to home');
+      toast({
+        title: "Signed out",
+        description: "You have been signed out successfully.",
+      });
+      
+      // Force navigation to homepage and replace history
+      navigate('/', { replace: true });
+      
+      // Force a page reload to ensure clean state
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 100);
+    }
+  };
 
   useEffect(() => {
     console.log('AdminDashboard - user:', user?.id, 'role:', userRole, 'loading:', loading);
@@ -85,7 +115,17 @@ const AdminDashboard = () => {
                 </h1>
                 <p className="text-gray-600 mt-1">Manage PALOP eSIM platform operations</p>
               </div>
-              <AdminLanguageToggle />
+              <div className="flex items-center gap-4">
+                <AdminLanguageToggle />
+                <Button 
+                  variant="outline" 
+                  onClick={handleSignOut}
+                  className="flex items-center gap-2"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign Out
+                </Button>
+              </div>
             </div>
           </div>
         </div>
