@@ -38,7 +38,7 @@ const Navbar = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
             <img 
-              src="/lovable-uploads/6c73d290-0fa1-422d-9477-66b82e8e14b4.png" 
+              src="/lovable-uploads/5ba8dc07-fd7f-40d9-a399-d4d2c2f19ea5.png" 
               alt="BuéChama Logo" 
               className="h-8 w-8 object-contain"
             />
