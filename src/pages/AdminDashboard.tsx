@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AdminOrdersTable from "@/components/admin/AdminOrdersTable";
 import AdminUsersTable from "@/components/admin/AdminUsersTable";
@@ -74,7 +73,6 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navbar />
       <main className="flex-grow">
         {/* Header */}
         <div className="bg-white border-b border-gray-200">
