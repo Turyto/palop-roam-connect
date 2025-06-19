@@ -42,36 +42,48 @@ const AdminOrdersTable = () => {
   const { data: orders = [], isLoading, error, refetch } = useQuery({
     queryKey: ['admin-orders'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      console.log('Fetching admin orders...');
+      
+      // First, let's try a simpler query to see if we can fetch orders at all
+      const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
-        .select(`
-          id,
-          user_id,
-          plan_name,
-          data_amount,
-          price,
-          currency,
-          status,
-          payment_status,
-          created_at,
-          esim_delivered_at,
-          profiles:user_id (
-            email,
-            full_name
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching orders:', error);
-        throw error;
+      if (ordersError) {
+        console.error('Error fetching orders:', ordersError);
+        throw ordersError;
       }
 
-      // Transform the data to match our Order interface
-      return (data || []).map(order => ({
+      console.log('Orders data:', ordersData);
+
+      // Now fetch profiles separately to avoid join issues
+      if (!ordersData || ordersData.length === 0) {
+        return [];
+      }
+
+      const userIds = [...new Set(ordersData.map(order => order.user_id))];
+      
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, email, full_name')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        // Don't throw here, just proceed without profile data
+      }
+
+      console.log('Profiles data:', profilesData);
+
+      // Combine orders with profile data
+      const ordersWithProfiles = ordersData.map(order => ({
         ...order,
-        profiles: Array.isArray(order.profiles) ? order.profiles[0] : order.profiles
-      })) as Order[];
+        profiles: profilesData?.find(profile => profile.id === order.user_id) || null
+      }));
+
+      console.log('Combined orders with profiles:', ordersWithProfiles);
+      return ordersWithProfiles as Order[];
     },
   });
 
@@ -89,7 +101,8 @@ const AdminOrdersTable = () => {
       
       return (
         email.toLowerCase().includes(searchLower) ||
-        planName.toLowerCase().includes(searchLower)
+        planName.toLowerCase().includes(searchLower) ||
+        order.id.toLowerCase().includes(searchLower)
       );
     });
     
@@ -97,6 +110,7 @@ const AdminOrdersTable = () => {
   }, [orders, searchTerm]);
 
   const handleRefresh = () => {
+    console.log('Refreshing orders...');
     refetch();
     toast({
       title: "Orders refreshed",
@@ -135,14 +149,15 @@ const AdminOrdersTable = () => {
   };
 
   if (error) {
+    console.error('Admin orders error:', error);
     return (
       <Card>
         <CardHeader>
           <CardTitle className="text-red-600">Error Loading Orders</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-gray-600">
-            Failed to load orders. Please try again later.
+          <p className="text-gray-600 mb-4">
+            {error.message || "Failed to load orders. Please try again later."}
           </p>
           <Button onClick={handleRefresh} className="mt-4">
             <RefreshCw className="h-4 w-4 mr-2" />
@@ -157,7 +172,7 @@ const AdminOrdersTable = () => {
     <Card>
       <CardHeader>
         <div className="flex justify-between items-center">
-          <CardTitle>Orders Management</CardTitle>
+          <CardTitle>Orders Management ({orders.length} total)</CardTitle>
           <Button onClick={handleRefresh} variant="outline" size="sm">
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
@@ -166,7 +181,7 @@ const AdminOrdersTable = () => {
         <div className="flex items-center space-x-2">
           <Search className="h-4 w-4 text-gray-400" />
           <Input
-            placeholder="Search by email or plan name..."
+            placeholder="Search by email, plan name, or order ID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="max-w-sm"
@@ -183,6 +198,7 @@ const AdminOrdersTable = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Order ID</TableHead>
                   <TableHead>Customer Email</TableHead>
                   <TableHead>Customer Name</TableHead>
                   <TableHead>Plan Name</TableHead>
@@ -197,13 +213,16 @@ const AdminOrdersTable = () => {
               <TableBody>
                 {filteredOrders.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={10} className="text-center py-8 text-gray-500">
                       {searchTerm ? 'No orders found matching your search.' : 'No orders found.'}
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredOrders.map((order) => (
                     <TableRow key={order.id}>
+                      <TableCell className="font-mono text-xs">
+                        {order.id.slice(0, 8)}...
+                      </TableCell>
                       <TableCell className="font-medium">
                         {order.profiles?.email || 'N/A'}
                       </TableCell>

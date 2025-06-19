@@ -25,6 +25,8 @@ export const useOrders = () => {
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
       
+      console.log('Fetching orders for user:', user.id);
+      
       const { data, error } = await supabase
         .from('orders')
         .select(`
@@ -35,7 +37,12 @@ export const useOrders = () => {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching user orders:', error);
+        throw error;
+      }
+
+      console.log('User orders data:', data);
       return data;
     },
     enabled: !!user,
@@ -52,6 +59,8 @@ export const useOrders = () => {
       currency?: string;
     }) => {
       if (!user) throw new Error('User not authenticated');
+
+      console.log('Creating order with data:', orderData);
 
       const order: OrderInsert = {
         user_id: user.id,
@@ -71,7 +80,12 @@ export const useOrders = () => {
         .select()
         .single();
 
-      if (orderError) throw orderError;
+      if (orderError) {
+        console.error('Error creating order:', orderError);
+        throw orderError;
+      }
+
+      console.log('Order created:', orderResult);
 
       // Create order item
       const { error: itemError } = await supabase
@@ -87,12 +101,17 @@ export const useOrders = () => {
           total_price: orderData.price
         });
 
-      if (itemError) throw itemError;
+      if (itemError) {
+        console.error('Error creating order item:', itemError);
+        throw itemError;
+      }
 
+      console.log('Order item created successfully');
       return orderResult;
     },
     onSuccess: (order) => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
       toast({
         title: "Order Created",
         description: `Order ${order.id} has been created successfully.`,
@@ -121,6 +140,8 @@ export const useOrders = () => {
       paymentStatus?: string;
       paymentIntentId?: string;
     }) => {
+      console.log('Updating order:', orderId, { status, paymentStatus, paymentIntentId });
+      
       const updateData: any = {};
       
       if (status) updateData.status = status;
@@ -138,11 +159,17 @@ export const useOrders = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating order:', error);
+        throw error;
+      }
+      
+      console.log('Order updated:', data);
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
     },
     onError: (error) => {
       console.error('Order update error:', error);
