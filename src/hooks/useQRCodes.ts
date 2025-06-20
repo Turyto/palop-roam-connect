@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -32,36 +31,82 @@ export const useQRCodes = () => {
     queryFn: async () => {
       console.log('Fetching QR codes...');
       
-      const { data, error } = await supabase
+      // First, get all QR codes
+      const { data: qrCodesData, error: qrError } = await supabase
         .from('qr_codes')
-        .select(`
-          *,
-          orders(plan_name, data_amount),
-          profiles(email, full_name)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching QR codes:', error);
-        throw error;
+      if (qrError) {
+        console.error('Error fetching QR codes:', qrError);
+        throw qrError;
       }
 
-      console.log('QR codes data:', data);
-      
-      // Transform the data to match our interface
-      const transformedData: QRCode[] = (data || []).map(item => ({
-        id: item.id,
-        order_id: item.order_id,
-        user_id: item.user_id,
-        esim_id: item.esim_id,
-        qr_image_url: item.qr_image_url,
-        activation_url: item.activation_url,
-        status: item.status as 'pending' | 'active' | 'revoked',
-        created_at: item.created_at,
-        updated_at: item.updated_at,
-        orders: Array.isArray(item.orders) ? item.orders[0] : item.orders,
-        profiles: Array.isArray(item.profiles) ? item.profiles[0] : item.profiles,
-      }));
+      console.log('QR codes data:', qrCodesData);
+
+      if (!qrCodesData || qrCodesData.length === 0) {
+        return [];
+      }
+
+      // Get unique user IDs and order IDs
+      const userIds = [...new Set(qrCodesData.map(qr => qr.user_id).filter(Boolean))];
+      const orderIds = [...new Set(qrCodesData.map(qr => qr.order_id).filter(Boolean))];
+
+      // Fetch profiles data
+      let profilesData: any[] = [];
+      if (userIds.length > 0) {
+        const { data, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, email, full_name')
+          .in('id', userIds);
+        
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
+        } else {
+          profilesData = data || [];
+        }
+      }
+
+      // Fetch orders data
+      let ordersData: any[] = [];
+      if (orderIds.length > 0) {
+        const { data, error: ordersError } = await supabase
+          .from('orders')
+          .select('id, plan_name, data_amount')
+          .in('id', orderIds);
+        
+        if (ordersError) {
+          console.error('Error fetching orders:', ordersError);
+        } else {
+          ordersData = data || [];
+        }
+      }
+
+      // Combine the data
+      const transformedData: QRCode[] = qrCodesData.map(qrCode => {
+        const profile = profilesData.find(p => p.id === qrCode.user_id);
+        const order = ordersData.find(o => o.id === qrCode.order_id);
+
+        return {
+          id: qrCode.id,
+          order_id: qrCode.order_id,
+          user_id: qrCode.user_id,
+          esim_id: qrCode.esim_id,
+          qr_image_url: qrCode.qr_image_url,
+          activation_url: qrCode.activation_url,
+          status: qrCode.status as 'pending' | 'active' | 'revoked',
+          created_at: qrCode.created_at,
+          updated_at: qrCode.updated_at,
+          orders: order ? {
+            plan_name: order.plan_name,
+            data_amount: order.data_amount
+          } : null,
+          profiles: profile ? {
+            email: profile.email,
+            full_name: profile.full_name
+          } : null,
+        };
+      });
 
       return transformedData;
     },
