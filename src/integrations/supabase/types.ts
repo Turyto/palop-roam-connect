@@ -190,6 +190,57 @@ export type Database = {
         }
         Relationships: []
       }
+      qr_codes: {
+        Row: {
+          activation_url: string
+          created_at: string | null
+          esim_id: string | null
+          id: string
+          order_id: string | null
+          qr_image_url: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          activation_url: string
+          created_at?: string | null
+          esim_id?: string | null
+          id?: string
+          order_id?: string | null
+          qr_image_url?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          activation_url?: string
+          created_at?: string | null
+          esim_id?: string | null
+          id?: string
+          order_id?: string | null
+          qr_image_url?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qr_codes_esim_id_fkey"
+            columns: ["esim_id"]
+            isOneToOne: false
+            referencedRelation: "esim_activations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_codes_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       support_tickets: {
         Row: {
           created_at: string

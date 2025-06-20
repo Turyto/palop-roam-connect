@@ -8,6 +8,7 @@ import AdminAnalytics from "@/components/admin/AdminAnalytics";
 import AdminSupportTickets from "@/components/admin/AdminSupportTickets";
 import AdminInventory from "@/components/admin/AdminInventory";
 import AdminLanguageToggle from "@/components/admin/AdminLanguageToggle";
+import AdminQRCodesTable from "@/components/admin/AdminQRCodesTable";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -139,11 +140,12 @@ const AdminDashboard = () => {
 
           {/* Main Content Tabs */}
           <Tabs defaultValue="orders" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="orders">Orders</TabsTrigger>
               <TabsTrigger value="users">Users</TabsTrigger>
               <TabsTrigger value="support">Support</TabsTrigger>
               <TabsTrigger value="inventory">Inventory</TabsTrigger>
+              <TabsTrigger value="qrcodes">QR Codes</TabsTrigger>
               <TabsTrigger value="esim">eSIM Management</TabsTrigger>
             </TabsList>
 
@@ -161,6 +163,10 @@ const AdminDashboard = () => {
 
             <TabsContent value="inventory">
               <AdminInventory />
+            </TabsContent>
+
+            <TabsContent value="qrcodes">
+              <AdminQRCodesTable />
             </TabsContent>
 
             <TabsContent value="esim">
