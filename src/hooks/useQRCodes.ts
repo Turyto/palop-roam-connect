@@ -47,7 +47,23 @@ export const useQRCodes = () => {
       }
 
       console.log('QR codes data:', data);
-      return data as QRCode[];
+      
+      // Transform the data to match our interface
+      const transformedData: QRCode[] = (data || []).map(item => ({
+        id: item.id,
+        order_id: item.order_id,
+        user_id: item.user_id,
+        esim_id: item.esim_id,
+        qr_image_url: item.qr_image_url,
+        activation_url: item.activation_url,
+        status: item.status as 'pending' | 'active' | 'revoked',
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        orders: Array.isArray(item.orders) ? item.orders[0] : item.orders,
+        profiles: Array.isArray(item.profiles) ? item.profiles[0] : item.profiles,
+      }));
+
+      return transformedData;
     },
   });
 

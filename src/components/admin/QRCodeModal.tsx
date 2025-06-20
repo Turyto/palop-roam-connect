@@ -3,8 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Download, Copy } from "lucide-react";
-import QRCode from "qrcode.react";
-import { saveAs } from "file-saver";
+import { QRCodeSVG } from "qrcode.react";
 import { useToast } from "@/hooks/use-toast";
 import type { QRCode } from "@/hooks/useQRCodes";
 
@@ -21,17 +20,40 @@ const QRCodeModal = ({ qrCode, isOpen, onClose }: QRCodeModalProps) => {
 
   const handleDownload = () => {
     try {
-      const canvas = document.querySelector('#qr-code-canvas canvas') as HTMLCanvasElement;
-      if (canvas) {
-        canvas.toBlob((blob) => {
-          if (blob) {
-            saveAs(blob, `qr-code-${qrCode.id.slice(0, 8)}.png`);
-            toast({
-              title: "Downloaded",
-              description: "QR code has been downloaded successfully.",
-            });
-          }
-        });
+      // Create a canvas to convert SVG to PNG
+      const svg = document.querySelector('#qr-code-canvas svg') as SVGElement;
+      if (svg) {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        
+        const svgData = new XMLSerializer().serializeToString(svg);
+        const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(svgBlob);
+        
+        img.onload = () => {
+          canvas.width = 200;
+          canvas.height = 200;
+          ctx?.drawImage(img, 0, 0);
+          
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const link = document.createElement('a');
+              link.download = `qr-code-${qrCode.id.slice(0, 8)}.png`;
+              link.href = URL.createObjectURL(blob);
+              link.click();
+              
+              toast({
+                title: "Downloaded",
+                description: "QR code has been downloaded successfully.",
+              });
+            }
+          });
+          
+          URL.revokeObjectURL(url);
+        };
+        
+        img.src = url;
       }
     } catch (error) {
       console.error('Download error:', error);
@@ -75,7 +97,7 @@ const QRCodeModal = ({ qrCode, isOpen, onClose }: QRCodeModalProps) => {
         <div className="space-y-4">
           {/* QR Code Display */}
           <div id="qr-code-canvas" className="flex justify-center p-4 bg-white rounded-lg border">
-            <QRCode 
+            <QRCodeSVG 
               value={qrCode.activation_url} 
               size={200}
               level="M"
