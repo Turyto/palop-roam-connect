@@ -9,18 +9,7 @@ import UserMenu from "./UserMenu";
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
-  
-  // Safe hook usage with error boundary
-  let authData;
-  try {
-    authData = useAuth();
-  } catch (error) {
-    console.error('Auth context error in Navbar:', error);
-    // Fallback state if auth context is not available
-    authData = { user: null, loading: true };
-  }
-  
-  const { user, loading } = authData;
+  const { user, loading } = useAuth();
 
   const navigation = [
     { name: "Home", href: "/" },
