@@ -9,6 +9,7 @@ import AdminSupportTickets from "@/components/admin/AdminSupportTickets";
 import AdminInventory from "@/components/admin/AdminInventory";
 import AdminLanguageToggle from "@/components/admin/AdminLanguageToggle";
 import AdminQRCodesTable from "@/components/admin/AdminQRCodesTable";
+import AdminESIMProvisioning from "@/components/admin/AdminESIMProvisioning";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -170,32 +171,7 @@ const AdminDashboard = () => {
             </TabsContent>
 
             <TabsContent value="esim">
-              <Card>
-                <CardHeader>
-                  <CardTitle>eSIM Provisioning Management</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-12">
-                    <Shield className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      eSIM Provisioning System
-                    </h3>
-                    <p className="text-gray-600 mb-4">
-                      Advanced eSIM delivery and activation management coming soon.
-                    </p>
-                    <div className="bg-blue-50 p-4 rounded-lg text-left">
-                      <h4 className="font-semibold text-blue-900 mb-2">Planned Features:</h4>
-                      <ul className="text-blue-800 space-y-1 text-sm">
-                        <li>• Automated QR code generation and delivery</li>
-                        <li>• Real-time activation tracking</li>
-                        <li>• Carrier integration management</li>
-                        <li>• Bulk eSIM provisioning</li>
-                        <li>• Failed activation recovery</li>
-                      </ul>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <AdminESIMProvisioning />
             </TabsContent>
           </Tabs>
         </div>

@@ -9,16 +9,49 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      carrier_integrations: {
+        Row: {
+          api_key: string | null
+          created_at: string | null
+          endpoint_url: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          api_key?: string | null
+          created_at?: string | null
+          endpoint_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          api_key?: string | null
+          created_at?: string | null
+          endpoint_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       esim_activations: {
         Row: {
           activated_at: string | null
           activation_code: string | null
+          activation_url: string | null
           created_at: string
           delivered_at: string | null
           expires_at: string | null
           iccid: string | null
           id: string
           order_id: string
+          provisioning_log: Json | null
+          provisioning_status: string | null
           qr_code_data: string | null
           status: string
           updated_at: string
@@ -27,12 +60,15 @@ export type Database = {
         Insert: {
           activated_at?: string | null
           activation_code?: string | null
+          activation_url?: string | null
           created_at?: string
           delivered_at?: string | null
           expires_at?: string | null
           iccid?: string | null
           id?: string
           order_id: string
+          provisioning_log?: Json | null
+          provisioning_status?: string | null
           qr_code_data?: string | null
           status?: string
           updated_at?: string
@@ -41,12 +77,15 @@ export type Database = {
         Update: {
           activated_at?: string | null
           activation_code?: string | null
+          activation_url?: string | null
           created_at?: string
           delivered_at?: string | null
           expires_at?: string | null
           iccid?: string | null
           id?: string
           order_id?: string
+          provisioning_log?: Json | null
+          provisioning_status?: string | null
           qr_code_data?: string | null
           status?: string
           updated_at?: string
