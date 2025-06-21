@@ -9,7 +9,18 @@ import UserMenu from "./UserMenu";
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
-  const { user } = useAuth();
+  
+  // Safe hook usage with error boundary
+  let authData;
+  try {
+    authData = useAuth();
+  } catch (error) {
+    console.error('Auth context error in Navbar:', error);
+    // Fallback state if auth context is not available
+    authData = { user: null, loading: true };
+  }
+  
+  const { user, loading } = authData;
 
   const navigation = [
     { name: "Home", href: "/" },
@@ -69,7 +80,9 @@ const Navbar = () => {
 
           {/* Auth Section */}
           <div className="hidden md:flex items-center space-x-4">
-            {user ? (
+            {loading ? (
+              <div className="text-sm text-gray-500">Loading...</div>
+            ) : user ? (
               <UserMenu />
             ) : (
               <Button asChild>
@@ -107,7 +120,9 @@ const Navbar = () => {
                 </Link>
               ))}
               
-              {user ? (
+              {loading ? (
+                <div className="text-sm text-gray-500">Loading...</div>
+              ) : user ? (
                 <div className="pt-4 border-t border-gray-200">
                   <UserMenu />
                 </div>
