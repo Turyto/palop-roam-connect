@@ -32,6 +32,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Function to fetch user role
   const fetchUserRole = async (userId: string) => {
     try {
+      console.log('Fetching user role for:', userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('role')
@@ -43,6 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return 'customer';
       }
 
+      console.log('User role fetched:', data?.role || 'customer');
       return data?.role || 'customer';
     } catch (error) {
       console.error('Error fetching user role:', error);
@@ -52,6 +54,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Clear all auth state
   const clearAuthState = () => {
+    console.log('Clearing auth state');
     setSession(null);
     setUser(null);
     setUserRole(null);

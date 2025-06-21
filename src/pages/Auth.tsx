@@ -11,15 +11,30 @@ const Auth = () => {
   useEffect(() => {
     console.log('Auth page - user:', user?.id || 'none', 'role:', userRole || 'none', 'loading:', loading);
     
-    if (!loading && user && userRole) {
-      console.log('Auth page - User authenticated, redirecting...');
-      // Redirect admin users to admin dashboard, regular users to homepage
-      if (userRole === 'admin') {
-        console.log('Redirecting admin to dashboard');
-        navigate('/admin/dashboard', { replace: true });
+    if (!loading && user) {
+      console.log('Auth page - User authenticated, checking role for redirect...');
+      
+      // Wait a bit for userRole to be fetched if user exists but role is still loading
+      if (userRole) {
+        if (userRole === 'admin') {
+          console.log('Redirecting admin to dashboard');
+          navigate('/admin/dashboard', { replace: true });
+        } else {
+          console.log('Redirecting user to homepage');
+          navigate('/', { replace: true });
+        }
       } else {
-        console.log('Redirecting user to homepage');
-        navigate('/', { replace: true });
+        // If user exists but role is not yet loaded, wait a bit more
+        console.log('User exists but role not yet loaded, waiting...');
+        const timeout = setTimeout(() => {
+          // If still no role after timeout, default to homepage
+          if (!userRole) {
+            console.log('No role found after timeout, redirecting to homepage');
+            navigate('/', { replace: true });
+          }
+        }, 2000);
+        
+        return () => clearTimeout(timeout);
       }
     }
   }, [user, userRole, loading, navigate]);
