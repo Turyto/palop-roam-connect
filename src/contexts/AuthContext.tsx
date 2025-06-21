@@ -28,7 +28,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [initialized, setInitialized] = useState(false);
 
   // Function to fetch user role
   const fetchUserRole = async (userId: string) => {
@@ -66,8 +65,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Initialize auth state
     const initializeAuth = async () => {
-      if (initialized) return; // Prevent multiple initializations
-      
       try {
         console.log('Initializing auth...');
         const { data: { session }, error } = await supabase.auth.getSession();
@@ -77,7 +74,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (mounted) {
             clearAuthState();
             setLoading(false);
-            setInitialized(true);
           }
           return;
         }
@@ -103,14 +99,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (mounted) {
           setLoading(false);
-          setInitialized(true);
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
         if (mounted) {
           clearAuthState();
           setLoading(false);
-          setInitialized(true);
         }
       }
     };
@@ -141,25 +135,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               console.log('User role updated:', role);
             }
           }
-        }
-        
-        if (mounted && initialized) {
-          setLoading(false);
+          
+          if (mounted) {
+            setLoading(false);
+          }
         }
       }
     );
 
-    // Only initialize if not already done
-    if (!initialized) {
-      initializeAuth();
-    }
+    // Initialize auth
+    initializeAuth();
 
     return () => {
       console.log('Cleaning up auth context');
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [initialized]);
+  }, []);
 
   const signUp = async (email: string, password: string, fullName?: string) => {
     const redirectUrl = `${window.location.origin}/`;
