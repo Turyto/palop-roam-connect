@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { RotateCw, ShieldCheck, Eye, Settings, Loader2 } from "lucide-react";
+import { RotateCw, ShieldCheck, Eye, Settings, Loader2, Download } from "lucide-react";
 import ProvisioningModal from "./ProvisioningModal";
 import type { ESIMActivation } from "@/hooks/useESIMActivations";
+import { useToast } from "@/hooks/use-toast";
 
 const AdminESIMProvisioning = () => {
   const { 
@@ -23,6 +24,7 @@ const AdminESIMProvisioning = () => {
     isBulkProvisioning
   } = useESIMActivations();
   
+  const { toast } = useToast();
   const [selectedActivation, setSelectedActivation] = useState<ESIMActivation | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -62,6 +64,38 @@ const AdminESIMProvisioning = () => {
     );
   };
 
+  const handleExportCSV = () => {
+    const csvData = filteredActivations.map(activation => ({
+      'Order ID': activation.order_id,
+      'Customer Email': activation.profiles?.email || 'N/A',
+      'Plan': activation.orders?.plan_name || 'N/A',
+      'Data Amount': activation.orders?.data_amount || 'N/A',
+      'Provisioning Status': activation.provisioning_status,
+      'Activation Status': activation.status,
+      'Attempts': activation.provisioning_log?.attempts || 0,
+      'Created At': new Date(activation.created_at).toLocaleString(),
+    }));
+
+    const headers = Object.keys(csvData[0] || {});
+    const csvContent = [
+      headers.join(','),
+      ...csvData.map(row => headers.map(header => `"${row[header as keyof typeof row]}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = `esim-provisioning-report-${new Date().toISOString().split('T')[0]}.csv`;
+    link.href = url;
+    link.click();
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Report Exported",
+      description: "Provisioning report has been downloaded as CSV.",
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -79,18 +113,28 @@ const AdminESIMProvisioning = () => {
           <h2 className="text-2xl font-bold text-gray-900">eSIM Provisioning Management</h2>
           <p className="text-gray-600 mt-1">Manage eSIM delivery and activation operations</p>
         </div>
-        <Button 
-          onClick={() => bulkProvision()} 
-          disabled={isBulkProvisioning || stats.pending === 0}
-          className="flex items-center gap-2"
-        >
-          {isBulkProvisioning ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Settings className="h-4 w-4" />
-          )}
-          Bulk Provision ({stats.pending})
-        </Button>
+        <div className="flex gap-3">
+          <Button 
+            onClick={handleExportCSV} 
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Download className="h-4 w-4" />
+            Export CSV
+          </Button>
+          <Button 
+            onClick={() => bulkProvision()} 
+            disabled={isBulkProvisioning || stats.pending === 0}
+            className="flex items-center gap-2"
+          >
+            {isBulkProvisioning ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Settings className="h-4 w-4" />
+            )}
+            Bulk Provision ({stats.pending})
+          </Button>
+        </div>
       </div>
 
       {/* Overview Cards */}
