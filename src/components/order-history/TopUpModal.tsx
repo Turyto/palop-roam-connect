@@ -15,6 +15,11 @@ interface TopUpModalProps {
 const TopUpModal = ({ isOpen, onClose, order }: TopUpModalProps) => {
   const { topUpOptions, optionsLoading, createTopUpOrder, isCreatingTopUp } = useTopUpOrders();
 
+  // Early return if no order is provided
+  if (!order) {
+    return null;
+  }
+
   const handleTopUpPurchase = (optionId: string) => {
     createTopUpOrder({
       parentOrderId: order.id,
