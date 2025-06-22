@@ -38,7 +38,7 @@ export const useReferralSystem = () => {
       if (!user) throw new Error('User not authenticated');
 
       const { data, error } = await supabase
-        .from('referral_codes' as any)
+        .from('referral_codes')
         .select('*')
         .eq('user_id', user.id)
         .eq('is_active', true)
@@ -61,7 +61,7 @@ export const useReferralSystem = () => {
       if (!user) throw new Error('User not authenticated');
 
       const { data, error } = await supabase
-        .from('referral_rewards' as any)
+        .from('referral_rewards')
         .select('*')
         .eq('referrer_id', user.id)
         .order('created_at', { ascending: false });
@@ -87,7 +87,7 @@ export const useReferralSystem = () => {
       const code = `${baseCode}${randomSuffix}`;
 
       const { data, error } = await supabase
-        .from('referral_codes' as any)
+        .from('referral_codes')
         .insert({
           user_id: user.id,
           code: code,
