@@ -79,9 +79,12 @@ const OrderHistory = () => {
     return qrCodes.find(qr => qr.order_id === orderId);
   };
 
-  const handleDownloadQR = (order: any) => {
+  const handleDownloadESIM = (order: any) => {
+    console.log('Download eSIM clicked for order:', order.id);
     const qrCode = getOrderQRCode(order.id);
+    
     if (qrCode) {
+      console.log('QR Code found:', qrCode);
       setSelectedQRCode({
         activationUrl: qrCode.activation_url,
         orderId: order.id,
@@ -89,6 +92,9 @@ const OrderHistory = () => {
         dataAmount: order.data_amount,
         status: qrCode.status
       });
+    } else {
+      console.log('No QR code found for order:', order.id);
+      console.log('Available QR codes:', qrCodes);
     }
   };
 
@@ -103,6 +109,8 @@ const OrderHistory = () => {
         {orders.map((order) => {
           const qrCode = getOrderQRCode(order.id);
           const hasQRCode = qrCode && (order.status === 'completed' || order.esim_delivered_at);
+          
+          console.log(`Order ${order.id}: status=${order.status}, esim_delivered_at=${order.esim_delivered_at}, qrCode=${!!qrCode}, hasQRCode=${hasQRCode}`);
           
           return (
             <Card key={order.id} className="hover:shadow-md transition-shadow">
@@ -138,14 +146,9 @@ const OrderHistory = () => {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => handleDownloadQR(order)}
+                        onClick={() => handleDownloadESIM(order)}
+                        className="bg-red-500 hover:bg-red-600 text-white border-red-500"
                       >
-                        <QrCode className="h-4 w-4 mr-2" />
-                        Download QR Code
-                      </Button>
-                    )}
-                    {order.status === 'completed' && (
-                      <Button variant="outline" size="sm">
                         <Download className="h-4 w-4 mr-2" />
                         Download eSIM
                       </Button>
