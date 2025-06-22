@@ -190,29 +190,6 @@ const OrderHistory = () => {
                   </div>
                   
                   <div className="flex space-x-2">
-                    {canDownload && (
-                      <>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleDownloadESIM(order)}
-                          className="bg-blue-500 hover:bg-blue-600 text-white border-blue-500"
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          View QR Code
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleDownloadESIM(order)}
-                          className="bg-green-500 hover:bg-green-600 text-white border-green-500"
-                        >
-                          <Download className="h-4 w-4 mr-2" />
-                          Download eSIM
-                        </Button>
-                      </>
-                    )}
-                    
                     <Button
                       variant="ghost"
                       size="sm"
@@ -227,6 +204,37 @@ const OrderHistory = () => {
                     </Button>
                   </div>
                 </div>
+
+                {/* eSIM Download Section - Show prominently when available */}
+                {canDownload && (
+                  <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-semibold text-blue-900">eSIM Ready for Download</h4>
+                        <p className="text-sm text-blue-700">Your eSIM is ready to install on your device</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleDownloadESIM(order)}
+                          className="bg-blue-500 hover:bg-blue-600 text-white border-blue-500"
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          View QR Code
+                        </Button>
+                        <Button 
+                          onClick={() => handleDownloadESIM(order)}
+                          className="bg-green-500 hover:bg-green-600 text-white"
+                          size="sm"
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Download eSIM
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 <div className="text-sm text-gray-600">
                   <div className="grid grid-cols-2 gap-4">
@@ -261,6 +269,39 @@ const OrderHistory = () => {
                         <div>• Activation required within 30 days of purchase</div>
                       </div>
                     </div>
+
+                    {/* Additional eSIM Actions in Expanded Section */}
+                    {canDownload && (
+                      <div className="bg-green-50 p-3 rounded-lg">
+                        <h4 className="font-medium text-sm mb-2 text-green-800">eSIM Actions</h4>
+                        <div className="flex flex-wrap gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleDownloadESIM(order)}
+                          >
+                            <QrCode className="h-4 w-4 mr-2" />
+                            Show QR Code
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleDownloadESIM(order)}
+                          >
+                            <Copy className="h-4 w-4 mr-2" />
+                            Copy Activation URL
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleResendEmail(order.id)}
+                          >
+                            <Mail className="h-4 w-4 mr-2" />
+                            Resend Email
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                     
                     <div className="flex flex-wrap gap-2">
                       <Button variant="outline" size="sm" asChild>
@@ -276,17 +317,6 @@ const OrderHistory = () => {
                           Need Help?
                         </a>
                       </Button>
-                      
-                      {canDownload && (
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleResendEmail(order.id)}
-                        >
-                          <Mail className="h-4 w-4 mr-2" />
-                          Resend Email
-                        </Button>
-                      )}
                     </div>
                   </div>
                 )}
