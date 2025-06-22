@@ -235,6 +235,39 @@ export type Database = {
         }
         Relationships: []
       }
+      plan_inventory: {
+        Row: {
+          available: number
+          created_at: string | null
+          id: string
+          plan_id: string
+          plan_name: string
+          threshold_critical: number
+          threshold_low: number
+          updated_at: string | null
+        }
+        Insert: {
+          available?: number
+          created_at?: string | null
+          id?: string
+          plan_id: string
+          plan_name: string
+          threshold_critical?: number
+          threshold_low?: number
+          updated_at?: string | null
+        }
+        Update: {
+          available?: number
+          created_at?: string | null
+          id?: string
+          plan_id?: string
+          plan_name?: string
+          threshold_critical?: number
+          threshold_low?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

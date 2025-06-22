@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Package, AlertTriangle, TrendingUp, Globe, Loader2, RefreshCw } from "lucide-react";
 import RestockModal from "./RestockModal";
+import PlanInventorySection from "./PlanInventorySection";
 import type { InventoryItem } from "@/hooks/useInventory";
 
 const AdminInventory = () => {
@@ -43,7 +44,7 @@ const AdminInventory = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header with Refresh */}
       <div className="flex justify-between items-center">
         <div>
@@ -59,6 +60,9 @@ const AdminInventory = () => {
           Refresh
         </Button>
       </div>
+
+      {/* Plan Inventory Section */}
+      <PlanInventorySection />
 
       {/* Development Notice */}
       <Card>
@@ -81,13 +85,13 @@ const AdminInventory = () => {
         </CardContent>
       </Card>
 
-      {/* Inventory Overview */}
+      {/* Carrier Inventory Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">Total Available</p>
+                <p className="text-sm font-medium text-gray-600 mb-1">Total Available (Carriers)</p>
                 <p className="text-2xl font-bold text-gray-900">{totalAvailable}</p>
               </div>
               <div className="p-3 rounded-full bg-green-50">
@@ -126,12 +130,12 @@ const AdminInventory = () => {
         </Card>
       </div>
 
-      {/* Inventory Details */}
+      {/* Carrier Inventory Details */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Globe className="h-5 w-5" />
-            Live Stock by Country & Carrier
+            Carrier Stock by Country & Carrier
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -178,7 +182,7 @@ const AdminInventory = () => {
           
           {inventory.length === 0 && (
             <div className="text-center py-8 text-gray-500">
-              No inventory data available.
+              No carrier inventory data available.
             </div>
           )}
         </CardContent>
