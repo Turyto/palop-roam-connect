@@ -42,10 +42,25 @@ export const useInventory = () => {
     mutationFn: async ({ inventoryId, amount }: { inventoryId: string; amount: number }) => {
       console.log('Restocking inventory:', inventoryId, 'amount:', amount);
       
+      // First get the current available amount
+      const { data: currentData, error: fetchError } = await supabase
+        .from('inventory')
+        .select('available')
+        .eq('id', inventoryId)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching current inventory:', fetchError);
+        throw fetchError;
+      }
+
+      // Update with the new amount
+      const newAvailable = currentData.available + amount;
+      
       const { data, error } = await supabase
         .from('inventory')
         .update({ 
-          available: supabase.sql`available + ${amount}`,
+          available: newAvailable,
           updated_at: new Date().toISOString()
         })
         .eq('id', inventoryId)
@@ -91,7 +106,8 @@ export const useInventory = () => {
     isLoading,
     error,
     refetch,
-    restock: restockMutation.mutate,
+    restock: (inventoryId: string, amount: number) => 
+      restockMutation.mutate({ inventoryId, amount }),
     isRestocking: restockMutation.isPending,
     getStatusInfo
   };
