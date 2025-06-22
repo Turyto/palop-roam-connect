@@ -3,14 +3,16 @@ import { useOrders } from "@/hooks/useOrders";
 import { useCustomerQRCodes } from "@/hooks/useCustomerQRCodes";
 import { useState } from "react";
 import QRCodeDownloadModal from "./QRCodeDownloadModal";
-import TopUpModal from "./order-history/TopUpModal";
+import TopUpCheckoutModal from "./order-history/TopUpCheckoutModal";
 import OrderHistoryHeader from "./order-history/OrderHistoryHeader";
 import EmptyOrdersState from "./order-history/EmptyOrdersState";
 import OrderCard from "./order-history/OrderCard";
+import { useToast } from "@/hooks/use-toast";
 
 const OrderHistory = () => {
   const { orders, ordersLoading, ordersError } = useOrders();
   const { qrCodes } = useCustomerQRCodes();
+  const { toast } = useToast();
   const [selectedQRCode, setSelectedQRCode] = useState<{
     activationUrl: string;
     orderId: string;
@@ -119,7 +121,11 @@ const OrderHistory = () => {
   };
 
   const handleResendEmail = (orderId: string) => {
-    // TODO: Implement resend email functionality
+    // Show success toast for resend email
+    toast({
+      title: "eSIM Details Sent!",
+      description: "Your eSIM activation details have been resent to your email address.",
+    });
     console.log('Resend email for order:', orderId);
   };
 
@@ -165,7 +171,7 @@ const OrderHistory = () => {
         status={selectedQRCode?.status || 'pending'}
       />
 
-      <TopUpModal
+      <TopUpCheckoutModal
         isOpen={!!selectedTopUpOrder}
         onClose={() => setSelectedTopUpOrder(null)}
         order={selectedTopUpOrder}

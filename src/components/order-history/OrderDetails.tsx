@@ -1,5 +1,6 @@
 
 import OrderActions from "./OrderActions";
+import UsageMetrics from "./UsageMetrics";
 
 interface OrderDetailsProps {
   order: any;
@@ -20,6 +21,9 @@ const OrderDetails = ({
 }: OrderDetailsProps) => {
   return (
     <div className="mt-4 pt-4 border-t space-y-4">
+      {/* Usage Metrics - Show for completed orders */}
+      <UsageMetrics order={order} />
+
       {/* Technical Details */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
         <div className="space-y-2">
@@ -55,7 +59,7 @@ const OrderDetails = ({
         variant="expanded"
       />
 
-      {/* Usage Guidelines */}
+      {/* Installation Guide */}
       <div className="bg-gray-50 p-3 rounded-lg">
         <h5 className="font-medium text-gray-900 mb-2">Installation Guide</h5>
         <ol className="text-sm text-gray-600 space-y-1">
@@ -65,6 +69,9 @@ const OrderDetails = ({
           <li>4. Follow your device's setup instructions</li>
           <li>5. Your eSIM will activate when you arrive in Cape Verde</li>
         </ol>
+        <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
+          💡 <strong>Not sure how to install?</strong> Contact our support team for a step-by-step guide tailored to your device.
+        </div>
       </div>
     </div>
   );
