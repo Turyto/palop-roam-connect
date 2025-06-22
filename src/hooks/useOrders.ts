@@ -170,21 +170,35 @@ export const useOrders = () => {
       if (status === 'completed' && data.plan_id) {
         console.log('Manually decreasing plan inventory for plan:', data.plan_id);
         
-        const { error: inventoryError } = await supabase
+        // First get current inventory
+        const { data: currentInventory, error: fetchError } = await supabase
           .from('plan_inventory')
-          .update({ 
-            available: supabase.rpc('greatest', { a: 'available - 1', b: 0 }),
-            updated_at: new Date().toISOString()
-          })
-          .eq('plan_id', data.plan_id);
+          .select('available')
+          .eq('plan_id', data.plan_id)
+          .single();
 
-        if (inventoryError) {
-          console.error('Error updating plan inventory:', inventoryError);
-          // Don't throw here to avoid blocking order completion
+        if (fetchError) {
+          console.error('Error fetching current plan inventory:', fetchError);
         } else {
-          console.log('Plan inventory updated successfully');
-          // Invalidate plan inventory queries to refresh the UI
-          queryClient.invalidateQueries({ queryKey: ['plan-inventory'] });
+          // Update with decreased amount
+          const newAvailable = Math.max(currentInventory.available - 1, 0);
+          
+          const { error: inventoryError } = await supabase
+            .from('plan_inventory')
+            .update({ 
+              available: newAvailable,
+              updated_at: new Date().toISOString()
+            })
+            .eq('plan_id', data.plan_id);
+
+          if (inventoryError) {
+            console.error('Error updating plan inventory:', inventoryError);
+            // Don't throw here to avoid blocking order completion
+          } else {
+            console.log('Plan inventory updated successfully');
+            // Invalidate plan inventory queries to refresh the UI
+            queryClient.invalidateQueries({ queryKey: ['plan-inventory'] });
+          }
         }
       }
       
