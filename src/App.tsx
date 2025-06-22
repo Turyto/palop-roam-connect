@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/auth";
+import { Suspense } from "react";
 import Index from "./pages/Index";
 import Plans from "./pages/Plans";
 import ESim from "./pages/ESim";
@@ -27,32 +28,65 @@ const queryClient = new QueryClient({
   },
 });
 
+// Error Boundary Component
+const ErrorBoundary = ({ children }: { children: React.ReactNode }) => {
+  try {
+    return <>{children}</>;
+  } catch (error) {
+    console.error('App Error:', error);
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-xl font-bold text-red-600">Something went wrong</h1>
+          <p className="text-gray-600 mt-2">Please refresh the page</p>
+        </div>
+      </div>
+    );
+  }
+};
+
+// Loading Component
+const LoadingFallback = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <div className="text-lg">Loading...</div>
+  </div>
+);
+
+// App Routes Component
+const AppRoutes = () => (
+  <Routes>
+    <Route path="/" element={<Index />} />
+    <Route path="/plans" element={<Plans />} />
+    <Route path="/esim" element={<ESim />} />
+    <Route path="/purchase" element={<Purchase />} />
+    <Route path="/community" element={<Community />} />
+    <Route path="/countries" element={<Countries />} />
+    <Route path="/support" element={<Support />} />
+    <Route path="/auth" element={<Auth />} />
+    <Route path="/orders" element={<Orders />} />
+    <Route path="/admin/dashboard" element={<AdminDashboard />} />
+    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+    <Route path="*" element={<NotFound />} />
+  </Routes>
+);
+
 const App = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AuthProvider>
-          <BrowserRouter>
-            <Toaster />
-            <Sonner />
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/plans" element={<Plans />} />
-              <Route path="/esim" element={<ESim />} />
-              <Route path="/purchase" element={<Purchase />} />
-              <Route path="/community" element={<Community />} />
-              <Route path="/countries" element={<Countries />} />
-              <Route path="/support" element={<Support />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/orders" element={<Orders />} />
-              <Route path="/admin/dashboard" element={<AdminDashboard />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </AuthProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <AuthProvider>
+            <TooltipProvider>
+              <Suspense fallback={<LoadingFallback />}>
+                <AppRoutes />
+              </Suspense>
+              <Toaster />
+              <Sonner />
+            </TooltipProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 };
 
