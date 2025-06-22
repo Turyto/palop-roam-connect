@@ -22,37 +22,55 @@ const AuthForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (loading) return; // Prevent double submissions
+    
     setLoading(true);
+    console.log('AuthForm: Starting', mode, 'for user:', email);
 
     try {
       let result;
       if (mode === 'signup') {
         result = await signUp(email, password, fullName);
         if (!result.error) {
+          console.log('AuthForm: Sign up successful');
           toast({
             title: "Account created successfully!",
             description: "Please check your email to verify your account.",
           });
           setMode('signin');
+          setEmail('');
+          setPassword('');
+          setFullName('');
         }
       } else {
         result = await signIn(email, password);
         if (!result.error) {
+          console.log('AuthForm: Sign in successful, redirecting...');
           toast({
             title: "Welcome back!",
             description: "You have been signed in successfully.",
           });
-          navigate('/');
+          // Don't navigate here - let the auth state change handle it
+          return;
         }
       }
 
       if (result.error) {
+        console.error('AuthForm: Auth error:', result.error);
         toast({
           title: "Error",
           description: result.error.message,
           variant: "destructive",
         });
       }
+    } catch (error) {
+      console.error('AuthForm: Unexpected error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -86,6 +104,7 @@ const AuthForm = () => {
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Enter your full name"
                   required={mode === 'signup'}
+                  disabled={loading}
                 />
               </div>
             )}
@@ -101,6 +120,7 @@ const AuthForm = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
                 required
+                disabled={loading}
               />
             </div>
             
@@ -116,6 +136,7 @@ const AuthForm = () => {
                 placeholder="Enter your password"
                 required
                 minLength={6}
+                disabled={loading}
               />
             </div>
             
@@ -124,15 +145,23 @@ const AuthForm = () => {
               className="w-full bg-palop-green hover:bg-palop-green/90"
               disabled={loading}
             >
-              {loading ? 'Loading...' : mode === 'signin' ? 'Sign In' : 'Create Account'}
+              {loading ? 'Processing...' : mode === 'signin' ? 'Sign In' : 'Create Account'}
             </Button>
           </form>
           
           <div className="mt-4 text-center">
             <button
               type="button"
-              onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
-              className="text-sm text-palop-green hover:text-palop-green/80"
+              onClick={() => {
+                if (!loading) {
+                  setMode(mode === 'signin' ? 'signup' : 'signin');
+                  setEmail('');
+                  setPassword('');
+                  setFullName('');
+                }
+              }}
+              className="text-sm text-palop-green hover:text-palop-green/80 disabled:opacity-50"
+              disabled={loading}
             >
               {mode === 'signin' 
                 ? "Don't have an account? Sign up" 

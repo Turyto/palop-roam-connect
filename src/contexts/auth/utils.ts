@@ -15,8 +15,9 @@ export const fetchUserRole = async (userId: string): Promise<string> => {
       return 'customer';
     }
 
-    console.log('User role fetched:', data?.role || 'customer');
-    return data?.role || 'customer';
+    const role = data?.role || 'customer';
+    console.log('User role fetched:', role);
+    return role;
   } catch (error) {
     console.error('Error fetching user role:', error);
     return 'customer';
@@ -24,38 +25,57 @@ export const fetchUserRole = async (userId: string): Promise<string> => {
 };
 
 export const signUp = async (email: string, password: string, fullName?: string) => {
-  const redirectUrl = `${window.location.origin}/`;
-  
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo: redirectUrl,
-      data: {
-        full_name: fullName
+  try {
+    console.log('Auth utils: Starting sign up for:', email);
+    const redirectUrl = `${window.location.origin}/`;
+    
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: redirectUrl,
+        data: {
+          full_name: fullName
+        }
       }
-    }
-  });
-  
-  return { error };
+    });
+    
+    console.log('Auth utils: Sign up result:', { success: !error, userId: data.user?.id });
+    return { data, error };
+  } catch (error) {
+    console.error('Auth utils: Sign up error:', error);
+    return { data: null, error };
+  }
 };
 
 export const signIn = async (email: string, password: string) => {
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-  
-  return { error };
+  try {
+    console.log('Auth utils: Starting sign in for:', email);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    
+    console.log('Auth utils: Sign in result:', { success: !error, userId: data.user?.id });
+    return { data, error };
+  } catch (error) {
+    console.error('Auth utils: Sign in error:', error);
+    return { data: null, error };
+  }
 };
 
 export const signOut = async () => {
-  console.log('Signing out user...');
-  const { error } = await supabase.auth.signOut();
-  
-  if (!error) {
-    console.log('User signed out successfully');
+  try {
+    console.log('Auth utils: Signing out user...');
+    const { error } = await supabase.auth.signOut();
+    
+    if (!error) {
+      console.log('Auth utils: User signed out successfully');
+    }
+    
+    return { error };
+  } catch (error) {
+    console.error('Auth utils: Sign out error:', error);
+    return { error };
   }
-  
-  return { error };
 };

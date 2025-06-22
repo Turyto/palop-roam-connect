@@ -9,21 +9,30 @@ const Auth = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log('Auth page - user:', user?.id || 'none', 'role:', userRole || 'none', 'loading:', loading);
+    console.log('Auth page - Current state:', { 
+      hasUser: !!user, 
+      userRole: userRole || 'none', 
+      loading 
+    });
     
+    // Only handle redirects when we're not loading and have a user
     if (!loading && user) {
       console.log('Auth page - User authenticated, checking role for redirect...');
       
-      if (userRole === 'admin') {
-        console.log('Redirecting admin to dashboard');
-        navigate('/admin/dashboard', { replace: true });
-      } else {
-        console.log('Redirecting user to homepage');
-        navigate('/', { replace: true });
-      }
+      // Use setTimeout to ensure state has fully settled
+      setTimeout(() => {
+        if (userRole === 'admin') {
+          console.log('Redirecting admin to dashboard');
+          navigate('/admin/dashboard', { replace: true });
+        } else {
+          console.log('Redirecting user to homepage');
+          navigate('/', { replace: true });
+        }
+      }, 100);
     }
   }, [user, userRole, loading, navigate]);
 
+  // Show loading while we're determining auth state
   if (loading) {
     console.log('Auth page - Still loading...');
     return (
@@ -33,7 +42,7 @@ const Auth = () => {
     );
   }
 
-  // Don't show auth form if user is already authenticated
+  // Show redirecting message if user is authenticated
   if (user) {
     console.log('Auth page - User authenticated, showing redirect message');
     return (
