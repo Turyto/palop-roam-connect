@@ -7,7 +7,9 @@ import TopUpCheckoutModal from "./order-history/TopUpCheckoutModal";
 import OrderHistoryHeader from "./order-history/OrderHistoryHeader";
 import EmptyOrdersState from "./order-history/EmptyOrdersState";
 import OrderCard from "./order-history/OrderCard";
+import LoyaltySection from "./order-history/LoyaltySection";
 import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const OrderHistory = () => {
   const { orders, ordersLoading, ordersError } = useOrders();
@@ -133,33 +135,65 @@ const OrderHistory = () => {
     <div className="space-y-6">
       <OrderHistoryHeader />
 
-      <div className="grid gap-6">
-        {orders.map((order) => {
-          const qrCode = getOrderQRCode(order.id);
-          const canDownload = canDownloadESIM(order, qrCode);
-          const isExpanded = expandedOrders.has(order.id);
-          
-          console.log('🎨 RENDERING ORDER CARD:', {
-            orderId: order.id,
-            canDownload,
-            hasQRCode: !!qrCode
-          });
-          
-          return (
-            <OrderCard
-              key={order.id}
-              order={order}
-              qrCode={qrCode}
-              canDownload={canDownload}
-              isExpanded={isExpanded}
-              onToggleExpansion={toggleOrderExpansion}
-              onDownloadESIM={handleDownloadESIM}
-              onResendEmail={handleResendEmail}
-              onTopUp={handleTopUp}
-            />
-          );
-        })}
-      </div>
+      <Tabs defaultValue="orders" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="orders">My Orders</TabsTrigger>
+          <TabsTrigger value="loyalty">Loyalty & Rewards</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="orders">
+          {ordersLoading && (
+            <div className="flex items-center justify-center min-h-[200px]">
+              <div className="text-lg">Loading orders...</div>
+            </div>
+          )}
+
+          {ordersError && (
+            <div className="text-center text-red-600 min-h-[200px] flex items-center justify-center">
+              <div>
+                <h3 className="text-lg font-semibold mb-2">Error Loading Orders</h3>
+                <p>Unable to load your order history. Please try again later.</p>
+              </div>
+            </div>
+          )}
+
+          {!orders || orders.length === 0 ? (
+            <EmptyOrdersState />
+          ) : (
+            <div className="grid gap-6">
+              {orders.map((order) => {
+                const qrCode = getOrderQRCode(order.id);
+                const canDownload = canDownloadESIM(order, qrCode);
+                const isExpanded = expandedOrders.has(order.id);
+                
+                console.log('🎨 RENDERING ORDER CARD:', {
+                  orderId: order.id,
+                  canDownload,
+                  hasQRCode: !!qrCode
+                });
+                
+                return (
+                  <OrderCard
+                    key={order.id}
+                    order={order}
+                    qrCode={qrCode}
+                    canDownload={canDownload}
+                    isExpanded={isExpanded}
+                    onToggleExpansion={toggleOrderExpansion}
+                    onDownloadESIM={handleDownloadESIM}
+                    onResendEmail={handleResendEmail}
+                    onTopUp={handleTopUp}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="loyalty">
+          <LoyaltySection />
+        </TabsContent>
+      </Tabs>
 
       <QRCodeDownloadModal
         isOpen={!!selectedQRCode}
