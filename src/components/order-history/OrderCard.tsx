@@ -80,14 +80,17 @@ const OrderCard = ({
           </div>
         </div>
 
-        <OrderActions
-          order={order}
-          qrCode={qrCode}
-          canDownload={canDownload}
-          onDownloadESIM={onDownloadESIM}
-          onResendEmail={onResendEmail}
-          variant="compact"
-        />
+        {/* Prominent eSIM Download Section */}
+        {canDownload && (
+          <OrderActions
+            order={order}
+            qrCode={qrCode}
+            canDownload={canDownload}
+            onDownloadESIM={onDownloadESIM}
+            onResendEmail={onResendEmail}
+            variant="compact"
+          />
+        )}
         
         <div className="text-sm text-gray-600">
           <div className="grid grid-cols-2 gap-4">
