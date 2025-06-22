@@ -13,113 +13,69 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Clear all auth state
-  const clearAuthState = () => {
-    console.log('Clearing auth state');
-    setSession(null);
-    setUser(null);
-    setUserRole(null);
-  };
-
   useEffect(() => {
-    let mounted = true;
-
-    // Initialize auth state
-    const initializeAuth = async () => {
+    console.log('AuthProvider: Initializing auth state...');
+    
+    // Get initial session
+    const getInitialSession = async () => {
       try {
-        console.log('Initializing auth...');
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error('Error getting session:', error);
-          if (mounted) {
-            clearAuthState();
-            setLoading(false);
-          }
-          return;
-        }
-
-        console.log('Initial session check:', session?.user?.id || 'No session');
-        
-        if (!mounted) return;
-        
-        if (session?.user) {
-          console.log('User found, setting auth state');
-          setSession(session);
-          setUser(session.user);
-          
-          const role = await fetchUserRole(session.user.id);
-          if (mounted) {
-            setUserRole(role);
-            console.log('User role set:', role);
-          }
+          console.error('Error getting initial session:', error);
         } else {
-          console.log('No session found, clearing auth state');
-          clearAuthState();
-        }
-        
-        if (mounted) {
-          setLoading(false);
+          console.log('Initial session:', session?.user?.id || 'No session');
+          setSession(session);
+          setUser(session?.user ?? null);
+          
+          if (session?.user) {
+            const role = await fetchUserRole(session.user.id);
+            setUserRole(role);
+          }
         }
       } catch (error) {
-        console.error('Error initializing auth:', error);
-        if (mounted) {
-          clearAuthState();
-          setLoading(false);
-        }
+        console.error('Error in getInitialSession:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.id || 'No session');
+        console.log('Auth state change:', event, session?.user?.id || 'No session');
         
-        if (!mounted) return;
+        setSession(session);
+        setUser(session?.user ?? null);
         
-        if (event === 'SIGNED_OUT' || !session) {
-          console.log('User signed out or no session, clearing state');
-          clearAuthState();
-          setLoading(false);
-          return;
+        if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+          const role = await fetchUserRole(session.user.id);
+          setUserRole(role);
+        } else if (event === 'SIGNED_OUT' || !session) {
+          setUserRole(null);
         }
         
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          console.log('User signed in or token refreshed');
-          setSession(session);
-          setUser(session.user);
-          
-          if (session.user) {
-            const role = await fetchUserRole(session.user.id);
-            if (mounted) {
-              setUserRole(role);
-              console.log('User role updated:', role);
-            }
-          }
-          
-          if (mounted) {
-            setLoading(false);
-          }
-        }
+        setLoading(false);
       }
     );
 
-    // Initialize auth
-    initializeAuth();
+    // Get initial session
+    getInitialSession();
 
     return () => {
-      console.log('Cleaning up auth context');
-      mounted = false;
+      console.log('AuthProvider: Cleaning up subscription');
       subscription.unsubscribe();
     };
   }, []);
 
   const handleSignOut = async () => {
+    console.log('AuthProvider: Signing out...');
     const result = await signOut();
     
     if (!result.error) {
-      // Immediately clear local state
-      clearAuthState();
+      setSession(null);
+      setUser(null);
+      setUserRole(null);
     }
     
     return result;
@@ -134,6 +90,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signIn,
     signOut: handleSignOut,
   };
+
+  console.log('AuthProvider: Rendering with state:', { 
+    hasUser: !!user, 
+    loading, 
+    userRole 
+  });
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

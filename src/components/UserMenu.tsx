@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/auth';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -35,13 +35,7 @@ const UserMenu = () => {
         description: "You have been signed out successfully.",
       });
       
-      // Force navigation to homepage and replace history
       navigate('/', { replace: true });
-      
-      // Force a page reload to ensure clean state
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 100);
     }
   };
 

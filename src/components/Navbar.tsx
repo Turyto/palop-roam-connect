@@ -3,13 +3,15 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, FlameKindling } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/auth";
 import UserMenu from "./UserMenu";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const { user, loading } = useAuth();
+
+  console.log('Navbar: Rendering with auth state:', { hasUser: !!user, loading });
 
   const navigation = [
     { name: "Home", href: "/" },
@@ -29,6 +31,26 @@ const Navbar = () => {
     if (href === "/" && location.pathname === "/") return true;
     if (href !== "/" && location.pathname.startsWith(href)) return true;
     return false;
+  };
+
+  const renderAuthSection = () => {
+    if (loading) {
+      return (
+        <div className="text-sm text-gray-500 px-4 py-2">
+          Loading...
+        </div>
+      );
+    }
+
+    if (user) {
+      return <UserMenu />;
+    }
+
+    return (
+      <Button asChild>
+        <Link to="/auth">Sign In</Link>
+      </Button>
+    );
   };
 
   return (
@@ -69,15 +91,7 @@ const Navbar = () => {
 
           {/* Auth Section */}
           <div className="hidden md:flex items-center space-x-4">
-            {loading ? (
-              <div className="text-sm text-gray-500">Loading...</div>
-            ) : user ? (
-              <UserMenu />
-            ) : (
-              <Button asChild>
-                <Link to="/auth">Sign In</Link>
-              </Button>
-            )}
+            {renderAuthSection()}
           </div>
 
           {/* Mobile menu button */}
@@ -109,19 +123,9 @@ const Navbar = () => {
                 </Link>
               ))}
               
-              {loading ? (
-                <div className="text-sm text-gray-500">Loading...</div>
-              ) : user ? (
-                <div className="pt-4 border-t border-gray-200">
-                  <UserMenu />
-                </div>
-              ) : (
-                <Button asChild className="w-fit">
-                  <Link to="/auth" onClick={() => setIsOpen(false)}>
-                    Sign In
-                  </Link>
-                </Button>
-              )}
+              <div className="pt-4 border-t border-gray-200">
+                {renderAuthSection()}
+              </div>
             </div>
           </div>
         )}

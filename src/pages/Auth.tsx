@@ -1,7 +1,7 @@
 
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/auth';
 import AuthForm from '@/components/AuthForm';
 
 const Auth = () => {
@@ -14,27 +14,12 @@ const Auth = () => {
     if (!loading && user) {
       console.log('Auth page - User authenticated, checking role for redirect...');
       
-      // Wait a bit for userRole to be fetched if user exists but role is still loading
-      if (userRole) {
-        if (userRole === 'admin') {
-          console.log('Redirecting admin to dashboard');
-          navigate('/admin/dashboard', { replace: true });
-        } else {
-          console.log('Redirecting user to homepage');
-          navigate('/', { replace: true });
-        }
+      if (userRole === 'admin') {
+        console.log('Redirecting admin to dashboard');
+        navigate('/admin/dashboard', { replace: true });
       } else {
-        // If user exists but role is not yet loaded, wait a bit more
-        console.log('User exists but role not yet loaded, waiting...');
-        const timeout = setTimeout(() => {
-          // If still no role after timeout, default to homepage
-          if (!userRole) {
-            console.log('No role found after timeout, redirecting to homepage');
-            navigate('/', { replace: true });
-          }
-        }, 2000);
-        
-        return () => clearTimeout(timeout);
+        console.log('Redirecting user to homepage');
+        navigate('/', { replace: true });
       }
     }
   }, [user, userRole, loading, navigate]);
