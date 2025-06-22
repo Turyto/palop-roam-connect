@@ -1,8 +1,7 @@
-
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import OrderHistory from "@/components/OrderHistory";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/auth";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
