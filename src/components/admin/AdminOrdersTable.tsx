@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -193,14 +192,12 @@ const AdminOrdersTable = () => {
     const colors = {
       order: {
         pending: "bg-yellow-100 text-yellow-800",
-        in_progress: "bg-blue-100 text-blue-800",
         completed: "bg-green-100 text-green-800",
         failed: "bg-red-100 text-red-800",
         cancelled: "bg-gray-100 text-gray-800",
       },
       payment: {
         pending: "bg-yellow-100 text-yellow-800",
-        confirmed: "bg-green-100 text-green-800",
         succeeded: "bg-green-100 text-green-800",
         failed: "bg-red-100 text-red-800",
         cancelled: "bg-gray-100 text-gray-800",
@@ -215,10 +212,10 @@ const AdminOrdersTable = () => {
   };
 
   const getESIMStatusBadge = (order: Order) => {
-    if (order.esim_delivered_at) {
+    if (order.esim_delivered_at && order.status === 'completed') {
       return <Badge className="bg-green-100 text-green-800">Delivered</Badge>;
-    } else if (order.status === 'in_progress') {
-      return <Badge className="bg-blue-100 text-blue-800">Pending</Badge>;
+    } else if (order.esim_delivered_at) {
+      return <Badge className="bg-blue-100 text-blue-800">Provisioned</Badge>;
     } else if (order.status === 'failed') {
       return <Badge className="bg-red-100 text-red-800">Failed</Badge>;
     }
@@ -226,11 +223,15 @@ const AdminOrdersTable = () => {
   };
 
   const canProcessOrder = (order: Order) => {
-    return order.payment_status === 'pending' && order.status === 'pending';
+    return order.payment_status === 'pending' && order.status === 'pending' && !order.esim_delivered_at;
   };
 
   const canRetryProvisioning = (order: Order) => {
-    return order.status === 'failed' || (order.status === 'in_progress' && !order.esim_delivered_at);
+    return order.status === 'failed' || (order.esim_delivered_at && order.status !== 'completed');
+  };
+
+  const canMarkComplete = (order: Order) => {
+    return order.esim_delivered_at && order.status !== 'completed';
   };
 
   if (error) {
@@ -289,7 +290,6 @@ const AdminOrdersTable = () => {
               <SelectContent>
                 <SelectItem value="all">All Orders</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="in_progress">In Progress</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
                 <SelectItem value="failed">Failed</SelectItem>
               </SelectContent>
@@ -302,7 +302,6 @@ const AdminOrdersTable = () => {
               <SelectContent>
                 <SelectItem value="all">All Payments</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="confirmed">Confirmed</SelectItem>
                 <SelectItem value="succeeded">Succeeded</SelectItem>
                 <SelectItem value="failed">Failed</SelectItem>
               </SelectContent>
@@ -372,6 +371,7 @@ const AdminOrdersTable = () => {
                               variant="outline"
                               size="sm"
                               onClick={() => handleViewDetails(order)}
+                              title="View Details"
                             >
                               <Eye className="h-3 w-3" />
                             </Button>
@@ -382,6 +382,7 @@ const AdminOrdersTable = () => {
                                 size="sm"
                                 onClick={() => handleProcessOrder(order)}
                                 disabled={isProcessing}
+                                title="Process Order"
                               >
                                 <CheckCircle className="h-3 w-3" />
                               </Button>
@@ -393,8 +394,22 @@ const AdminOrdersTable = () => {
                                 size="sm"
                                 onClick={() => handleRetryProvisioning(order.id)}
                                 disabled={isRetrying}
+                                title="Retry Provisioning"
                               >
                                 <RotateCw className="h-3 w-3" />
+                              </Button>
+                            )}
+
+                            {canMarkComplete(order) && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleMarkComplete(order.id)}
+                                disabled={isMarkingComplete}
+                                title="Mark Complete"
+                                className="bg-green-50 hover:bg-green-100"
+                              >
+                                <CheckCircle className="h-3 w-3 text-green-600" />
                               </Button>
                             )}
                           </div>
