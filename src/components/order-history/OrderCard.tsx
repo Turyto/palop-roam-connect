@@ -30,7 +30,7 @@ const OrderCard = ({
     return `Valid for ${order.duration_days} days from activation`;
   };
 
-  console.log(`Order ${order.id}: status=${order.status}, payment_status=${order.payment_status}, esim_delivered_at=${order.esim_delivered_at}, qrCode=${!!qrCode}, canDownload=${canDownload}`);
+  console.log(`OrderCard ${order.id}: status=${order.status}, payment_status=${order.payment_status}, esim_delivered_at=${order.esim_delivered_at}, qrCode=${!!qrCode}, canDownload=${canDownload}`);
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -81,16 +81,14 @@ const OrderCard = ({
         </div>
 
         {/* Prominent eSIM Download Section */}
-        {canDownload && (
-          <OrderActions
-            order={order}
-            qrCode={qrCode}
-            canDownload={canDownload}
-            onDownloadESIM={onDownloadESIM}
-            onResendEmail={onResendEmail}
-            variant="compact"
-          />
-        )}
+        <OrderActions
+          order={order}
+          qrCode={qrCode}
+          canDownload={canDownload}
+          onDownloadESIM={onDownloadESIM}
+          onResendEmail={onResendEmail}
+          variant="compact"
+        />
         
         <div className="text-sm text-gray-600">
           <div className="grid grid-cols-2 gap-4">

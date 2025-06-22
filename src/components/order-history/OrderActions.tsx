@@ -19,7 +19,12 @@ const OrderActions = ({
   onResendEmail,
   variant = 'compact'
 }: OrderActionsProps) => {
-  if (!canDownload) return null;
+  console.log('OrderActions render:', { canDownload, variant, order: order.id });
+
+  if (!canDownload) {
+    console.log('Cannot download, not rendering actions');
+    return null;
+  }
 
   if (variant === 'compact') {
     return (
