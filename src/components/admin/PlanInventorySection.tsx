@@ -4,13 +4,24 @@ import { usePlanInventory } from "@/hooks/usePlanInventory";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Package, AlertTriangle, TrendingUp, ShoppingCart, Loader2 } from "lucide-react";
+import { Package, AlertTriangle, TrendingUp, ShoppingCart, Loader2, Bug } from "lucide-react";
 import RestockModal from "./RestockModal";
 import type { PlanInventoryItem } from "@/hooks/usePlanInventory";
+import { useToast } from "@/hooks/use-toast";
 
 const PlanInventorySection = () => {
-  const { planInventory, isLoading, restockPlan, isRestocking, getStatusInfo } = usePlanInventory();
+  const { 
+    planInventory, 
+    isLoading, 
+    restockPlan, 
+    adjustPlanInventory,
+    isRestocking, 
+    isAdjusting,
+    getStatusInfo,
+    refetch 
+  } = usePlanInventory();
   const [selectedPlan, setSelectedPlan] = useState<PlanInventoryItem | null>(null);
+  const { toast } = useToast();
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -50,6 +61,15 @@ const PlanInventorySection = () => {
       default:
         return 'eSIM Plan';
     }
+  };
+
+  const handleTestDecrease = (planId: string, currentAmount: number) => {
+    const newAmount = Math.max(currentAmount - 1, 0);
+    adjustPlanInventory(planId, newAmount);
+    toast({
+      title: "Test Decrease",
+      description: `Manually decreased ${planId} plan inventory by 1 for testing`,
+    });
   };
 
   if (isLoading) {
@@ -116,14 +136,27 @@ const PlanInventorySection = () => {
                       </Badge>
                     </div>
                     
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setSelectedPlan(plan)}
-                      disabled={isRestocking}
-                    >
-                      {isRestocking ? "..." : "Restock"}
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setSelectedPlan(plan)}
+                        disabled={isRestocking || isAdjusting}
+                      >
+                        {isRestocking ? "..." : "Restock"}
+                      </Button>
+                      
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleTestDecrease(plan.plan_id, plan.available)}
+                        disabled={isRestocking || isAdjusting}
+                        className="text-orange-600 border-orange-300 hover:bg-orange-50"
+                      >
+                        <Bug className="h-3 w-3 mr-1" />
+                        Test -1
+                      </Button>
+                    </div>
                   </div>
                 </div>
               );

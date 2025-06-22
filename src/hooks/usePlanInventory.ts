@@ -91,6 +91,45 @@ export const usePlanInventory = () => {
     }
   });
 
+  // Manual inventory adjustment for troubleshooting
+  const adjustPlanInventoryMutation = useMutation({
+    mutationFn: async ({ planId, newAmount }: { planId: string; newAmount: number }) => {
+      console.log('Manually adjusting plan inventory:', planId, 'to:', newAmount);
+      
+      const { data, error } = await supabase
+        .from('plan_inventory')
+        .update({ 
+          available: Math.max(newAmount, 0), // Ensure non-negative
+          updated_at: new Date().toISOString()
+        })
+        .eq('plan_id', planId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error adjusting plan inventory:', error);
+        throw error;
+      }
+
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['plan-inventory'] });
+      toast({
+        title: "Plan Inventory Adjusted",
+        description: `${data.plan_name} plan inventory updated to ${data.available}`,
+      });
+    },
+    onError: (error) => {
+      console.error('Plan inventory adjustment error:', error);
+      toast({
+        title: "Plan Inventory Adjustment Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
   const getStatusInfo = (available: number, thresholdLow: number, thresholdCritical: number) => {
     if (available <= thresholdCritical) {
       return { status: 'critical', label: 'Critical', color: 'bg-red-100 text-red-800' };
@@ -108,7 +147,10 @@ export const usePlanInventory = () => {
     refetch,
     restockPlan: (planId: string, amount: number) => 
       restockPlanMutation.mutate({ planId, amount }),
+    adjustPlanInventory: (planId: string, newAmount: number) =>
+      adjustPlanInventoryMutation.mutate({ planId, newAmount }),
     isRestocking: restockPlanMutation.isPending,
+    isAdjusting: adjustPlanInventoryMutation.isPending,
     getStatusInfo
   };
 };

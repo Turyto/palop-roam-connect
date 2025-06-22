@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/auth';
@@ -164,11 +165,35 @@ export const useOrders = () => {
       }
       
       console.log('Order updated:', data);
+      
+      // Manually trigger plan inventory decrease for completed orders
+      if (status === 'completed' && data.plan_id) {
+        console.log('Manually decreasing plan inventory for plan:', data.plan_id);
+        
+        const { error: inventoryError } = await supabase
+          .from('plan_inventory')
+          .update({ 
+            available: supabase.rpc('greatest', { a: 'available - 1', b: 0 }),
+            updated_at: new Date().toISOString()
+          })
+          .eq('plan_id', data.plan_id);
+
+        if (inventoryError) {
+          console.error('Error updating plan inventory:', inventoryError);
+          // Don't throw here to avoid blocking order completion
+        } else {
+          console.log('Plan inventory updated successfully');
+          // Invalidate plan inventory queries to refresh the UI
+          queryClient.invalidateQueries({ queryKey: ['plan-inventory'] });
+        }
+      }
+      
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['plan-inventory'] });
     },
     onError: (error) => {
       console.error('Order update error:', error);
