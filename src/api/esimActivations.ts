@@ -65,7 +65,7 @@ export const fetchESIMActivations = async (): Promise<ESIMActivation[]> => {
       id: activation.id,
       order_id: activation.order_id,
       user_id: activation.user_id,
-      status: activation.status as 'pending' | 'active' | 'delivered' | 'expired',
+      status: activation.status as 'pending' | 'delivered' | 'expired', // Updated to match type definition
       provisioning_status: activation.provisioning_status as 'pending' | 'in_progress' | 'completed' | 'failed',
       activation_url: activation.activation_url,
       activated_at: activation.activated_at,
@@ -120,7 +120,7 @@ export const markAsCompleteAPI = async (activationId: string) => {
     .from('esim_activations')
     .update({ 
       provisioning_status: 'completed',
-      status: 'active',
+      status: 'delivered', // Using 'delivered' instead of 'active' to match type definition
       delivered_at: new Date().toISOString(),
       provisioning_log: {
         completed_manually: true,
