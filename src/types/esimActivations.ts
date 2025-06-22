@@ -3,7 +3,7 @@ export interface ESIMActivation {
   id: string;
   order_id: string;
   user_id: string;
-  status: 'pending' | 'active' | 'delivered' | 'expired';
+  status: 'pending' | 'delivered' | 'expired'; // Updated to match actual database constraints
   provisioning_status: 'pending' | 'in_progress' | 'completed' | 'failed';
   activation_url: string | null;
   activated_at: string | null;

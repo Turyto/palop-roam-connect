@@ -51,13 +51,13 @@ export const useOrderManagement = () => {
 
       if (qrError) throw qrError;
 
-      // Create eSIM activation entry - using correct status values
+      // Create eSIM activation entry - using correct status values from database
       const { data: esimActivation, error: esimError } = await supabase
         .from('esim_activations')
         .insert({
           order_id: orderId,
           user_id: order.user_id,
-          status: 'pending', // Use valid status from database
+          status: 'pending', // This matches the database constraint
           provisioning_status: 'pending',
           activation_url: activationUrl
         })
@@ -78,12 +78,12 @@ export const useOrderManagement = () => {
 
       if (inventoryUpdateError) throw inventoryUpdateError;
 
-      // Update order status - using correct status values
+      // Update order status
       const { data: updatedOrder, error: updateError } = await supabase
         .from('orders')
         .update({
           status: 'pending', // Keep as pending until fully processed
-          payment_status: 'succeeded', // Use valid payment status
+          payment_status: 'succeeded',
           esim_delivered_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
@@ -93,20 +93,7 @@ export const useOrderManagement = () => {
 
       if (updateError) throw updateError;
 
-      // Now update to in_progress status
-      const { data: finalOrder, error: finalError } = await supabase
-        .from('orders')
-        .update({
-          status: 'pending', // Stay pending until manual completion
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', orderId)
-        .select()
-        .single();
-
-      if (finalError) throw finalError;
-
-      return { order: finalOrder, qrCode, esimActivation };
+      return { order: updatedOrder, qrCode, esimActivation };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
@@ -167,11 +154,11 @@ export const useOrderManagement = () => {
     mutationFn: async (orderId: string) => {
       console.log('Marking order as complete:', orderId);
       
-      // Update eSIM activation to completed
+      // Update eSIM activation to completed - using valid status values
       const { error: esimError } = await supabase
         .from('esim_activations')
         .update({
-          status: 'active', // Use valid status
+          status: 'delivered', // Using 'delivered' instead of 'active'
           provisioning_status: 'completed',
           activated_at: new Date().toISOString(),
           delivered_at: new Date().toISOString()
@@ -184,7 +171,7 @@ export const useOrderManagement = () => {
       const { data, error: orderError } = await supabase
         .from('orders')
         .update({
-          status: 'completed', // This should be valid
+          status: 'completed',
           completed_at: new Date().toISOString(),
           esim_delivered_at: new Date().toISOString()
         })
