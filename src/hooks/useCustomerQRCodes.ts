@@ -17,9 +17,12 @@ export const useCustomerQRCodes = () => {
   const { data: qrCodes = [], isLoading, error } = useQuery({
     queryKey: ['customer-qr-codes', user?.id],
     queryFn: async () => {
-      if (!user) throw new Error('User not authenticated');
+      if (!user) {
+        console.log('❌ No authenticated user for QR codes fetch');
+        throw new Error('User not authenticated');
+      }
       
-      console.log('Fetching customer QR codes...');
+      console.log('🔍 Fetching customer QR codes for user:', user.id);
       
       const { data, error } = await supabase
         .from('qr_codes')
@@ -28,13 +31,23 @@ export const useCustomerQRCodes = () => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching customer QR codes:', error);
+        console.error('❌ Error fetching customer QR codes:', error);
         throw error;
       }
 
+      console.log('✅ Successfully fetched QR codes:', data);
+      console.log('📊 QR codes count:', data?.length || 0);
+      
       return data as CustomerQRCode[];
     },
     enabled: !!user,
+  });
+
+  console.log('🎯 useCustomerQRCodes result:', {
+    qrCodesCount: qrCodes?.length || 0,
+    isLoading,
+    hasError: !!error,
+    userId: user?.id
   });
 
   return {
