@@ -11,6 +11,7 @@ export interface ReferralCode {
   is_active: boolean;
   uses_count: number;
   created_at: string;
+  updated_at: string;
 }
 
 export interface ReferralReward {
@@ -22,6 +23,7 @@ export interface ReferralReward {
   reward_amount: number;
   status: 'pending' | 'claimed' | 'expired';
   created_at: string;
+  updated_at: string;
 }
 
 export const useReferralSystem = () => {
@@ -36,13 +38,13 @@ export const useReferralSystem = () => {
       if (!user) throw new Error('User not authenticated');
 
       const { data, error } = await supabase
-        .from('referral_codes')
+        .from('referral_codes' as any)
         .select('*')
         .eq('user_id', user.id)
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Error fetching referral code:', error);
         throw error;
       }
@@ -59,7 +61,7 @@ export const useReferralSystem = () => {
       if (!user) throw new Error('User not authenticated');
 
       const { data, error } = await supabase
-        .from('referral_rewards')
+        .from('referral_rewards' as any)
         .select('*')
         .eq('referrer_id', user.id)
         .order('created_at', { ascending: false });
@@ -69,7 +71,7 @@ export const useReferralSystem = () => {
         throw error;
       }
 
-      return data as ReferralReward[];
+      return (data as ReferralReward[]) || [];
     },
     enabled: !!user,
   });
@@ -85,7 +87,7 @@ export const useReferralSystem = () => {
       const code = `${baseCode}${randomSuffix}`;
 
       const { data, error } = await supabase
-        .from('referral_codes')
+        .from('referral_codes' as any)
         .insert({
           user_id: user.id,
           code: code,
@@ -100,7 +102,7 @@ export const useReferralSystem = () => {
         throw error;
       }
 
-      return data;
+      return data as ReferralCode;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['referral-code'] });
