@@ -101,6 +101,39 @@ export type Database = {
           },
         ]
       }
+      inventory: {
+        Row: {
+          available: number
+          carrier: string
+          country: string
+          created_at: string | null
+          id: string
+          threshold_critical: number
+          threshold_low: number
+          updated_at: string | null
+        }
+        Insert: {
+          available?: number
+          carrier: string
+          country: string
+          created_at?: string | null
+          id?: string
+          threshold_critical?: number
+          threshold_low?: number
+          updated_at?: string | null
+        }
+        Update: {
+          available?: number
+          carrier?: string
+          country?: string
+          created_at?: string | null
+          id?: string
+          threshold_critical?: number
+          threshold_low?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string

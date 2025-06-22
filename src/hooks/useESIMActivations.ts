@@ -146,6 +146,8 @@ export const useESIMActivations = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-esim-activations'] });
+      // Also refresh inventory in case stock changed
+      queryClient.invalidateQueries({ queryKey: ['admin-inventory'] });
       toast({
         title: "Provisioning Retry Started",
         description: "eSIM provisioning has been queued for retry.",
@@ -189,9 +191,11 @@ export const useESIMActivations = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-esim-activations'] });
+      // Refresh inventory since stock should decrease automatically
+      queryClient.invalidateQueries({ queryKey: ['admin-inventory'] });
       toast({
         title: "Marked as Complete",
-        description: "eSIM activation has been marked as completed.",
+        description: "eSIM activation completed. Inventory has been automatically adjusted.",
       });
     },
     onError: (error) => {
@@ -242,6 +246,7 @@ export const useESIMActivations = () => {
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['admin-esim-activations'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-inventory'] });
       toast({
         title: "Bulk Provisioning Started",
         description: result.message,
