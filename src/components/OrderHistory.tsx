@@ -49,21 +49,36 @@ const OrderHistory = () => {
 
   const getOrderQRCode = (orderId: string) => {
     const qrCode = qrCodes.find(qr => qr.order_id === orderId);
-    console.log('Looking for QR code for order:', orderId, 'Found:', qrCode);
+    console.log('🔍 Looking for QR code for order:', orderId);
+    console.log('📋 Available QR codes:', qrCodes);
+    console.log('✅ Found QR code:', qrCode);
     return qrCode;
   };
 
   const canDownloadESIM = (order: any, qrCode: any) => {
-    const result = order.status === 'completed' && 
-                   order.payment_status === 'succeeded' && 
-                   order.esim_delivered_at && 
-                   qrCode;
-    console.log('Can download eSIM for order:', order.id, 'Result:', result, {
+    console.log('🚀 CHECKING CAN DOWNLOAD for order:', order.id);
+    console.log('📊 Order details:', {
       status: order.status,
       payment_status: order.payment_status,
       esim_delivered_at: order.esim_delivered_at,
       hasQRCode: !!qrCode
     });
+    
+    const statusCheck = order.status === 'completed';
+    const paymentCheck = order.payment_status === 'succeeded';
+    const deliveredCheck = !!order.esim_delivered_at;
+    const qrCodeCheck = !!qrCode;
+    
+    console.log('✅ Status checks:', {
+      statusCheck,
+      paymentCheck,
+      deliveredCheck,
+      qrCodeCheck
+    });
+    
+    const result = statusCheck && paymentCheck && deliveredCheck && qrCodeCheck;
+    console.log('🎯 FINAL RESULT for canDownload:', result);
+    
     return result;
   };
 
@@ -110,6 +125,12 @@ const OrderHistory = () => {
           const qrCode = getOrderQRCode(order.id);
           const canDownload = canDownloadESIM(order, qrCode);
           const isExpanded = expandedOrders.has(order.id);
+          
+          console.log('🎨 RENDERING ORDER CARD:', {
+            orderId: order.id,
+            canDownload,
+            hasQRCode: !!qrCode
+          });
           
           return (
             <OrderCard
