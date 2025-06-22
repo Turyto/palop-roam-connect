@@ -1,322 +1,293 @@
 
 import { useState } from "react";
-import { useESIMActivations } from "@/hooks/useESIMActivations";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { RotateCw, ShieldCheck, Eye, Settings, Loader2, Download } from "lucide-react";
+import { AlertCircle, CheckCircle, Clock, Play, RefreshCw, Zap } from "lucide-react";
+import { useESIMActivations } from "@/hooks/useESIMActivations";
 import ProvisioningModal from "./ProvisioningModal";
-import type { ESIMActivation } from "@/hooks/useESIMActivations";
-import { useToast } from "@/hooks/use-toast";
+import type { ESIMActivation } from "@/types/esimActivations";
 
 const AdminESIMProvisioning = () => {
   const { 
     activations, 
     isLoading, 
-    retryProvisioning, 
-    markAsComplete, 
+    error, 
+    refetch,
+    retryProvisioning,
+    markAsComplete,
     bulkProvision,
     isRetrying,
     isMarkingComplete,
     isBulkProvisioning
   } = useESIMActivations();
-  
-  const { toast } = useToast();
+
   const [selectedActivation, setSelectedActivation] = useState<ESIMActivation | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Filter activations based on status and search term
-  const filteredActivations = activations.filter(activation => {
-    const matchesStatus = statusFilter === 'all' || activation.provisioning_status === statusFilter;
-    const matchesSearch = searchTerm === '' || 
-      activation.profiles?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      activation.order_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      activation.orders?.plan_name?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    return matchesStatus && matchesSearch;
-  });
-
-  // Calculate overview stats
-  const stats = {
-    total: activations.length,
-    pending: activations.filter(a => a.provisioning_status === 'pending').length,
-    inProgress: activations.filter(a => a.provisioning_status === 'in_progress').length,
-    completed: activations.filter(a => a.provisioning_status === 'completed').length,
-    failed: activations.filter(a => a.provisioning_status === 'failed').length,
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'in_progress': return 'bg-blue-100 text-blue-800';
+      case 'failed': return 'bg-red-100 text-red-800';
+      default: return 'bg-yellow-100 text-yellow-800';
+    }
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusColors: Record<string, string> = {
-      pending: "bg-yellow-100 text-yellow-800",
-      in_progress: "bg-blue-100 text-blue-800",
-      completed: "bg-green-100 text-green-800",
-      failed: "bg-red-100 text-red-800",
-    };
-
-    return (
-      <Badge className={statusColors[status] || "bg-gray-100 text-gray-800"}>
-        {status.replace('_', ' ').toUpperCase()}
-      </Badge>
-    );
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'completed': return <CheckCircle className="h-4 w-4" />;
+      case 'in_progress': return <RefreshCw className="h-4 w-4 animate-spin" />;
+      case 'failed': return <AlertCircle className="h-4 w-4" />;
+      default: return <Clock className="h-4 w-4" />;
+    }
   };
 
-  const handleExportCSV = () => {
-    const csvData = filteredActivations.map(activation => ({
-      'Order ID': activation.order_id,
-      'Customer Email': activation.profiles?.email || 'N/A',
-      'Plan': activation.orders?.plan_name || 'N/A',
-      'Data Amount': activation.orders?.data_amount || 'N/A',
-      'Provisioning Status': activation.provisioning_status,
-      'Activation Status': activation.status,
-      'Attempts': activation.provisioning_log?.attempts || 0,
-      'Created At': new Date(activation.created_at).toLocaleString(),
-    }));
-
-    const headers = Object.keys(csvData[0] || {});
-    const csvContent = [
-      headers.join(','),
-      ...csvData.map(row => headers.map(header => `"${row[header as keyof typeof row]}"`).join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.download = `esim-provisioning-report-${new Date().toISOString().split('T')[0]}.csv`;
-    link.href = url;
-    link.click();
-    URL.revokeObjectURL(url);
-
-    toast({
-      title: "Report Exported",
-      description: "Provisioning report has been downloaded as CSV.",
-    });
+  const handleViewDetails = (activation: ESIMActivation) => {
+    setSelectedActivation(activation);
+    setIsModalOpen(true);
   };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Loading eSIM activations...</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">eSIM Provisioning Management</h2>
-          <p className="text-gray-600 mt-1">Manage eSIM delivery and activation operations</p>
-        </div>
-        <div className="flex gap-3">
-          <Button 
-            onClick={handleExportCSV} 
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <Download className="h-4 w-4" />
-            Export CSV
-          </Button>
-          <Button 
-            onClick={() => bulkProvision()} 
-            disabled={isBulkProvisioning || stats.pending === 0}
-            className="flex items-center gap-2"
-          >
-            {isBulkProvisioning ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Settings className="h-4 w-4" />
-            )}
-            Bulk Provision ({stats.pending})
-          </Button>
-        </div>
-      </div>
-
-      {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total Activations</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Pending</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">In Progress</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{stats.inProgress}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Completed</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.completed}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Failed</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">{stats.failed}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Filters</CardTitle>
+          <CardTitle>eSIM Provisioning Management</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <Input
-                placeholder="Search by email, order ID, or plan..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <div className="w-48">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="failed">Failed</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="flex items-center justify-center p-8">
+            <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
+            <span className="ml-2 text-gray-600">Loading activations...</span>
           </div>
         </CardContent>
       </Card>
+    );
+  }
 
-      {/* Activations Table */}
+  if (error) {
+    return (
       <Card>
         <CardHeader>
-          <CardTitle>eSIM Activations ({filteredActivations.length})</CardTitle>
+          <CardTitle>eSIM Provisioning Management</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Order ID</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Plan</TableHead>
-                <TableHead>Provisioning Status</TableHead>
-                <TableHead>Activation Status</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredActivations.map((activation) => (
-                <TableRow key={activation.id}>
-                  <TableCell className="font-mono text-sm">
-                    {activation.order_id.slice(0, 8)}...
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{activation.profiles?.email || 'N/A'}</div>
-                      <div className="text-sm text-gray-500">
-                        {activation.profiles?.full_name || 'No name'}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{activation.orders?.plan_name || 'N/A'}</div>
-                      <div className="text-sm text-gray-500">
-                        {activation.orders?.data_amount || 'No data info'}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {getStatusBadge(activation.provisioning_status)}
-                  </TableCell>
-                  <TableCell>
-                    {getStatusBadge(activation.status)}
-                  </TableCell>
-                  <TableCell className="text-sm text-gray-500">
-                    {new Date(activation.created_at).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedActivation(activation)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      {activation.provisioning_status === 'failed' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => retryProvisioning(activation.id)}
-                          disabled={isRetrying}
+          <div className="text-center p-8">
+            <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
+            <p className="text-red-600 mb-4">Failed to load eSIM activations</p>
+            <Button onClick={() => refetch()} variant="outline">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Try Again
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const pendingCount = activations.filter(a => a.provisioning_status === 'pending').length;
+  const inProgressCount = activations.filter(a => a.provisioning_status === 'in_progress').length;
+  const completedCount = activations.filter(a => a.provisioning_status === 'completed').length;
+  const failedCount = activations.filter(a => a.provisioning_status === 'failed').length;
+
+  return (
+    <div className="space-y-6">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center">
+              <Clock className="h-8 w-8 text-yellow-500" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Pending</p>
+                <p className="text-2xl font-bold">{pendingCount}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center">
+              <RefreshCw className="h-8 w-8 text-blue-500" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">In Progress</p>
+                <p className="text-2xl font-bold">{inProgressCount}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center">
+              <CheckCircle className="h-8 w-8 text-green-500" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Completed</p>
+                <p className="text-2xl font-bold">{completedCount}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center">
+              <AlertCircle className="h-8 w-8 text-red-500" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Failed</p>
+                <p className="text-2xl font-bold">{failedCount}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Table */}
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle className="flex items-center gap-2">
+              <Zap className="h-5 w-5" />
+              eSIM Provisioning Management
+            </CardTitle>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => refetch()} 
+                variant="outline" 
+                size="sm"
+                disabled={isLoading}
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
+              <Button 
+                onClick={() => bulkProvision()} 
+                disabled={isBulkProvisioning || pendingCount === 0}
+                size="sm"
+              >
+                <Play className="h-4 w-4 mr-2" />
+                {isBulkProvisioning ? 'Starting...' : `Bulk Provision (${pendingCount})`}
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {activations.length === 0 ? (
+            <div className="text-center p-8">
+              <Zap className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600">No eSIM activations found</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Order ID</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Plan</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Provisioning</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {activations.map((activation) => (
+                    <TableRow key={activation.id}>
+                      <TableCell className="font-mono text-sm">
+                        {activation.order_id.slice(0, 8)}...
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">
+                            {activation.profiles?.full_name || 'Unknown'}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {activation.profiles?.email}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">
+                            {activation.orders?.plan_name || 'Unknown Plan'}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {activation.orders?.data_amount}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={getStatusColor(activation.status)}>
+                          {activation.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant="outline" 
+                          className={`flex items-center gap-1 w-fit ${getStatusColor(activation.provisioning_status)}`}
                         >
-                          <RotateCw className="h-4 w-4" />
-                        </Button>
-                      )}
-                      {activation.provisioning_status !== 'completed' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => markAsComplete(activation.id)}
-                          disabled={isMarkingComplete}
-                        >
-                          <ShieldCheck className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          
-          {filteredActivations.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              No eSIM activations found matching your criteria.
+                          {getStatusIcon(activation.provisioning_status)}
+                          {activation.provisioning_status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {new Date(activation.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewDetails(activation)}
+                          >
+                            Details
+                          </Button>
+                          {activation.provisioning_status === 'failed' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => retryProvisioning(activation.id)}
+                              disabled={isRetrying}
+                            >
+                              <RefreshCw className="h-3 w-3 mr-1" />
+                              Retry
+                            </Button>
+                          )}
+                          {activation.provisioning_status === 'in_progress' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => markAsComplete(activation.id)}
+                              disabled={isMarkingComplete}
+                            >
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Complete
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Provisioning Detail Modal */}
       <ProvisioningModal
         activation={selectedActivation}
-        isOpen={!!selectedActivation}
-        onClose={() => setSelectedActivation(null)}
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedActivation(null);
+        }}
         onRetry={retryProvisioning}
         onMarkComplete={markAsComplete}
+        isRetrying={isRetrying}
+        isMarkingComplete={isMarkingComplete}
       />
     </div>
   );

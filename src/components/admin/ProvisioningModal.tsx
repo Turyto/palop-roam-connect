@@ -2,225 +2,224 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Copy, RotateCw, ShieldCheck, Download } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import type { ESIMActivation } from "@/hooks/useESIMActivations";
+import { Separator } from "@/components/ui/separator";
+import { AlertCircle, CheckCircle, Clock, RefreshCw, ExternalLink } from "lucide-react";
+import type { ESIMActivation } from "@/types/esimActivations";
 
 interface ProvisioningModalProps {
   activation: ESIMActivation | null;
   isOpen: boolean;
   onClose: () => void;
-  onRetry: (id: string) => void;
-  onMarkComplete: (id: string) => void;
+  onRetry: (activationId: string) => void;
+  onMarkComplete: (activationId: string) => void;
+  isRetrying: boolean;
+  isMarkingComplete: boolean;
 }
 
-const ProvisioningModal = ({ activation, isOpen, onClose, onRetry, onMarkComplete }: ProvisioningModalProps) => {
-  const { toast } = useToast();
-
+const ProvisioningModal = ({ 
+  activation, 
+  isOpen, 
+  onClose, 
+  onRetry, 
+  onMarkComplete,
+  isRetrying,
+  isMarkingComplete 
+}: ProvisioningModalProps) => {
   if (!activation) return null;
 
-  const handleCopyUrl = () => {
-    if (activation.activation_url) {
-      navigator.clipboard.writeText(activation.activation_url);
-      toast({
-        title: "Copied",
-        description: "Activation URL copied to clipboard.",
-      });
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'in_progress': return 'bg-blue-100 text-blue-800';
+      case 'failed': return 'bg-red-100 text-red-800';
+      default: return 'bg-yellow-100 text-yellow-800';
     }
   };
 
-  const handleDownloadInfo = () => {
-    const activationInfo = {
-      orderId: activation.order_id,
-      customer: activation.profiles?.email,
-      plan: activation.orders?.plan_name,
-      dataAmount: activation.orders?.data_amount,
-      activationUrl: activation.activation_url,
-      status: activation.status,
-      provisioningStatus: activation.provisioning_status,
-      createdAt: activation.created_at,
-      activatedAt: activation.activated_at,
-      deliveredAt: activation.delivered_at,
-      logs: activation.provisioning_log
-    };
-
-    const blob = new Blob([JSON.stringify(activationInfo, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.download = `esim-activation-${activation.id.slice(0, 8)}.json`;
-    link.href = url;
-    link.click();
-    URL.revokeObjectURL(url);
-
-    toast({
-      title: "Downloaded",
-      description: "eSIM activation info has been downloaded.",
-    });
-  };
-
-  const getStatusBadge = (status: string) => {
-    const statusColors: Record<string, string> = {
-      pending: "bg-yellow-100 text-yellow-800",
-      in_progress: "bg-blue-100 text-blue-800",
-      completed: "bg-green-100 text-green-800",
-      failed: "bg-red-100 text-red-800",
-      active: "bg-green-100 text-green-800",
-      delivered: "bg-blue-100 text-blue-800",
-      expired: "bg-gray-100 text-gray-800",
-    };
-
-    return (
-      <Badge className={statusColors[status] || "bg-gray-100 text-gray-800"}>
-        {status.replace('_', ' ').toUpperCase()}
-      </Badge>
-    );
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'completed': return <CheckCircle className="h-4 w-4" />;
+      case 'in_progress': return <RefreshCw className="h-4 w-4 animate-spin" />;
+      case 'failed': return <AlertCircle className="h-4 w-4" />;
+      default: return <Clock className="h-4 w-4" />;
+    }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>eSIM Activation Details</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <RefreshCw className="h-5 w-5" />
+            eSIM Provisioning Details
+          </DialogTitle>
         </DialogHeader>
         
         <div className="space-y-6">
-          {/* Basic Info */}
+          {/* Activation Info */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-3">
+            <div>
+              <label className="text-sm font-medium text-gray-600">Activation ID</label>
+              <div className="font-mono text-sm text-gray-900">{activation.id}</div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-600">Order ID</label>
+              <div className="font-mono text-sm text-gray-900">{activation.order_id}</div>
+            </div>
+          </div>
+
+          {/* Customer Info */}
+          <div>
+            <h3 className="font-medium text-gray-900 mb-2">Customer Information</h3>
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-600">Order ID</label>
-                <div className="text-sm font-mono">{activation.order_id}</div>
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium text-gray-600">Customer</label>
-                <div className="text-sm">
-                  <div>{activation.profiles?.email || 'N/A'}</div>
-                  <div className="text-gray-500">{activation.profiles?.full_name || 'No name'}</div>
+                <label className="text-sm font-medium text-gray-600">Name</label>
+                <div className="text-sm text-gray-900">
+                  {activation.profiles?.full_name || 'Not provided'}
                 </div>
               </div>
-              
               <div>
-                <label className="text-sm font-medium text-gray-600">Plan</label>
-                <div className="text-sm">
-                  <div>{activation.orders?.plan_name || 'N/A'}</div>
-                  <div className="text-gray-500">{activation.orders?.data_amount || 'No data info'}</div>
+                <label className="text-sm font-medium text-gray-600">Email</label>
+                <div className="text-sm text-gray-900">{activation.profiles?.email}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Plan Info */}
+          <div>
+            <h3 className="font-medium text-gray-900 mb-2">Plan Details</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-600">Plan Name</label>
+                <div className="text-sm text-gray-900">
+                  {activation.orders?.plan_name || 'Unknown Plan'}
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-600">Data Amount</label>
+                <div className="text-sm text-gray-900">
+                  {activation.orders?.data_amount || 'Unknown'}
                 </div>
               </div>
             </div>
-            
-            <div className="space-y-3">
-              <div>
-                <label className="text-sm font-medium text-gray-600">Provisioning Status</label>
-                <div>{getStatusBadge(activation.provisioning_status)}</div>
-              </div>
-              
+          </div>
+
+          <Separator />
+
+          {/* Status Info */}
+          <div>
+            <h3 className="font-medium text-gray-900 mb-2">Status Information</h3>
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-gray-600">Activation Status</label>
-                <div>{getStatusBadge(activation.status)}</div>
+                <Badge variant="outline" className={`w-fit ${getStatusColor(activation.status)}`}>
+                  {activation.status}
+                </Badge>
               </div>
-              
+              <div>
+                <label className="text-sm font-medium text-gray-600">Provisioning Status</label>
+                <Badge 
+                  variant="outline" 
+                  className={`flex items-center gap-1 w-fit ${getStatusColor(activation.provisioning_status)}`}
+                >
+                  {getStatusIcon(activation.provisioning_status)}
+                  {activation.provisioning_status}
+                </Badge>
+              </div>
+            </div>
+          </div>
+
+          {/* Timestamps */}
+          <div>
+            <h3 className="font-medium text-gray-900 mb-2">Timeline</h3>
+            <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <label className="text-sm font-medium text-gray-600">Created</label>
-                <div className="text-sm">{new Date(activation.created_at).toLocaleString()}</div>
+                <div className="text-gray-900">
+                  {new Date(activation.created_at).toLocaleString()}
+                </div>
               </div>
+              <div>
+                <label className="text-sm font-medium text-gray-600">Last Updated</label>
+                <div className="text-gray-900">
+                  {new Date(activation.updated_at).toLocaleString()}
+                </div>
+              </div>
+              {activation.activated_at && (
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Activated</label>
+                  <div className="text-gray-900">
+                    {new Date(activation.activated_at).toLocaleString()}
+                  </div>
+                </div>
+              )}
+              {activation.delivered_at && (
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Delivered</label>
+                  <div className="text-gray-900">
+                    {new Date(activation.delivered_at).toLocaleString()}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Activation URL */}
           {activation.activation_url && (
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <label className="text-sm font-medium text-gray-600">Activation URL</label>
+            <div>
+              <label className="text-sm font-medium text-gray-600">Activation URL</label>
+              <div className="flex items-center gap-2 mt-1">
+                <code className="text-xs bg-gray-100 px-2 py-1 rounded flex-1 truncate">
+                  {activation.activation_url}
+                </code>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
-                  onClick={handleCopyUrl}
-                  className="h-6 px-2"
+                  onClick={() => window.open(activation.activation_url!, '_blank')}
                 >
-                  <Copy className="h-3 w-3" />
+                  <ExternalLink className="h-3 w-3" />
                 </Button>
-              </div>
-              <div className="p-2 bg-gray-50 rounded text-xs font-mono break-all">
-                {activation.activation_url}
               </div>
             </div>
           )}
 
-          {/* Timestamps */}
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="text-sm font-medium text-gray-600">Delivered At</label>
-              <div className="text-sm">
-                {activation.delivered_at 
-                  ? new Date(activation.delivered_at).toLocaleString() 
-                  : 'Not delivered'
-                }
-              </div>
-            </div>
-            
-            <div>
-              <label className="text-sm font-medium text-gray-600">Activated At</label>
-              <div className="text-sm">
-                {activation.activated_at 
-                  ? new Date(activation.activated_at).toLocaleString() 
-                  : 'Not activated'
-                }
-              </div>
-            </div>
-            
-            <div>
-              <label className="text-sm font-medium text-gray-600">Expires At</label>
-              <div className="text-sm">
-                {activation.expires_at 
-                  ? new Date(activation.expires_at).toLocaleString() 
-                  : 'No expiry'
-                }
-              </div>
-            </div>
-          </div>
-
-          {/* Provisioning Logs */}
+          {/* Provisioning Log */}
           {activation.provisioning_log && (
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-600">Provisioning Logs</label>
-              <div className="p-3 bg-gray-50 rounded text-xs font-mono">
-                <pre>{JSON.stringify(activation.provisioning_log, null, 2)}</pre>
-              </div>
+            <div>
+              <label className="text-sm font-medium text-gray-600">Provisioning Log</label>
+              <pre className="text-xs bg-gray-50 p-3 rounded-md mt-1 overflow-auto max-h-32">
+                {JSON.stringify(activation.provisioning_log, null, 2)}
+              </pre>
             </div>
           )}
 
           {/* Actions */}
           <div className="flex gap-3 pt-4 border-t">
-            <Button onClick={handleDownloadInfo} variant="outline" className="flex-1">
-              <Download className="h-4 w-4 mr-2" />
-              Download Info
-            </Button>
-            
-            {activation.provisioning_status === 'failed' && (
-              <Button 
-                onClick={() => onRetry(activation.id)} 
-                variant="outline" 
-                className="flex-1"
-              >
-                <RotateCw className="h-4 w-4 mr-2" />
-                Retry Provisioning
-              </Button>
-            )}
-            
-            {activation.provisioning_status !== 'completed' && (
-              <Button 
-                onClick={() => onMarkComplete(activation.id)} 
-                className="flex-1"
-              >
-                <ShieldCheck className="h-4 w-4 mr-2" />
-                Mark as Complete
-              </Button>
-            )}
-            
             <Button variant="outline" onClick={onClose} className="flex-1">
               Close
             </Button>
+            
+            {activation.provisioning_status === 'failed' && (
+              <Button
+                onClick={() => onRetry(activation.id)}
+                disabled={isRetrying}
+                className="flex-1"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                {isRetrying ? 'Retrying...' : 'Retry Provisioning'}
+              </Button>
+            )}
+            
+            {activation.provisioning_status === 'in_progress' && (
+              <Button
+                onClick={() => onMarkComplete(activation.id)}
+                disabled={isMarkingComplete}
+                className="flex-1"
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                {isMarkingComplete ? 'Updating...' : 'Mark as Complete'}
+              </Button>
+            )}
           </div>
         </div>
       </DialogContent>
