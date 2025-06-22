@@ -54,17 +54,17 @@ const OrderHistory = () => {
   };
 
   const canDownloadESIM = (order: any, qrCode: any) => {
-    const canDownload = order.status === 'completed' && 
-                       order.payment_status === 'succeeded' && 
-                       order.esim_delivered_at && 
-                       qrCode;
-    console.log('Can download eSIM for order:', order.id, 'Result:', canDownload, {
+    const result = order.status === 'completed' && 
+                   order.payment_status === 'succeeded' && 
+                   order.esim_delivered_at && 
+                   qrCode;
+    console.log('Can download eSIM for order:', order.id, 'Result:', result, {
       status: order.status,
       payment_status: order.payment_status,
       esim_delivered_at: order.esim_delivered_at,
       hasQRCode: !!qrCode
     });
-    return canDownload;
+    return result;
   };
 
   const handleDownloadESIM = (order: any) => {
