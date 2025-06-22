@@ -3,6 +3,7 @@ import { useOrders } from "@/hooks/useOrders";
 import { useCustomerQRCodes } from "@/hooks/useCustomerQRCodes";
 import { useState } from "react";
 import QRCodeDownloadModal from "./QRCodeDownloadModal";
+import TopUpModal from "./order-history/TopUpModal";
 import OrderHistoryHeader from "./order-history/OrderHistoryHeader";
 import EmptyOrdersState from "./order-history/EmptyOrdersState";
 import OrderCard from "./order-history/OrderCard";
@@ -17,6 +18,7 @@ const OrderHistory = () => {
     dataAmount?: string;
     status: 'pending' | 'active' | 'revoked';
   } | null>(null);
+  const [selectedTopUpOrder, setSelectedTopUpOrder] = useState<any>(null);
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
 
   if (ordersLoading) {
@@ -101,6 +103,11 @@ const OrderHistory = () => {
     }
   };
 
+  const handleTopUp = (order: any) => {
+    console.log('Top-up clicked for order:', order.id);
+    setSelectedTopUpOrder(order);
+  };
+
   const toggleOrderExpansion = (orderId: string) => {
     const newExpanded = new Set(expandedOrders);
     if (newExpanded.has(orderId)) {
@@ -142,6 +149,7 @@ const OrderHistory = () => {
               onToggleExpansion={toggleOrderExpansion}
               onDownloadESIM={handleDownloadESIM}
               onResendEmail={handleResendEmail}
+              onTopUp={handleTopUp}
             />
           );
         })}
@@ -155,6 +163,12 @@ const OrderHistory = () => {
         planName={selectedQRCode?.planName}
         dataAmount={selectedQRCode?.dataAmount}
         status={selectedQRCode?.status || 'pending'}
+      />
+
+      <TopUpModal
+        isOpen={!!selectedTopUpOrder}
+        onClose={() => setSelectedTopUpOrder(null)}
+        order={selectedTopUpOrder}
       />
     </div>
   );

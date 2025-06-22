@@ -390,6 +390,113 @@ export type Database = {
           },
         ]
       }
+      topup_options: {
+        Row: {
+          created_at: string
+          currency: string
+          data_amount: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          price: number
+          sort_order: number
+          type: string
+          updated_at: string
+          validity_days: number | null
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          data_amount?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          price: number
+          sort_order?: number
+          type: string
+          updated_at?: string
+          validity_days?: number | null
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          data_amount?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          price?: number
+          sort_order?: number
+          type?: string
+          updated_at?: string
+          validity_days?: number | null
+        }
+        Relationships: []
+      }
+      topup_orders: {
+        Row: {
+          applied_at: string | null
+          completed_at: string | null
+          created_at: string
+          currency: string
+          data_amount: string | null
+          id: string
+          parent_order_id: string
+          payment_intent_id: string | null
+          payment_status: string
+          price: number
+          status: string
+          topup_type: string
+          updated_at: string
+          user_id: string
+          validity_days: number | null
+        }
+        Insert: {
+          applied_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          data_amount?: string | null
+          id?: string
+          parent_order_id: string
+          payment_intent_id?: string | null
+          payment_status?: string
+          price: number
+          status?: string
+          topup_type: string
+          updated_at?: string
+          user_id: string
+          validity_days?: number | null
+        }
+        Update: {
+          applied_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          data_amount?: string | null
+          id?: string
+          parent_order_id?: string
+          payment_intent_id?: string | null
+          payment_status?: string
+          price?: number
+          status?: string
+          topup_type?: string
+          updated_at?: string
+          user_id?: string
+          validity_days?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topup_orders_parent_order_id_fkey"
+            columns: ["parent_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

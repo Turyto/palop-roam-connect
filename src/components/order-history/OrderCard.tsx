@@ -15,6 +15,7 @@ interface OrderCardProps {
   onToggleExpansion: (orderId: string) => void;
   onDownloadESIM: (order: any) => void;
   onResendEmail: (orderId: string) => void;
+  onTopUp?: (order: any) => void;
 }
 
 const OrderCard = ({ 
@@ -24,7 +25,8 @@ const OrderCard = ({
   isExpanded, 
   onToggleExpansion, 
   onDownloadESIM, 
-  onResendEmail 
+  onResendEmail,
+  onTopUp
 }: OrderCardProps) => {
   const getValidityInfo = (order: any) => {
     return `Valid for ${order.duration_days} days from activation`;
@@ -87,6 +89,7 @@ const OrderCard = ({
           canDownload={canDownload}
           onDownloadESIM={onDownloadESIM}
           onResendEmail={onResendEmail}
+          onTopUp={onTopUp}
           variant="compact"
         />
         
@@ -118,6 +121,7 @@ const OrderCard = ({
             canDownload={canDownload}
             onDownloadESIM={onDownloadESIM}
             onResendEmail={onResendEmail}
+            onTopUp={onTopUp}
           />
         )}
       </CardContent>

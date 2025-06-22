@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { Download, Eye, Copy, QrCode, Mail } from "lucide-react";
+import { Download, Eye, Copy, QrCode, Mail, Zap } from "lucide-react";
 
 interface OrderActionsProps {
   order: any;
@@ -8,6 +8,7 @@ interface OrderActionsProps {
   canDownload: boolean;
   onDownloadESIM: (order: any) => void;
   onResendEmail: (orderId: string) => void;
+  onTopUp?: (order: any) => void;
   variant?: 'compact' | 'expanded';
 }
 
@@ -17,6 +18,7 @@ const OrderActions = ({
   canDownload, 
   onDownloadESIM, 
   onResendEmail,
+  onTopUp,
   variant = 'compact'
 }: OrderActionsProps) => {
   console.log('🎬 OrderActions render:', { 
@@ -25,6 +27,9 @@ const OrderActions = ({
     variant, 
     hasQRCode: !!qrCode 
   });
+
+  // Check if order is eligible for top-up (completed orders only)
+  const canTopUp = order.status === 'completed' && order.payment_status === 'succeeded';
 
   // Always render the component, but show different content based on canDownload
   if (variant === 'compact') {
@@ -55,52 +60,97 @@ const OrderActions = ({
                 <Download className="h-4 w-4 mr-2" />
                 Download eSIM
               </Button>
+              {canTopUp && onTopUp && (
+                <Button 
+                  onClick={() => onTopUp(order)}
+                  className="bg-palop-green hover:bg-palop-green/90 text-white"
+                  size="sm"
+                >
+                  <Zap className="h-4 w-4 mr-2" />
+                  Top-Up
+                </Button>
+              )}
             </div>
           </div>
         </div>
       );
+    } else if (canTopUp && onTopUp) {
+      console.log('🔄 Rendering COMPACT top-up only section for order:', order.id);
+      return (
+        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-semibold text-green-900">Add More Data or Time</h4>
+              <p className="text-sm text-green-700">Extend your plan with additional data or validity</p>
+            </div>
+            <Button 
+              onClick={() => onTopUp(order)}
+              className="bg-palop-green hover:bg-palop-green/90 text-white"
+              size="sm"
+            >
+              <Zap className="h-4 w-4 mr-2" />
+              Top-Up Plan
+            </Button>
+          </div>
+        </div>
+      );
     } else {
-      console.log('❌ Cannot download - not rendering compact actions for order:', order.id);
+      console.log('❌ Cannot download or top-up - not rendering compact actions for order:', order.id);
       return null;
     }
   }
 
-  if (canDownload) {
-    console.log('✅ Rendering EXPANDED download section for order:', order.id);
+  if (canDownload || canTopUp) {
+    console.log('✅ Rendering EXPANDED actions section for order:', order.id);
     return (
       <div className="bg-green-50 p-3 rounded-lg">
         <h4 className="font-medium text-sm mb-2 text-green-800">eSIM Actions</h4>
         <div className="flex flex-wrap gap-2">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => onDownloadESIM(order)}
-          >
-            <QrCode className="h-4 w-4 mr-2" />
-            Show QR Code
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => onDownloadESIM(order)}
-          >
-            <Copy className="h-4 w-4 mr-2" />
-            Copy Activation URL
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => onResendEmail(order.id)}
-          >
-            <Mail className="h-4 w-4 mr-2" />
-            Resend Email
-          </Button>
+          {canDownload && (
+            <>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => onDownloadESIM(order)}
+              >
+                <QrCode className="h-4 w-4 mr-2" />
+                Show QR Code
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => onDownloadESIM(order)}
+              >
+                <Copy className="h-4 w-4 mr-2" />
+                Copy Activation URL
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => onResendEmail(order.id)}
+              >
+                <Mail className="h-4 w-4 mr-2" />
+                Resend Email
+              </Button>
+            </>
+          )}
+          {canTopUp && onTopUp && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => onTopUp(order)}
+              className="bg-palop-green/10 hover:bg-palop-green/20 border-palop-green text-palop-green"
+            >
+              <Zap className="h-4 w-4 mr-2" />
+              Top-Up Plan
+            </Button>
+          )}
         </div>
       </div>
     );
   }
 
-  console.log('❌ Cannot download - not rendering expanded actions for order:', order.id);
+  console.log('❌ Cannot download or top-up - not rendering expanded actions for order:', order.id);
   return null;
 };
 
