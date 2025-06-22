@@ -58,11 +58,15 @@ const OrderHistory = () => {
   const getConsolidatedStatus = (order: any, qrCode: any) => {
     console.log('Getting status for order:', order.id, 'QR Code:', qrCode);
     
-    if (order.status === 'completed' && order.payment_status === 'succeeded' && qrCode) {
-      if (qrCode.status === 'active') {
-        return { status: 'Active', color: 'bg-green-100 text-green-800', icon: '🟢' };
+    // If order is completed and payment succeeded, check eSIM delivery
+    if (order.status === 'completed' && order.payment_status === 'succeeded') {
+      if (order.esim_delivered_at) {
+        if (qrCode?.status === 'active') {
+          return { status: 'Active', color: 'bg-green-100 text-green-800', icon: '🟢' };
+        }
+        return { status: 'Ready to activate', color: 'bg-blue-100 text-blue-800', icon: '🟡' };
       }
-      return { status: 'Ready to activate', color: 'bg-blue-100 text-blue-800', icon: '🟡' };
+      return { status: 'Processing eSIM', color: 'bg-yellow-100 text-yellow-800', icon: '🟡' };
     }
     
     if (order.status === 'failed' || order.payment_status === 'failed') {
@@ -83,8 +87,17 @@ const OrderHistory = () => {
   };
 
   const canDownloadESIM = (order: any, qrCode: any) => {
-    const canDownload = order.status === 'completed' && order.payment_status === 'succeeded' && qrCode;
-    console.log('Can download eSIM for order:', order.id, 'Result:', canDownload);
+    // Order must be completed, payment succeeded, eSIM delivered, and QR code exists
+    const canDownload = order.status === 'completed' && 
+                       order.payment_status === 'succeeded' && 
+                       order.esim_delivered_at && 
+                       qrCode;
+    console.log('Can download eSIM for order:', order.id, 'Result:', canDownload, {
+      status: order.status,
+      payment_status: order.payment_status,
+      esim_delivered_at: order.esim_delivered_at,
+      hasQRCode: !!qrCode
+    });
     return canDownload;
   };
 
@@ -140,7 +153,7 @@ const OrderHistory = () => {
           const canDownload = canDownloadESIM(order, qrCode);
           const isExpanded = expandedOrders.has(order.id);
           
-          console.log(`Order ${order.id}: status=${order.status}, payment_status=${order.payment_status}, qrCode=${!!qrCode}, canDownload=${canDownload}`);
+          console.log(`Order ${order.id}: status=${order.status}, payment_status=${order.payment_status}, esim_delivered_at=${order.esim_delivered_at}, qrCode=${!!qrCode}, canDownload=${canDownload}`);
           
           return (
             <Card key={order.id} className="hover:shadow-md transition-shadow">
