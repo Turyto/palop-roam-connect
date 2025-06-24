@@ -1,4 +1,3 @@
-
 import { Check, X, Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -207,28 +206,28 @@ const PlanComparison = () => {
                 </div>
               )}
               
-              <CardHeader className={`${plan.color} text-white text-center py-4`}>
-                <CardTitle className="text-lg">{plan.name}</CardTitle>
-                <div className="text-2xl font-bold">{plan.price}</div>
-                <p className="text-xs opacity-90 mt-1">{plan.microcopy}</p>
+              <CardHeader className={`${plan.color} text-white text-center py-6`}>
+                <CardTitle className="text-xl mb-2">{plan.name}</CardTitle>
+                <div className="text-3xl font-bold mb-3">{plan.price}</div>
+                <p className="text-sm opacity-90 leading-relaxed px-2">{plan.microcopy}</p>
                 {plan.promo && (
-                  <Badge className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-xs mt-2">
+                  <Badge className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs mt-3 mx-auto w-fit">
                     Limited Time
                   </Badge>
                 )}
               </CardHeader>
               
-              <CardContent className="p-4">
-                <div className="space-y-2 mb-4">
+              <CardContent className="p-6">
+                <div className="space-y-3 mb-6">
                   {features.slice(0, 4).map((feature, index) => (
                     <div key={index} className="flex items-center justify-between text-sm">
-                      <span className="text-gray-700">{feature.name}</span>
+                      <span className="text-gray-700 font-medium">{feature.name}</span>
                       <div>{renderFeatureValue(feature[plan.id as keyof typeof feature] as string | boolean)}</div>
                     </div>
                   ))}
                 </div>
                 
-                <Button className="w-full bg-palop-green hover:bg-palop-green/90" asChild>
+                <Button className="w-full bg-palop-green hover:bg-palop-green/90 text-white font-medium py-3" asChild>
                   <Link to={`/purchase?plan=${plan.id}`}>{plan.ctaLabel}</Link>
                 </Button>
               </CardContent>
