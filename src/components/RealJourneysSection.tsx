@@ -1,6 +1,8 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Users, Gift, Shield, Globe } from "lucide-react";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import PALOPConnectivityMap from "./PALOPConnectivityMap";
 
 const scenarios = [
@@ -85,49 +87,69 @@ const RealJourneysSection = () => {
           </p>
         </div>
 
-        {/* Usage Scenario Tiles */}
+        {/* Usage Scenario Carousel */}
         <div className="mb-16">
           <h3 className="text-2xl font-semibold mb-8 text-center">Real User Stories</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {scenarios.map((scenario) => (
-              <Card key={scenario.planId} className="card-hover">
-                <CardHeader className={`${scenario.color} text-white rounded-t-lg`}>
-                  <CardTitle className="text-lg">{scenario.persona}</CardTitle>
-                  <div className="text-sm opacity-90">
-                    {scenario.duration} • {scenario.dataUse}
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="p-6">
-                  <p className="text-gray-700 mb-4 text-sm leading-relaxed">
-                    {scenario.scenario}
-                  </p>
-                  
-                  <div className="mb-4">
-                    <div className="flex items-center mb-2">
-                      <MapPin className="h-4 w-4 text-palop-green mr-2" />
-                      <span className="text-sm font-medium">Coverage:</span>
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                      {scenario.countries.map((country, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          {country}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    {scenario.keyFeatures.map((feature, index) => (
-                      <div key={index} className="flex items-center text-sm">
-                        <div className="w-2 h-2 bg-palop-green rounded-full mr-2"></div>
-                        {feature}
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="max-w-7xl mx-auto">
+            <Carousel
+              opts={{
+                align: "start",
+                loop: true,
+              }}
+              className="w-full"
+            >
+              <CarouselContent className="-ml-2 md:-ml-4">
+                {scenarios.map((scenario) => (
+                  <CarouselItem key={scenario.planId} className="pl-2 md:pl-4 basis-full md:basis-1/2 lg:basis-1/3">
+                    <Card className="card-hover h-full">
+                      <CardHeader className={`${scenario.color} text-white rounded-t-lg`}>
+                        <CardTitle className="text-lg">{scenario.persona}</CardTitle>
+                        <div className="text-sm opacity-90">
+                          {scenario.duration} • {scenario.dataUse}
+                        </div>
+                      </CardHeader>
+                      
+                      <CardContent className="p-6 flex-grow">
+                        <p className="text-gray-700 mb-4 text-sm leading-relaxed">
+                          {scenario.scenario}
+                        </p>
+                        
+                        <div className="mb-4">
+                          <div className="flex items-center mb-2">
+                            <MapPin className="h-4 w-4 text-palop-green mr-2" />
+                            <span className="text-sm font-medium">Coverage:</span>
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {scenario.countries.map((country, index) => (
+                              <Badge key={index} variant="outline" className="text-xs">
+                                {country}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          {scenario.keyFeatures.map((feature, index) => (
+                            <div key={index} className="flex items-center text-sm">
+                              <div className="w-2 h-2 bg-palop-green rounded-full mr-2"></div>
+                              {feature}
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="hidden md:flex" />
+              <CarouselNext className="hidden md:flex" />
+            </Carousel>
+          </div>
+          
+          <div className="text-center mt-8">
+            <p className="text-gray-600">
+              Swipe to explore different user journeys across the PALOP region
+            </p>
           </div>
         </div>
 
