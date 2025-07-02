@@ -26,3 +26,6 @@ verify_jwt = true
 
 [functions.check-esim-status]
 verify_jwt = false
+
+[functions.get-esim-package]
+verify_jwt = true
