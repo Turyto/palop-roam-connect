@@ -66,6 +66,8 @@ export const useCreateOrderWithESIM = () => {
           console.error('eSIM order creation error:', error);
           esimError = error.message || 'eSIM provisioning failed';
         }
+      } else {
+        console.log('No eSIM package mapping found or error:', packageError);
       }
 
       // Create the local order regardless of eSIM status
@@ -86,15 +88,17 @@ export const useCreateOrderWithESIM = () => {
         })
       };
 
+      console.log('Inserting order into database:', order);
+
       const { data: orderResult, error: orderError } = await supabase
         .from('orders')
-        .insert(order as any)
+        .insert(order)
         .select()
         .single();
 
       if (orderError) {
         console.error('Error creating order:', orderError);
-        throw orderError;
+        throw new Error(`Database error: ${orderError.message}`);
       }
 
       console.log('Local order created:', orderResult);
@@ -115,7 +119,7 @@ export const useCreateOrderWithESIM = () => {
 
       if (itemError) {
         console.error('Error creating order item:', itemError);
-        throw itemError;
+        throw new Error(`Order item creation failed: ${itemError.message}`);
       }
 
       // If we have eSIM data, create the activation record with real data
@@ -142,6 +146,7 @@ export const useCreateOrderWithESIM = () => {
 
         if (activationError) {
           console.error('Error creating eSIM activation:', activationError);
+          // Don't throw here - order was created successfully
         }
 
         // Also create/update QR code with real data
@@ -158,6 +163,7 @@ export const useCreateOrderWithESIM = () => {
 
         if (qrError) {
           console.error('Error creating QR code:', qrError);
+          // Don't throw here - order was created successfully
         }
       } else if (packageData && esimError) {
         // Create a failed eSIM activation record for debugging
@@ -177,6 +183,7 @@ export const useCreateOrderWithESIM = () => {
 
         if (activationError) {
           console.error('Error creating failed eSIM activation record:', activationError);
+          // Don't throw here - order was created successfully
         }
       }
 
@@ -202,7 +209,7 @@ export const useCreateOrderWithESIM = () => {
       } else if (result.esimError) {
         toast({
           title: "Order Created with eSIM Warning",
-          description: `Order ${result.order.id} was created, but eSIM provisioning failed: ${result.esimError}`,
+          description: `Order was created, but eSIM provisioning failed: ${result.esimError}`,
           variant: "destructive",
         });
       } else {

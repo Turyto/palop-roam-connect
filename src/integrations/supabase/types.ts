@@ -216,6 +216,9 @@ export type Database = {
           data_amount: string
           duration_days: number
           esim_delivered_at: string | null
+          esim_order_id: string | null
+          esim_package_id: string | null
+          esim_status: string | null
           id: string
           payment_intent_id: string | null
           payment_status: string | null
@@ -233,6 +236,9 @@ export type Database = {
           data_amount: string
           duration_days: number
           esim_delivered_at?: string | null
+          esim_order_id?: string | null
+          esim_package_id?: string | null
+          esim_status?: string | null
           id?: string
           payment_intent_id?: string | null
           payment_status?: string | null
@@ -250,6 +256,9 @@ export type Database = {
           data_amount?: string
           duration_days?: number
           esim_delivered_at?: string | null
+          esim_order_id?: string | null
+          esim_package_id?: string | null
+          esim_status?: string | null
           id?: string
           payment_intent_id?: string | null
           payment_status?: string | null
