@@ -33,29 +33,23 @@ export const useCreateOrderWithESIM = () => {
 
       console.log('Creating order with eSIM integration:', orderData);
 
-      // First, get the eSIM package mapping using raw SQL to avoid type issues
-      const { data: esimPackages, error: packageError } = await supabase
-        .rpc('get_esim_package_for_plan', { plan_id_param: orderData.plan_id })
-        .single();
-
       let esimPackageId: string | null = null;
       
-      // If the RPC doesn't exist yet, fall back to a direct query
-      if (packageError) {
-        console.log('Falling back to direct query for eSIM package');
-        // Use a more generic approach since types aren't updated yet
-        const { data: fallbackPackages, error: fallbackError } = await supabase
-          .from('esim_packages' as any)
-          .select('*')
-          .eq('plan_id', orderData.plan_id)
-          .eq('is_active', true)
-          .limit(1);
+      // Try to get the eSIM package mapping using the new function
+      try {
+        const { data: packageResponse, error: packageError } = await supabase.functions.invoke('get-esim-package', {
+          body: { planId: orderData.plan_id }
+        });
 
-        if (!fallbackError && fallbackPackages && fallbackPackages.length > 0) {
-          esimPackageId = fallbackPackages[0].esim_access_package_id;
+        if (!packageError && packageResponse) {
+          esimPackageId = packageResponse.esim_access_package_id;
+          console.log('Found eSIM package mapping:', esimPackageId);
+        } else {
+          console.log('No eSIM package mapping found for plan:', orderData.plan_id);
         }
-      } else if (esimPackages) {
-        esimPackageId = esimPackages.esim_access_package_id;
+      } catch (error) {
+        console.log('Error fetching eSIM package mapping:', error);
+        // Continue without eSIM integration
       }
 
       // Create the local order first
