@@ -126,6 +126,9 @@ export const useCreateOrderWithESIM = () => {
       if (esimOrderData && packageData) {
         console.log('Creating eSIM activation with real data:', esimOrderData);
         
+        // Use the real activation code from eSIM Access as the activation URL
+        const realActivationUrl = esimOrderData.activationCode || esimOrderData.downloadUrl || esimOrderData.qrCodeUrl;
+        
         const { error: activationError } = await supabase
           .from('esim_activations')
           .insert({
@@ -133,7 +136,7 @@ export const useCreateOrderWithESIM = () => {
             user_id: user.id,
             status: 'pending',
             provisioning_status: 'completed',
-            activation_url: esimOrderData.downloadUrl || esimOrderData.qrCodeUrl,
+            activation_url: realActivationUrl,
             iccid: esimOrderData.iccid,
             activation_code: esimOrderData.activationCode,
             qr_code_data: esimOrderData.qrCodeUrl,
@@ -149,14 +152,14 @@ export const useCreateOrderWithESIM = () => {
           // Don't throw here - order was created successfully
         }
 
-        // Also create/update QR code with real data
+        // Create QR code with real activation code as the URL
         const { error: qrError } = await supabase
           .from('qr_codes')
           .insert({
             order_id: orderResult.id,
             user_id: user.id,
             esim_id: null, // Will be linked later
-            activation_url: esimOrderData.downloadUrl || esimOrderData.qrCodeUrl,
+            activation_url: realActivationUrl,
             qr_image_url: esimOrderData.qrCodeUrl,
             status: 'active'
           });

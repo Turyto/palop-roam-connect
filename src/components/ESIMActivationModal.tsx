@@ -84,13 +84,12 @@ const ESIMActivationModal = ({
   };
 
   const handleCopyActivationCode = () => {
-    if (activationCode) {
-      navigator.clipboard.writeText(activationCode);
-      toast({
-        title: "Copied",
-        description: "Activation code copied to clipboard.",
-      });
-    }
+    const codeToCopy = activationCode || activationUrl;
+    navigator.clipboard.writeText(codeToCopy);
+    toast({
+      title: "Copied",
+      description: "Activation code copied to clipboard.",
+    });
   };
 
   const getStatusInfo = (status: string) => {
@@ -117,6 +116,7 @@ const ESIMActivationModal = ({
   };
 
   const statusInfo = getStatusInfo(status);
+  // Use the real activation code for QR generation, fallback to activation URL
   const qrCodeData = activationCode || activationUrl;
 
   return (
@@ -198,10 +198,12 @@ const ESIMActivationModal = ({
           </div>
 
           {/* Activation Code */}
-          {activationCode && (
+          {(activationCode || activationUrl) && (
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
               <div className="flex justify-between items-center mb-2">
-                <p className="text-sm font-medium text-gray-600">Activation Code</p>
+                <p className="text-sm font-medium text-gray-600">
+                  {activationCode ? 'Activation Code' : 'Activation Details'}
+                </p>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -213,7 +215,9 @@ const ESIMActivationModal = ({
                 </Button>
               </div>
               <div className="bg-gray-50 p-3 rounded-lg border">
-                <p className="font-mono text-sm text-gray-900 break-all">{activationCode}</p>
+                <p className="font-mono text-sm text-gray-900 break-all">
+                  {activationCode || activationUrl}
+                </p>
               </div>
             </div>
           )}
