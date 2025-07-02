@@ -20,7 +20,8 @@ interface ESIMAccessResponse {
   error?: string;
 }
 
-const ESIM_ACCESS_BASE_URL = 'https://api.esimaccess.com/v1';
+// Updated base URL without /v1
+const ESIM_ACCESS_BASE_URL = 'https://api.esimaccess.com';
 
 serve(async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
@@ -79,8 +80,10 @@ serve(async (req: Request): Promise<Response> => {
       );
     }
 
+    // Updated headers with AccessCode (using secret key as AccessCode for now)
     const headers = {
       'Authorization': `Bearer ${secretKey}`,
+      'AccessCode': secretKey, // Using secret key as AccessCode - may need adjustment
       'Content-Type': 'application/json',
     };
 
@@ -183,16 +186,20 @@ async function getPackages(headers: Record<string, string>): Promise<ESIMAccessR
 
 async function createOrder(orderData: ESIMAccessOrder, headers: Record<string, string>): Promise<ESIMAccessResponse> {
   try {
+    // Updated payload format based on eSIM Access API documentation
     const payload = {
-      packageId: orderData.packageId,
-      customer: {
-        email: orderData.customerEmail,
-        name: orderData.customerName || orderData.customerEmail,
-      },
-      referenceId: orderData.referenceId,
+      type: "transaction", // Required: "transaction" for actual purchase
+      item: orderData.packageId, // Bundle name (case sensitive)
+      quantity: 1, // Required: Number of bundles
+      assign: true, // Required: Assign to eSIM immediately
+      // Removed customer object as it's not needed in this API
+      // Optional fields that might be needed later:
+      // iccids: [], // Optional: specific ICCIDs to assign to
+      // allowReassign: true, // Optional: allow new eSIM if incompatible
+      // profileID: "your_branding_profile_id" // Optional: branding profile
     };
 
-    console.log('🔄 Creating eSIM order with payload:', JSON.stringify(payload, null, 2));
+    console.log('🔄 Creating eSIM order with updated payload:', JSON.stringify(payload, null, 2));
     console.log('🔄 API URL:', `${ESIM_ACCESS_BASE_URL}/orders`);
 
     const response = await fetch(`${ESIM_ACCESS_BASE_URL}/orders`, {
@@ -228,40 +235,31 @@ async function createOrder(orderData: ESIMAccessOrder, headers: Record<string, s
 
     console.log('✅ eSIM order created successfully:', JSON.stringify(data, null, 2));
     
-    // Log all available URL fields for debugging
-    console.log('🔍 Available URL fields in create order response:');
-    console.log('- shortUrl:', data.shortUrl);
-    console.log('- downloadUrl:', data.downloadUrl);
-    console.log('- url:', data.url);
-    console.log('- qrCodeUrl:', data.qrCodeUrl);
-    console.log('- activationUrl:', data.activationUrl);
-    console.log('- activationCode:', data.activationCode);
-    console.log('- iccid:', data.iccid);
+    // Log all available fields for debugging
+    console.log('🔍 Available fields in create order response:');
+    Object.keys(data).forEach(key => {
+      console.log(`- ${key}:`, data[key]);
+    });
     
-    // Get the order details immediately to fetch the QR code and activation data
-    if (data.id || data.orderId) {
-      console.log('🔍 Fetching detailed order information for ID:', data.id || data.orderId);
-      const orderDetails = await getOrder(data.id || data.orderId, headers);
+    // Get the order details immediately to fetch additional data
+    if (data.id || data.orderId || data.reference) {
+      const orderId = data.id || data.orderId || data.reference;
+      console.log('🔍 Fetching detailed order information for ID:', orderId);
+      const orderDetails = await getOrder(orderId, headers);
       if (orderDetails.success) {
         console.log('✅ Order details retrieved:', JSON.stringify(orderDetails.data, null, 2));
-        
-        // Log all available URL fields from detailed response
-        console.log('🔍 Available URL fields in detailed order response:');
-        console.log('- shortUrl:', orderDetails.data?.shortUrl);
-        console.log('- downloadUrl:', orderDetails.data?.downloadUrl);
-        console.log('- url:', orderDetails.data?.url);
-        console.log('- qrCodeUrl:', orderDetails.data?.qrCodeUrl);
-        console.log('- activationUrl:', orderDetails.data?.activationUrl);
-        console.log('- activationCode:', orderDetails.data?.activationCode);
-        console.log('- iccid:', orderDetails.data?.iccid);
         
         // Merge the creation response with the detailed order information
         const mergedData = {
           ...data,
           ...orderDetails.data,
+          // Map common fields that might be needed
+          id: data.id || data.orderId || data.reference,
+          orderId: data.id || data.orderId || data.reference,
+          activationCode: orderDetails.data?.activationCode || orderDetails.data?.lpa,
+          iccid: orderDetails.data?.iccid,
           qrCodeUrl: orderDetails.data?.qrCodeUrl || orderDetails.data?.downloadUrl,
-          activationCode: orderDetails.data?.activationCode,
-          iccid: orderDetails.data?.iccid
+          activationUrl: orderDetails.data?.activationUrl || orderDetails.data?.shortUrl || orderDetails.data?.downloadUrl
         };
         console.log('🔀 Merged order data:', JSON.stringify(mergedData, null, 2));
         return { 
