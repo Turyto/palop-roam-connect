@@ -2,7 +2,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, Copy, QrCode } from "lucide-react";
+import { Download, Copy, QrCode, ExternalLink } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -14,6 +14,8 @@ interface QRCodeDownloadModalProps {
   planName?: string;
   dataAmount?: string;
   status: 'pending' | 'active' | 'revoked';
+  activationCode?: string;
+  iccid?: string;
 }
 
 const QRCodeDownloadModal = ({ 
@@ -23,7 +25,9 @@ const QRCodeDownloadModal = ({
   orderId, 
   planName, 
   dataAmount,
-  status 
+  status,
+  activationCode,
+  iccid 
 }: QRCodeDownloadModalProps) => {
   const { toast } = useToast();
 
@@ -82,6 +86,20 @@ const QRCodeDownloadModal = ({
     });
   };
 
+  const handleCopyActivationCode = () => {
+    if (activationCode) {
+      navigator.clipboard.writeText(activationCode);
+      toast({
+        title: "Copied",
+        description: "Activation code copied to clipboard.",
+      });
+    }
+  };
+
+  const handleOpenQRUrl = () => {
+    window.open(activationUrl, '_blank');
+  };
+
   const getStatusBadge = (status: string) => {
     const statusColors: Record<string, string> = {
       pending: "bg-yellow-100 text-yellow-800",
@@ -96,13 +114,16 @@ const QRCodeDownloadModal = ({
     );
   };
 
+  // Determine what to display in QR code - prefer activation code if available
+  const qrCodeData = activationCode || activationUrl;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <QrCode className="h-5 w-5" />
-            Download eSIM QR Code
+            eSIM Installation QR Code
           </DialogTitle>
         </DialogHeader>
         
@@ -110,7 +131,7 @@ const QRCodeDownloadModal = ({
           {/* QR Code Display */}
           <div id="customer-qr-code" className="flex justify-center p-6 bg-white rounded-lg border-2 border-dashed border-gray-200">
             <QRCodeSVG 
-              value={activationUrl} 
+              value={qrCodeData} 
               size={250}
               level="M"
               includeMargin
@@ -138,24 +159,61 @@ const QRCodeDownloadModal = ({
               </div>
             )}
 
+            {iccid && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-gray-600">ICCID:</span>
+                <span className="text-sm font-mono text-xs">{iccid}</span>
+              </div>
+            )}
+
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium text-gray-600">Order ID:</span>
               <span className="text-sm font-mono">{orderId.slice(0, 8)}...</span>
             </div>
           </div>
 
-          {/* Activation URL */}
+          {/* Activation Code */}
+          {activationCode && (
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-gray-600">Activation Code:</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCopyActivationCode}
+                  className="h-6 px-2"
+                >
+                  <Copy className="h-3 w-3" />
+                </Button>
+              </div>
+              <div className="p-2 bg-gray-50 rounded text-xs font-mono break-all">
+                {activationCode}
+              </div>
+            </div>
+          )}
+
+          {/* QR Code URL */}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-gray-600">Activation URL:</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleCopyUrl}
-                className="h-6 px-2"
-              >
-                <Copy className="h-3 w-3" />
-              </Button>
+              <span className="text-sm font-medium text-gray-600">QR Code URL:</span>
+              <div className="flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCopyUrl}
+                  className="h-6 px-2"
+                >
+                  <Copy className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleOpenQRUrl}
+                  className="h-6 px-2"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                </Button>
+              </div>
             </div>
             <div className="p-2 bg-gray-50 rounded text-xs font-mono break-all">
               {activationUrl}
@@ -165,7 +223,7 @@ const QRCodeDownloadModal = ({
           {/* Instructions */}
           <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-xs text-blue-800">
-              <strong>Instructions:</strong> Scan this QR code with your device's camera or QR code scanner to activate your eSIM. Make sure you have a stable internet connection during activation.
+              <strong>Instructions:</strong> Scan this QR code with your device's camera or eSIM scanner to install your eSIM. The QR code contains your activation code for automatic setup.
             </p>
           </div>
 

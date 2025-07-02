@@ -150,11 +150,30 @@ async function createOrder(orderData: ESIMAccessOrder, headers: Record<string, s
     if (!response.ok) {
       const errorData = await response.text();
       console.error('Create order error:', errorData);
-      return { success: false, error: `API error: ${response.status}` };
+      return { success: false, error: `API error: ${response.status} - ${errorData}` };
     }
 
     const data = await response.json();
     console.log('eSIM order created successfully:', data);
+    
+    // Get the order details immediately to fetch the QR code and activation data
+    if (data.id || data.orderId) {
+      const orderDetails = await getOrder(data.id || data.orderId, headers);
+      if (orderDetails.success) {
+        // Merge the creation response with the detailed order information
+        return { 
+          success: true, 
+          data: {
+            ...data,
+            ...orderDetails.data,
+            qrCodeUrl: orderDetails.data?.qrCodeUrl || orderDetails.data?.downloadUrl,
+            activationCode: orderDetails.data?.activationCode,
+            iccid: orderDetails.data?.iccid
+          }
+        };
+      }
+    }
+    
     return { success: true, data };
   } catch (error) {
     console.error('Create order fetch error:', error);
@@ -164,6 +183,8 @@ async function createOrder(orderData: ESIMAccessOrder, headers: Record<string, s
 
 async function getOrder(orderId: string, headers: Record<string, string>): Promise<ESIMAccessResponse> {
   try {
+    console.log('Fetching order details for:', orderId);
+    
     const response = await fetch(`${ESIM_ACCESS_BASE_URL}/orders/${orderId}`, {
       method: 'GET',
       headers,
@@ -172,10 +193,11 @@ async function getOrder(orderId: string, headers: Record<string, string>): Promi
     if (!response.ok) {
       const errorData = await response.text();
       console.error('Get order error:', errorData);
-      return { success: false, error: `API error: ${response.status}` };
+      return { success: false, error: `API error: ${response.status} - ${errorData}` };
     }
 
     const data = await response.json();
+    console.log('Order details retrieved:', data);
     return { success: true, data };
   } catch (error) {
     console.error('Get order fetch error:', error);
@@ -193,10 +215,11 @@ async function downloadESIM(orderId: string, headers: Record<string, string>): P
     if (!response.ok) {
       const errorData = await response.text();
       console.error('Download eSIM error:', errorData);
-      return { success: false, error: `API error: ${response.status}` };
+      return { success: false, error: `API error: ${response.status} - ${errorData}` };
     }
 
     const data = await response.json();
+    console.log('eSIM download data:', data);
     return { success: true, data };
   } catch (error) {
     console.error('Download eSIM fetch error:', error);
