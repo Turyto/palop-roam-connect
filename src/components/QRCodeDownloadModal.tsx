@@ -1,10 +1,5 @@
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Download, Copy, QrCode, ExternalLink } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
-import { useToast } from "@/hooks/use-toast";
+import ESIMActivationModal from "./ESIMActivationModal";
 
 interface QRCodeDownloadModalProps {
   isOpen: boolean;
@@ -29,217 +24,19 @@ const QRCodeDownloadModal = ({
   activationCode,
   iccid 
 }: QRCodeDownloadModalProps) => {
-  const { toast } = useToast();
-
-  const handleDownload = () => {
-    try {
-      // Create a canvas to convert SVG to PNG
-      const svg = document.querySelector('#customer-qr-code svg') as SVGElement;
-      if (svg) {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        const img = new Image();
-        
-        const svgData = new XMLSerializer().serializeToString(svg);
-        const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-        const url = URL.createObjectURL(svgBlob);
-        
-        img.onload = () => {
-          canvas.width = 300;
-          canvas.height = 300;
-          ctx?.drawImage(img, 0, 0);
-          
-          canvas.toBlob((blob) => {
-            if (blob) {
-              const link = document.createElement('a');
-              link.download = `esim-qr-code-${orderId.slice(0, 8)}.png`;
-              link.href = URL.createObjectURL(blob);
-              link.click();
-              
-              toast({
-                title: "Downloaded",
-                description: "QR code has been downloaded successfully.",
-              });
-            }
-          });
-          
-          URL.revokeObjectURL(url);
-        };
-        
-        img.src = url;
-      }
-    } catch (error) {
-      console.error('Download error:', error);
-      toast({
-        title: "Download Failed",
-        description: "Failed to download QR code.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleCopyUrl = () => {
-    navigator.clipboard.writeText(activationUrl);
-    toast({
-      title: "Copied",
-      description: "Activation URL copied to clipboard.",
-    });
-  };
-
-  const handleCopyActivationCode = () => {
-    if (activationCode) {
-      navigator.clipboard.writeText(activationCode);
-      toast({
-        title: "Copied",
-        description: "Activation code copied to clipboard.",
-      });
-    }
-  };
-
-  const handleOpenQRUrl = () => {
-    window.open(activationUrl, '_blank');
-  };
-
-  const getStatusBadge = (status: string) => {
-    const statusColors: Record<string, string> = {
-      pending: "bg-yellow-100 text-yellow-800",
-      active: "bg-green-100 text-green-800",
-      revoked: "bg-red-100 text-red-800",
-    };
-
-    return (
-      <Badge className={statusColors[status] || "bg-gray-100 text-gray-800"}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </Badge>
-    );
-  };
-
-  // Determine what to display in QR code - prefer activation code if available
-  const qrCodeData = activationCode || activationUrl;
-
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <QrCode className="h-5 w-5" />
-            eSIM Installation QR Code
-          </DialogTitle>
-        </DialogHeader>
-        
-        <div className="space-y-4">
-          {/* QR Code Display */}
-          <div id="customer-qr-code" className="flex justify-center p-6 bg-white rounded-lg border-2 border-dashed border-gray-200">
-            <QRCodeSVG 
-              value={qrCodeData} 
-              size={250}
-              level="M"
-              includeMargin
-            />
-          </div>
-
-          {/* Plan Info */}
-          <div className="space-y-3 bg-gray-50 p-4 rounded-lg">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-gray-600">Status:</span>
-              {getStatusBadge(status)}
-            </div>
-            
-            {planName && (
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-600">Plan:</span>
-                <span className="text-sm font-medium">{planName}</span>
-              </div>
-            )}
-
-            {dataAmount && (
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-600">Data:</span>
-                <span className="text-sm font-medium">{dataAmount}</span>
-              </div>
-            )}
-
-            {iccid && (
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-600">ICCID:</span>
-                <span className="text-sm font-mono text-xs">{iccid}</span>
-              </div>
-            )}
-
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-gray-600">Order ID:</span>
-              <span className="text-sm font-mono">{orderId.slice(0, 8)}...</span>
-            </div>
-          </div>
-
-          {/* Activation Code */}
-          {activationCode && (
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-600">Activation Code:</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCopyActivationCode}
-                  className="h-6 px-2"
-                >
-                  <Copy className="h-3 w-3" />
-                </Button>
-              </div>
-              <div className="p-2 bg-gray-50 rounded text-xs font-mono break-all">
-                {activationCode}
-              </div>
-            </div>
-          )}
-
-          {/* QR Code URL */}
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-gray-600">QR Code URL:</span>
-              <div className="flex gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCopyUrl}
-                  className="h-6 px-2"
-                >
-                  <Copy className="h-3 w-3" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleOpenQRUrl}
-                  className="h-6 px-2"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-            <div className="p-2 bg-gray-50 rounded text-xs font-mono break-all">
-              {activationUrl}
-            </div>
-          </div>
-
-          {/* Instructions */}
-          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-xs text-blue-800">
-              <strong>Instructions:</strong> Scan this QR code with your device's camera or eSIM scanner to install your eSIM. The QR code contains your activation code for automatic setup.
-            </p>
-          </div>
-
-          {/* Actions */}
-          <div className="flex gap-2 pt-2">
-            <Button onClick={handleDownload} className="flex-1">
-              <Download className="h-4 w-4 mr-2" />
-              Download QR Code
-            </Button>
-            <Button variant="outline" onClick={onClose} className="flex-1">
-              Close
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+    <ESIMActivationModal
+      isOpen={isOpen}
+      onClose={onClose}
+      activationUrl={activationUrl}
+      orderId={orderId}
+      planName={planName}
+      dataAmount={dataAmount}
+      status={status}
+      activationCode={activationCode}
+      iccid={iccid}
+      coverage="Algeria"
+    />
   );
 };
 

@@ -101,6 +101,33 @@ export type Database = {
           },
         ]
       }
+      esim_packages: {
+        Row: {
+          created_at: string
+          esim_access_package_id: string
+          id: string
+          plan_id: string
+          plan_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          esim_access_package_id: string
+          id?: string
+          plan_id: string
+          plan_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          esim_access_package_id?: string
+          id?: string
+          plan_id?: string
+          plan_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       inventory: {
         Row: {
           available: number

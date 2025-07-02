@@ -34,13 +34,12 @@ export const useCreateOrderWithESIM = () => {
 
       console.log('Creating order with eSIM integration:', orderData);
 
-      // Check if this plan has eSIM Access integration
-      const { data: packageData, error: packageError } = await supabase
-        .from('esim_packages')
-        .select('*')
-        .eq('plan_id', orderData.plan_id)
-        .single();
+      // Check if this plan has eSIM Access integration using edge function
+      const { data: packageResponse, error: packageError } = await supabase.functions.invoke('get-esim-package', {
+        body: { plan_id: orderData.plan_id }
+      });
 
+      const packageData = packageResponse?.data;
       let esimOrderData = null;
 
       if (packageData && !packageError) {
