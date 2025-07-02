@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { ESIMPlan } from "@/pages/Purchase";
 import { Form } from "@/components/ui/form";
@@ -5,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
-import { useOrders } from "@/hooks/useOrders";
+import { useCreateOrderWithESIM } from "@/hooks/orders/useCreateOrderWithESIM";
 import { useAuth } from "@/contexts/auth";
 import { useNavigate } from "react-router-dom";
 import CartOverview from "./CartOverview";
@@ -31,7 +32,7 @@ const PurchaseFormWithOrders = ({
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { createOrderAsync, isCreatingOrder } = useOrders();
+  const { createOrderAsync, isCreatingOrder } = useCreateOrderWithESIM();
   
   const form = useForm<z.infer<typeof checkoutFormSchema>>({
     resolver: zodResolver(checkoutFormSchema),
@@ -56,7 +57,7 @@ const PurchaseFormWithOrders = ({
       onProceedToPayment();
     } else if (currentStep === "payment") {
       try {
-        // Create order in database
+        // Create order with eSIM integration
         const order = await createOrderAsync({
           plan_id: plan.id,
           plan_name: plan.name,
@@ -66,15 +67,15 @@ const PurchaseFormWithOrders = ({
           currency: plan.currency
         });
 
-        console.log('Order created:', order);
+        console.log('Order with eSIM created:', order);
 
         toast({
           title: "Order Created Successfully!",
-          description: "Your order has been placed. Proceeding to payment...",
+          description: "Your eSIM order has been placed and is being provisioned.",
         });
 
         // In a real implementation, you would integrate with payment processing here
-        // For now, we'll simulate a successful payment
+        // For now, simulate successful payment and proceed to confirmation
         setTimeout(() => {
           toast({
             title: "Payment Successful!",
@@ -123,7 +124,7 @@ const PurchaseFormWithOrders = ({
               disabled={isCreatingOrder}
             >
               {isCreatingOrder 
-                ? "Creating Order..." 
+                ? "Creating eSIM Order..." 
                 : currentStep === "checkout" 
                   ? "Continue" 
                   : "Complete Purchase"
