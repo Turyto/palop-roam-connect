@@ -37,6 +37,17 @@ export const useESIMAccess = () => {
     }
   };
 
+  const testConnectionMutation = useMutation({
+    mutationFn: () => callESIMAccessAPI('test-connection'),
+    onError: (error: any) => {
+      toast({
+        title: "Connection test failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
   const getPackagesMutation = useMutation({
     mutationFn: () => callESIMAccessAPI('get-packages'),
     onError: (error: any) => {
@@ -82,6 +93,10 @@ export const useESIMAccess = () => {
   });
 
   return {
+    testConnection: testConnectionMutation.mutate,
+    testConnectionAsync: testConnectionMutation.mutateAsync,
+    isTestingConnection: testConnectionMutation.isPending,
+    
     getPackages: getPackagesMutation.mutate,
     getPackagesAsync: getPackagesMutation.mutateAsync,
     isGettingPackages: getPackagesMutation.isPending,
