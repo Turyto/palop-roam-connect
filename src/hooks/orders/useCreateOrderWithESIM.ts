@@ -59,6 +59,16 @@ export const useCreateOrderWithESIM = () => {
             esimOrderData = esimResponse.data;
             console.log('eSIM order created successfully:', esimOrderData);
             console.log('Full eSIM response data:', JSON.stringify(esimOrderData, null, 2));
+            
+            // Log all URL fields to understand the structure
+            console.log('🔍 Available URL fields in eSIM response after order creation:');
+            console.log('- shortUrl:', esimOrderData.shortUrl);
+            console.log('- downloadUrl:', esimOrderData.downloadUrl);
+            console.log('- url:', esimOrderData.url);
+            console.log('- qrCodeUrl:', esimOrderData.qrCodeUrl);
+            console.log('- activationUrl:', esimOrderData.activationUrl);
+            console.log('- activationCode (LPA):', esimOrderData.activationCode);
+            console.log('- iccid:', esimOrderData.iccid);
           } else {
             console.error('eSIM order creation failed:', esimResponse);
             esimError = esimResponse.error || 'Failed to create eSIM order';
@@ -125,9 +135,9 @@ export const useCreateOrderWithESIM = () => {
 
       // If we have eSIM data, create the activation record with proper URL handling
       if (esimOrderData && packageData) {
-        console.log('Creating eSIM activation with proper URL handling:', esimOrderData);
+        console.log('Creating eSIM activation with enhanced URL mapping:', esimOrderData);
         
-        // Extract the correct web URL - check all possible URL fields from eSIM Access
+        // Priority order: shortUrl > downloadUrl > url > qrCodeUrl > activationUrl
         const webActivationUrl = esimOrderData.shortUrl || 
                                  esimOrderData.downloadUrl || 
                                  esimOrderData.url ||
@@ -137,16 +147,10 @@ export const useCreateOrderWithESIM = () => {
         // The activationCode contains the LPA string for QR code scanning
         const lpaActivationCode = esimOrderData.activationCode;
         
-        console.log('Available URL fields in eSIM response:', {
-          shortUrl: esimOrderData.shortUrl,
-          downloadUrl: esimOrderData.downloadUrl,
-          url: esimOrderData.url,
-          qrCodeUrl: esimOrderData.qrCodeUrl,
-          activationUrl: esimOrderData.activationUrl,
-          activationCode: esimOrderData.activationCode
-        });
-        console.log('Selected Web URL:', webActivationUrl);
-        console.log('LPA Code for QR:', lpaActivationCode);
+        console.log('🎯 Selected URLs and Codes:');
+        console.log('- Web URL (for browser):', webActivationUrl);
+        console.log('- LPA Code (for QR):', lpaActivationCode);
+        console.log('- ICCID:', esimOrderData.iccid);
         
         const { error: activationError } = await supabase
           .from('esim_activations')
@@ -165,12 +169,13 @@ export const useCreateOrderWithESIM = () => {
               api_response: esimOrderData,
               selected_web_url: webActivationUrl,
               lpa_code: lpaActivationCode,
-              all_urls: {
+              url_selection_priority: {
                 shortUrl: esimOrderData.shortUrl,
                 downloadUrl: esimOrderData.downloadUrl,
                 url: esimOrderData.url,
                 qrCodeUrl: esimOrderData.qrCodeUrl,
-                activationUrl: esimOrderData.activationUrl
+                activationUrl: esimOrderData.activationUrl,
+                selected: webActivationUrl
               }
             }
           });
@@ -178,6 +183,8 @@ export const useCreateOrderWithESIM = () => {
         if (activationError) {
           console.error('Error creating eSIM activation:', activationError);
           // Don't throw here - order was created successfully
+        } else {
+          console.log('✅ eSIM activation record created successfully');
         }
 
         // Create QR code with LPA activation code (for device scanning)
@@ -195,6 +202,8 @@ export const useCreateOrderWithESIM = () => {
         if (qrError) {
           console.error('Error creating QR code:', qrError);
           // Don't throw here - order was created successfully
+        } else {
+          console.log('✅ QR code record created successfully');
         }
       } else if (packageData && esimError) {
         // Create a failed eSIM activation record for debugging

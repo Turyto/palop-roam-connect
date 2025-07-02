@@ -29,25 +29,35 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { authorization: req.headers.get('authorization')! },
-        },
-      }
-    );
-
-    // Get the current user
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    if (userError || !user) {
-      console.error('Authentication error:', userError);
+    // Extract JWT from Authorization header for user verification
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.error('❌ No valid authorization header provided');
       return new Response(
-        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        JSON.stringify({ success: false, error: 'Unauthorized - No valid token provided' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Create Supabase client with service role for internal operations
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    );
+
+    // Verify the JWT token manually
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
+    
+    if (userError || !user) {
+      console.error('❌ JWT verification failed:', userError);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized - Invalid token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('✅ User authenticated successfully:', user.email);
 
     const { action, ...body } = await req.json();
     const secretKey = Deno.env.get('ESIM_ACCESS_SECRET_KEY');
@@ -56,7 +66,7 @@ serve(async (req: Request): Promise<Response> => {
     console.log('Action requested:', action);
     console.log('Request body:', JSON.stringify(body, null, 2));
     console.log('Secret key configured:', !!secretKey);
-    console.log('User authenticated:', !!user);
+    console.log('User authenticated:', user.email);
 
     if (!secretKey) {
       console.error('❌ eSIM Access secret key not configured');
@@ -128,6 +138,7 @@ serve(async (req: Request): Promise<Response> => {
 async function getPackages(headers: Record<string, string>): Promise<ESIMAccessResponse> {
   try {
     console.log('📦 Fetching packages from eSIM Access API...');
+    console.log('📦 API URL:', `${ESIM_ACCESS_BASE_URL}/packages`);
     
     const response = await fetch(`${ESIM_ACCESS_BASE_URL}/packages`, {
       method: 'GET',
@@ -135,6 +146,7 @@ async function getPackages(headers: Record<string, string>): Promise<ESIMAccessR
     });
 
     console.log('📦 eSIM Access packages API response status:', response.status);
+    console.log('📦 Response headers:', Object.fromEntries(response.headers.entries()));
 
     const responseText = await response.text();
     console.log('📦 Raw packages response:', responseText);
@@ -181,6 +193,7 @@ async function createOrder(orderData: ESIMAccessOrder, headers: Record<string, s
     };
 
     console.log('🔄 Creating eSIM order with payload:', JSON.stringify(payload, null, 2));
+    console.log('🔄 API URL:', `${ESIM_ACCESS_BASE_URL}/orders`);
 
     const response = await fetch(`${ESIM_ACCESS_BASE_URL}/orders`, {
       method: 'POST',
@@ -189,6 +202,7 @@ async function createOrder(orderData: ESIMAccessOrder, headers: Record<string, s
     });
 
     console.log('🔄 eSIM Access create order API response status:', response.status);
+    console.log('🔄 Response headers:', Object.fromEntries(response.headers.entries()));
 
     const responseText = await response.text();
     console.log('🔄 Raw create order response:', responseText);
@@ -214,12 +228,33 @@ async function createOrder(orderData: ESIMAccessOrder, headers: Record<string, s
 
     console.log('✅ eSIM order created successfully:', JSON.stringify(data, null, 2));
     
+    // Log all available URL fields for debugging
+    console.log('🔍 Available URL fields in create order response:');
+    console.log('- shortUrl:', data.shortUrl);
+    console.log('- downloadUrl:', data.downloadUrl);
+    console.log('- url:', data.url);
+    console.log('- qrCodeUrl:', data.qrCodeUrl);
+    console.log('- activationUrl:', data.activationUrl);
+    console.log('- activationCode:', data.activationCode);
+    console.log('- iccid:', data.iccid);
+    
     // Get the order details immediately to fetch the QR code and activation data
     if (data.id || data.orderId) {
       console.log('🔍 Fetching detailed order information for ID:', data.id || data.orderId);
       const orderDetails = await getOrder(data.id || data.orderId, headers);
       if (orderDetails.success) {
         console.log('✅ Order details retrieved:', JSON.stringify(orderDetails.data, null, 2));
+        
+        // Log all available URL fields from detailed response
+        console.log('🔍 Available URL fields in detailed order response:');
+        console.log('- shortUrl:', orderDetails.data?.shortUrl);
+        console.log('- downloadUrl:', orderDetails.data?.downloadUrl);
+        console.log('- url:', orderDetails.data?.url);
+        console.log('- qrCodeUrl:', orderDetails.data?.qrCodeUrl);
+        console.log('- activationUrl:', orderDetails.data?.activationUrl);
+        console.log('- activationCode:', orderDetails.data?.activationCode);
+        console.log('- iccid:', orderDetails.data?.iccid);
+        
         // Merge the creation response with the detailed order information
         const mergedData = {
           ...data,
@@ -251,6 +286,7 @@ async function createOrder(orderData: ESIMAccessOrder, headers: Record<string, s
 async function getOrder(orderId: string, headers: Record<string, string>): Promise<ESIMAccessResponse> {
   try {
     console.log('🔍 Fetching order details for ID:', orderId);
+    console.log('🔍 API URL:', `${ESIM_ACCESS_BASE_URL}/orders/${orderId}`);
     
     const response = await fetch(`${ESIM_ACCESS_BASE_URL}/orders/${orderId}`, {
       method: 'GET',
@@ -258,6 +294,7 @@ async function getOrder(orderId: string, headers: Record<string, string>): Promi
     });
 
     console.log('🔍 eSIM Access get order API response status:', response.status);
+    console.log('🔍 Response headers:', Object.fromEntries(response.headers.entries()));
 
     const responseText = await response.text();
     console.log('🔍 Raw get order response:', responseText);
@@ -295,6 +332,7 @@ async function getOrder(orderId: string, headers: Record<string, string>): Promi
 async function downloadESIM(orderId: string, headers: Record<string, string>): Promise<ESIMAccessResponse> {
   try {
     console.log('⬇️ Downloading eSIM for order ID:', orderId);
+    console.log('⬇️ API URL:', `${ESIM_ACCESS_BASE_URL}/orders/${orderId}/download`);
     
     const response = await fetch(`${ESIM_ACCESS_BASE_URL}/orders/${orderId}/download`, {
       method: 'GET',
@@ -302,6 +340,7 @@ async function downloadESIM(orderId: string, headers: Record<string, string>): P
     });
 
     console.log('⬇️ eSIM Access download API response status:', response.status);
+    console.log('⬇️ Response headers:', Object.fromEntries(response.headers.entries()));
 
     const responseText = await response.text();
     console.log('⬇️ Raw download response:', responseText);

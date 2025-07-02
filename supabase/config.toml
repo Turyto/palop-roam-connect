@@ -22,7 +22,7 @@ double_confirm_changes = true
 enable_confirmations = false
 
 [functions.esim-access]
-verify_jwt = true
+verify_jwt = false
 
 [functions.check-esim-status]
 verify_jwt = false
