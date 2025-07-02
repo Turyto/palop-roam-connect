@@ -53,6 +53,36 @@ const ESIMPlans = ({ onSelectPlan }: ESIMPlansProps) => {
         "Priority support",
         "Business-grade reliability"
       ]
+    },
+    {
+      id: "palop-neighbours1",
+      name: "Palop Neighbours1",
+      data: "100 MB",
+      days: 7,  
+      price: 2.30,
+      currency: "EUR",
+      features: [
+        "100 MB of Internet",
+        "Valid for 7 days",
+        "Algeria coverage",
+        "Real eSIM provisioning",
+        "Instant QR delivery"
+      ]
+    },
+    {
+      id: "palop-neighbours2", 
+      name: "Palop Neighbours2",
+      data: "1 GB",
+      days: 7,
+      price: 7.70,
+      currency: "EUR",
+      features: [
+        "1 GB of Internet", 
+        "Valid for 7 days",
+        "25+ African areas",
+        "Multi-area coverage",
+        "Data reloadable"
+      ]
     }
   ];
 
@@ -64,6 +94,10 @@ const ESIMPlans = ({ onSelectPlan }: ESIMPlansProps) => {
         return <Users className="h-12 w-12" />;
       case "plus":
         return <Briefcase className="h-12 w-12" />;
+      case "palop-neighbours1":
+        return <Globe className="h-12 w-12" />;
+      case "palop-neighbours2":
+        return <Building className="h-12 w-12" />;
       default:
         return <Smartphone className="h-12 w-12" />;
     }
@@ -77,6 +111,10 @@ const ESIMPlans = ({ onSelectPlan }: ESIMPlansProps) => {
         return "bg-palop-green";
       case "plus":
         return "bg-palop-yellow";
+      case "palop-neighbours1":
+        return "bg-orange-500";
+      case "palop-neighbours2":
+        return "bg-purple-500";
       default:
         return "bg-palop-blue";
     }
@@ -86,12 +124,18 @@ const ESIMPlans = ({ onSelectPlan }: ESIMPlansProps) => {
     <div className="max-w-6xl mx-auto">
       <h2 className="text-2xl font-bold mb-6 text-center">Choose Your eSIM Plan</h2>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {pallopPlans.map((plan) => (
           <div key={plan.id} className={`border rounded-lg overflow-hidden shadow-md ${plan.id === 'core' ? 'border-2 border-palop-green' : ''} relative`}>
             {plan.id === 'core' && (
               <div className="absolute -top-3 right-4 bg-palop-green text-white px-3 py-1 text-xs font-bold rounded-full">
                 Most Popular
+              </div>
+            )}
+            
+            {(plan.id === 'palop-neighbours1' || plan.id === 'palop-neighbours2') && (
+              <div className="absolute -top-3 left-4 bg-green-600 text-white px-3 py-1 text-xs font-bold rounded-full">
+                Real eSIM
               </div>
             )}
             
@@ -142,8 +186,8 @@ const ESIMPlans = ({ onSelectPlan }: ESIMPlansProps) => {
         <div className="bg-gray-50 rounded-lg p-4 max-w-3xl mx-auto">
           <h3 className="font-semibold mb-2">Coverage Information</h3>
           <p className="text-gray-600 text-sm">
-            All plans include coverage across PALOP countries (Angola, Cape Verde, Guinea-Bissau, 
-            Mozambique, São Tomé and Príncipe) with expanded roaming options based on your tier.
+            All plans include coverage across PALOP countries and neighboring regions. 
+            Real eSIM plans provide actual connectivity through our eSIM Access partnership.
           </p>
         </div>
       </div>

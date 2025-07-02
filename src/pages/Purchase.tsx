@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Check } from "lucide-react";
@@ -27,7 +28,7 @@ const Purchase = () => {
   const [currentStep, setCurrentStep] = useState<PurchaseStep>(planParam ? "checkout" : "plans");
   const [selectedPlan, setSelectedPlan] = useState<ESIMPlan | null>(null);
   
-  // Pre-defined plans
+  // Pre-defined plans including new real eSIM Access plans
   const availablePlans: ESIMPlan[] = [
     {
       id: "lite",
@@ -107,6 +108,38 @@ const Purchase = () => {
         "Regional partnerships",
         "Cultural exchange benefits"
       ]
+    },
+    {
+      id: "palop-neighbours1",
+      name: "Palop Neighbours1",
+      data: "100 MB",
+      days: 7,  
+      price: 2.30,
+      currency: "EUR",
+      features: [
+        "100 MB of Internet",
+        "Valid for 7 days",
+        "Algeria coverage",
+        "Real eSIM provisioning",
+        "Instant QR delivery",
+        "eSIM Access powered"
+      ]
+    },
+    {
+      id: "palop-neighbours2", 
+      name: "Palop Neighbours2",
+      data: "1 GB",
+      days: 7,
+      price: 7.70,
+      currency: "EUR",
+      features: [
+        "1 GB of Internet", 
+        "Valid for 7 days",
+        "25+ African areas",
+        "Multi-area coverage",
+        "Data reloadable",
+        "eSIM Access powered"
+      ]
     }
   ];
 
@@ -167,6 +200,13 @@ const Purchase = () => {
                   <div className="bg-white rounded-lg shadow-md p-6">
                     <div className="text-center mb-6">
                       <h2 className="text-2xl font-bold text-palop-green mb-2">{selectedPlan.name} Plan</h2>
+                      {(selectedPlan.id === 'palop-neighbours1' || selectedPlan.id === 'palop-neighbours2') && (
+                        <div className="mb-2">
+                          <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                            Real eSIM Access • Live Provisioning
+                          </span>
+                        </div>
+                      )}
                       <div className="text-3xl font-bold text-gray-800">€{selectedPlan.price.toFixed(2)}</div>
                       <div className="text-gray-600">{selectedPlan.data} for {selectedPlan.days} days</div>
                     </div>

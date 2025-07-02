@@ -61,6 +61,30 @@ const plans = [
     icon: <Globe className="h-8 w-8" />,
     features: ["CPLP countries", "Cultural connectivity", "Exchange support"],
     color: "from-gray-500/20 to-gray-500/10"
+  },
+  {
+    id: "palop-neighbours1",
+    title: "Palop Neighbours1",
+    description: "Algeria coverage",
+    data: "100 MB",
+    duration: "7 days",
+    price: "2.30",
+    icon: <Globe className="h-8 w-8" />,
+    features: ["Real eSIM provisioning", "Algeria coverage", "Instant delivery"],
+    color: "from-orange-500/20 to-orange-500/10",
+    realEsim: true
+  },
+  {
+    id: "palop-neighbours2",
+    title: "Palop Neighbours2", 
+    description: "25+ African areas",
+    data: "1 GB",
+    duration: "7 days",
+    price: "7.70",
+    icon: <Building className="h-8 w-8" />,
+    features: ["Multi-area coverage", "Data reloadable", "eSIM Access powered"],
+    color: "from-purple-500/20 to-purple-500/10",
+    realEsim: true
   }
 ];
 
@@ -90,6 +114,12 @@ const PlanCards = () => {
                     {plan.popular && (
                       <div className="absolute -top-3 right-4 bg-palop-green text-white px-3 py-1 text-xs font-bold rounded-full z-10">
                         Most Popular
+                      </div>
+                    )}
+                    
+                    {plan.realEsim && (
+                      <div className="absolute -top-3 left-4 bg-green-600 text-white px-3 py-1 text-xs font-bold rounded-full z-10">
+                        Real eSIM
                       </div>
                     )}
                     
