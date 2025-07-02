@@ -92,6 +92,18 @@ const ESIMActivationModal = ({
     });
   };
 
+  const handleOpenWebUrl = () => {
+    // If activationUrl looks like a web URL, open it
+    if (activationUrl && (activationUrl.startsWith('http') || activationUrl.startsWith('https'))) {
+      window.open(activationUrl, '_blank');
+    } else {
+      toast({
+        title: "No Web URL Available",
+        description: "Use the QR code or activation code to install the eSIM.",
+      });
+    }
+  };
+
   const getStatusInfo = (status: string) => {
     switch (status) {
       case 'active':
@@ -116,8 +128,16 @@ const ESIMActivationModal = ({
   };
 
   const statusInfo = getStatusInfo(status);
-  // Use the real activation code for QR generation, fallback to activation URL
+  
+  // For QR code, prefer activation code (LPA string), fallback to activation URL
   const qrCodeData = activationCode || activationUrl;
+  
+  // Check if we have a web URL for browser access
+  const hasWebUrl = activationUrl && (activationUrl.startsWith('http') || activationUrl.startsWith('https'));
+  
+  console.log('ESIMActivationModal - QR Code Data:', qrCodeData);
+  console.log('ESIMActivationModal - Web URL:', activationUrl);
+  console.log('ESIMActivationModal - Has Web URL:', hasWebUrl);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -202,7 +222,7 @@ const ESIMActivationModal = ({
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
               <div className="flex justify-between items-center mb-2">
                 <p className="text-sm font-medium text-gray-600">
-                  {activationCode ? 'Activation Code' : 'Activation Details'}
+                  {activationCode ? 'LPA Activation Code' : 'Activation Details'}
                 </p>
                 <Button
                   variant="ghost"
@@ -217,6 +237,29 @@ const ESIMActivationModal = ({
               <div className="bg-gray-50 p-3 rounded-lg border">
                 <p className="font-mono text-sm text-gray-900 break-all">
                   {activationCode || activationUrl}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Web Access URL (if available) */}
+          {hasWebUrl && (
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="flex justify-between items-center mb-2">
+                <p className="text-sm font-medium text-gray-600">Web Access URL</p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleOpenWebUrl}
+                  className="h-8 px-3 text-palop-green hover:bg-palop-green/10"
+                >
+                  <ExternalLink className="h-4 w-4 mr-1" />
+                  Open
+                </Button>
+              </div>
+              <div className="bg-gray-50 p-3 rounded-lg border">
+                <p className="text-sm text-gray-900 break-all">
+                  {activationUrl}
                 </p>
               </div>
             </div>

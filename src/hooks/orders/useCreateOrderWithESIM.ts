@@ -122,12 +122,19 @@ export const useCreateOrderWithESIM = () => {
         throw new Error(`Order item creation failed: ${itemError.message}`);
       }
 
-      // If we have eSIM data, create the activation record with real data
+      // If we have eSIM data, create the activation record with proper URL handling
       if (esimOrderData && packageData) {
-        console.log('Creating eSIM activation with real data:', esimOrderData);
+        console.log('Creating eSIM activation with proper URL handling:', esimOrderData);
         
-        // Use the real activation code from eSIM Access as the activation URL
-        const realActivationUrl = esimOrderData.activationCode || esimOrderData.downloadUrl || esimOrderData.qrCodeUrl;
+        // Use the proper web URL for activation_url (for browser access)
+        // This should be downloadUrl, shortUrl, or similar web-accessible URL
+        const webActivationUrl = esimOrderData.downloadUrl || esimOrderData.shortUrl || esimOrderData.url;
+        
+        // The activationCode contains the LPA string for QR code scanning
+        const lpaActivationCode = esimOrderData.activationCode;
+        
+        console.log('Web URL:', webActivationUrl);
+        console.log('LPA Code:', lpaActivationCode);
         
         const { error: activationError } = await supabase
           .from('esim_activations')
@@ -136,14 +143,16 @@ export const useCreateOrderWithESIM = () => {
             user_id: user.id,
             status: 'pending',
             provisioning_status: 'completed',
-            activation_url: realActivationUrl,
+            activation_url: webActivationUrl, // Web URL for browser access
             iccid: esimOrderData.iccid,
-            activation_code: esimOrderData.activationCode,
-            qr_code_data: esimOrderData.qrCodeUrl,
+            activation_code: lpaActivationCode, // LPA string for QR code
+            qr_code_data: lpaActivationCode, // QR code should contain LPA string
             provisioning_log: {
               esim_order_id: esimOrderData.id || esimOrderData.orderId,
               created_at: new Date().toISOString(),
-              api_response: esimOrderData
+              api_response: esimOrderData,
+              web_url: webActivationUrl,
+              lpa_code: lpaActivationCode
             }
           });
 
@@ -152,14 +161,14 @@ export const useCreateOrderWithESIM = () => {
           // Don't throw here - order was created successfully
         }
 
-        // Create QR code with real activation code as the URL
+        // Create QR code with LPA activation code (for device scanning)
         const { error: qrError } = await supabase
           .from('qr_codes')
           .insert({
             order_id: orderResult.id,
             user_id: user.id,
             esim_id: null, // Will be linked later
-            activation_url: realActivationUrl,
+            activation_url: lpaActivationCode, // QR code contains LPA string
             qr_image_url: esimOrderData.qrCodeUrl,
             status: 'active'
           });
