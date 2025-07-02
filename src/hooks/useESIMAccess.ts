@@ -1,4 +1,3 @@
-
 import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -39,6 +38,20 @@ export const useESIMAccess = () => {
 
   const testConnectionMutation = useMutation({
     mutationFn: () => callESIMAccessAPI('test-connection'),
+    onSuccess: (response) => {
+      if (response.success) {
+        toast({
+          title: "Connection test successful",
+          description: "eSIM Access API is responding correctly",
+        });
+      } else {
+        toast({
+          title: "Connection test failed",
+          description: response.error || "API connection failed",
+          variant: "destructive",
+        });
+      }
+    },
     onError: (error: any) => {
       toast({
         title: "Connection test failed",
