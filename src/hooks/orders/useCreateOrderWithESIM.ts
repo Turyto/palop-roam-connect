@@ -41,12 +41,13 @@ export const useCreateOrderWithESIM = () => {
 
       const packageData = packageResponse?.data;
       let esimOrderData = null;
+      let esimError = null;
 
       if (packageData && !packageError) {
         console.log('Found eSIM package mapping:', packageData);
         
         try {
-          // Create eSIM order first
+          // Try to create eSIM order
           const esimResponse = await createESIMOrder({
             packageId: packageData.esim_access_package_id,
             customerEmail: user.email || '',
@@ -59,15 +60,15 @@ export const useCreateOrderWithESIM = () => {
             console.log('eSIM order created successfully:', esimOrderData);
           } else {
             console.error('eSIM order creation failed:', esimResponse);
-            throw new Error('Failed to create eSIM order');
+            esimError = esimResponse.error || 'Failed to create eSIM order';
           }
-        } catch (esimError) {
-          console.error('eSIM order creation error:', esimError);
-          throw new Error('eSIM provisioning failed');
+        } catch (error) {
+          console.error('eSIM order creation error:', error);
+          esimError = error.message || 'eSIM provisioning failed';
         }
       }
 
-      // Create the local order
+      // Create the local order regardless of eSIM status
       const order: OrderInsertWithESIM = {
         user_id: user.id,
         plan_id: orderData.plan_id,
@@ -80,7 +81,7 @@ export const useCreateOrderWithESIM = () => {
         payment_status: 'pending',
         ...(packageData && {
           esim_package_id: packageData.esim_access_package_id,
-          esim_status: 'pending',
+          esim_status: esimOrderData ? 'provisioned' : 'failed',
           esim_order_id: esimOrderData?.id || esimOrderData?.orderId
         })
       };
@@ -158,19 +159,58 @@ export const useCreateOrderWithESIM = () => {
         if (qrError) {
           console.error('Error creating QR code:', qrError);
         }
+      } else if (packageData && esimError) {
+        // Create a failed eSIM activation record for debugging
+        const { error: activationError } = await supabase
+          .from('esim_activations')
+          .insert({
+            order_id: orderResult.id,
+            user_id: user.id,
+            status: 'pending',
+            provisioning_status: 'failed',
+            provisioning_log: {
+              error: esimError,
+              failed_at: new Date().toISOString(),
+              package_id: packageData.esim_access_package_id
+            }
+          });
+
+        if (activationError) {
+          console.error('Error creating failed eSIM activation record:', activationError);
+        }
       }
 
       console.log('Order creation completed successfully');
-      return orderResult;
+      
+      // Return both the order and any eSIM error for user feedback
+      return { 
+        order: orderResult, 
+        esimError: esimError,
+        esimSuccess: !!esimOrderData
+      };
     },
-    onSuccess: (order) => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
       queryClient.invalidateQueries({ queryKey: ['customer-qr-codes'] });
-      toast({
-        title: "Order Created",
-        description: `Order ${order.id} has been created with real eSIM provisioning.`,
-      });
+      
+      if (result.esimSuccess) {
+        toast({
+          title: "Order Created Successfully!",
+          description: `Order ${result.order.id} has been created with real eSIM provisioning.`,
+        });
+      } else if (result.esimError) {
+        toast({
+          title: "Order Created with eSIM Warning",
+          description: `Order ${result.order.id} was created, but eSIM provisioning failed: ${result.esimError}`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Order Created",
+          description: `Order ${result.order.id} has been created successfully.`,
+        });
+      }
     },
     onError: (error) => {
       console.error('Order creation error:', error);

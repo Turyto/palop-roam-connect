@@ -44,7 +44,7 @@ serve(async (req: Request): Promise<Response> => {
     if (userError || !user) {
       console.error('Authentication error:', userError);
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ success: false, error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -52,10 +52,12 @@ serve(async (req: Request): Promise<Response> => {
     const { action, ...body } = await req.json();
     const secretKey = Deno.env.get('ESIM_ACCESS_SECRET_KEY');
 
+    console.log('eSIM Access request:', { action, body });
+
     if (!secretKey) {
       console.error('eSIM Access secret key not configured');
       return new Response(
-        JSON.stringify({ error: 'API configuration missing' }),
+        JSON.stringify({ success: false, error: 'API configuration missing - please check your ESIM_ACCESS_SECRET_KEY' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -101,7 +103,7 @@ serve(async (req: Request): Promise<Response> => {
   } catch (error) {
     console.error('eSIM Access function error:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ success: false, error: `Internal server error: ${error.message}` }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
@@ -109,22 +111,26 @@ serve(async (req: Request): Promise<Response> => {
 
 async function getPackages(headers: Record<string, string>): Promise<ESIMAccessResponse> {
   try {
+    console.log('Fetching packages from eSIM Access API...');
     const response = await fetch(`${ESIM_ACCESS_BASE_URL}/packages`, {
       method: 'GET',
       headers,
     });
 
+    console.log('eSIM Access API packages response status:', response.status);
+
     if (!response.ok) {
       const errorData = await response.text();
       console.error('Get packages error:', errorData);
-      return { success: false, error: `API error: ${response.status}` };
+      return { success: false, error: `API error: ${response.status} - ${errorData}` };
     }
 
     const data = await response.json();
+    console.log('Packages retrieved successfully:', data);
     return { success: true, data };
   } catch (error) {
     console.error('Get packages fetch error:', error);
-    return { success: false, error: 'Failed to fetch packages' };
+    return { success: false, error: `Failed to fetch packages: ${error.message}` };
   }
 }
 
@@ -147,9 +153,11 @@ async function createOrder(orderData: ESIMAccessOrder, headers: Record<string, s
       body: JSON.stringify(payload),
     });
 
+    console.log('eSIM Access API create order response status:', response.status);
+
     if (!response.ok) {
       const errorData = await response.text();
-      console.error('Create order error:', errorData);
+      console.error('Create order error response:', errorData);
       return { success: false, error: `API error: ${response.status} - ${errorData}` };
     }
 
@@ -177,7 +185,7 @@ async function createOrder(orderData: ESIMAccessOrder, headers: Record<string, s
     return { success: true, data };
   } catch (error) {
     console.error('Create order fetch error:', error);
-    return { success: false, error: 'Failed to create order' };
+    return { success: false, error: `Failed to create order: ${error.message}` };
   }
 }
 
@@ -190,9 +198,11 @@ async function getOrder(orderId: string, headers: Record<string, string>): Promi
       headers,
     });
 
+    console.log('eSIM Access API get order response status:', response.status);
+
     if (!response.ok) {
       const errorData = await response.text();
-      console.error('Get order error:', errorData);
+      console.error('Get order error response:', errorData);
       return { success: false, error: `API error: ${response.status} - ${errorData}` };
     }
 
@@ -201,20 +211,24 @@ async function getOrder(orderId: string, headers: Record<string, string>): Promi
     return { success: true, data };
   } catch (error) {
     console.error('Get order fetch error:', error);
-    return { success: false, error: 'Failed to get order' };
+    return { success: false, error: `Failed to get order: ${error.message}` };
   }
 }
 
 async function downloadESIM(orderId: string, headers: Record<string, string>): Promise<ESIMAccessResponse> {
   try {
+    console.log('Downloading eSIM for order:', orderId);
+    
     const response = await fetch(`${ESIM_ACCESS_BASE_URL}/orders/${orderId}/download`, {
       method: 'GET',
       headers,
     });
 
+    console.log('eSIM Access API download response status:', response.status);
+
     if (!response.ok) {
       const errorData = await response.text();
-      console.error('Download eSIM error:', errorData);
+      console.error('Download eSIM error response:', errorData);
       return { success: false, error: `API error: ${response.status} - ${errorData}` };
     }
 
@@ -223,6 +237,6 @@ async function downloadESIM(orderId: string, headers: Record<string, string>): P
     return { success: true, data };
   } catch (error) {
     console.error('Download eSIM fetch error:', error);
-    return { success: false, error: 'Failed to download eSIM' };
+    return { success: false, error: `Failed to download eSIM: ${error.message}` };
   }
 }
