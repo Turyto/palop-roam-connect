@@ -135,14 +135,26 @@ serve(async (req: Request): Promise<Response> => {
 async function testConnection(secretKey: string): Promise<ESIMAccessResponse> {
   console.log('🔍 Testing eSIM Access API connection...');
   
-  const testEndpoints = [
-    '/account',
-    '/plans',
+  // Test different possible endpoint variations
+  const testVariations = [
+    // Original documented endpoints
+    { base: 'https://api.esimaccess.com', path: '/v1/plans' },
+    { base: 'https://api.esimaccess.com', path: '/v1/account' },
+    // Without version prefix
+    { base: 'https://api.esimaccess.com', path: '/plans' },
+    { base: 'https://api.esimaccess.com', path: '/account' },
+    // Different version
+    { base: 'https://api.esimaccess.com', path: '/v2/plans' },
+    { base: 'https://api.esimaccess.com', path: '/v2/account' },
+    // Root endpoints
+    { base: 'https://api.esimaccess.com', path: '/' },
+    { base: 'https://api.esimaccess.com', path: '/status' },
+    { base: 'https://api.esimaccess.com', path: '/health' },
   ];
 
-  for (const endpoint of testEndpoints) {
+  for (const variation of testVariations) {
     try {
-      const url = `https://api.esimaccess.com/v1${endpoint}`;
+      const url = `${variation.base}${variation.path}`;
       console.log(`🔧 Testing: ${url}`);
       
       const response = await fetch(url, {
@@ -159,7 +171,7 @@ async function testConnection(secretKey: string): Promise<ESIMAccessResponse> {
       if (response.ok) {
         const responseText = await response.text();
         console.log('✅ API connection successful!');
-        console.log('📦 Response preview:', responseText.substring(0, 200));
+        console.log('📦 Response preview:', responseText.substring(0, 300));
         
         let data;
         try {
@@ -180,6 +192,19 @@ async function testConnection(secretKey: string): Promise<ESIMAccessResponse> {
         const errorText = await response.text();
         console.log(`❌ Failed (${response.status}): ${errorText.substring(0, 200)}`);
         
+        // Try to parse error response to understand the API structure
+        try {
+          const errorData = JSON.parse(errorText);
+          console.log('📝 Error structure:', JSON.stringify(errorData, null, 2));
+          
+          // If we get a structured error, the API is responding - just wrong endpoint
+          if (errorData.errorCode === '404' && errorData.errorMsg) {
+            console.log('💡 API is responding but endpoint not found:', errorData.errorMsg);
+          }
+        } catch (parseError) {
+          console.log('📝 Raw error response:', errorText);
+        }
+        
         if (response.status === 401) {
           return { 
             success: false, 
@@ -194,167 +219,176 @@ async function testConnection(secretKey: string): Promise<ESIMAccessResponse> {
 
   return { 
     success: false, 
-    error: 'Unable to connect to eSIM Access API - please check your API key and network connectivity' 
+    error: 'Unable to find working API endpoints. The API structure may be different than expected. Please check with eSIM Access for the correct endpoint documentation.' 
   };
 }
 
 async function getPackages(secretKey: string): Promise<ESIMAccessResponse> {
   console.log('📦 Getting available eSIM packages...');
   
-  try {
-    const url = 'https://api.esimaccess.com/v1/plans';
-    console.log(`🔧 Calling: ${url}`);
-    
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${secretKey}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-    });
+  // Try different possible endpoints for packages/plans
+  const packageEndpoints = [
+    'https://api.esimaccess.com/v1/plans',
+    'https://api.esimaccess.com/plans',
+    'https://api.esimaccess.com/v1/packages',
+    'https://api.esimaccess.com/packages',
+    'https://api.esimaccess.com/v2/plans',
+    'https://api.esimaccess.com/v2/packages',
+  ];
 
-    console.log(`📊 Status: ${response.status}`);
-
-    if (response.ok) {
-      const responseText = await response.text();
-      console.log('✅ Packages retrieved successfully!');
-      console.log('📦 Response preview:', responseText.substring(0, 500));
+  for (const url of packageEndpoints) {
+    try {
+      console.log(`🔧 Trying: ${url}`);
       
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (parseError) {
-        data = { rawResponse: responseText };
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${secretKey}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      });
+
+      console.log(`📊 Status: ${response.status}`);
+
+      if (response.ok) {
+        const responseText = await response.text();
+        console.log('✅ Packages retrieved successfully!');
+        console.log('📦 Response preview:', responseText.substring(0, 500));
+        
+        let data;
+        try {
+          data = JSON.parse(responseText);
+        } catch (parseError) {
+          data = { rawResponse: responseText };
+        }
+
+        return { success: true, data };
       }
-
-      return { success: true, data };
-    } else {
-      const errorText = await response.text();
-      console.log(`❌ Failed: ${errorText.substring(0, 200)}`);
-      
-      return { 
-        success: false, 
-        error: `Failed to retrieve packages: ${response.status} - ${errorText}` 
-      };
+    } catch (error) {
+      console.log(`💥 Network error for ${url}: ${error.message}`);
     }
-  } catch (error) {
-    console.log(`💥 Network error: ${error.message}`);
-    return { 
-      success: false, 
-      error: `Network error: ${error.message}` 
-    };
   }
+
+  return { 
+    success: false, 
+    error: 'Unable to retrieve packages from any known endpoint' 
+  };
 }
 
 async function createOrder(orderData: ESIMAccessOrder, secretKey: string): Promise<ESIMAccessResponse> {
   console.log('🔄 Creating eSIM order...');
   console.log('📦 Order data:', JSON.stringify(orderData, null, 2));
   
-  try {
-    const url = 'https://api.esimaccess.com/v1/orders';
-    console.log(`🔧 Calling: ${url}`);
-    
-    // Convert our order data to match eSIM Access API format
-    const payload = {
-      planId: orderData.packageId,
-      customerEmail: orderData.customerEmail,
-      ...(orderData.customerName && { customerName: orderData.customerName }),
-      ...(orderData.referenceId && { referenceId: orderData.referenceId })
-    };
-    
-    console.log('🔧 Payload:', JSON.stringify(payload, null, 2));
-    
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${secretKey}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
+  // Try different possible endpoints for orders
+  const orderEndpoints = [
+    'https://api.esimaccess.com/v1/orders',
+    'https://api.esimaccess.com/orders',
+    'https://api.esimaccess.com/v2/orders',
+  ];
 
-    console.log(`📊 Status: ${response.status}`);
-
-    if (response.ok) {
-      const responseText = await response.text();
-      console.log('✅ Order created successfully!');
-      console.log('📦 Response:', responseText);
+  for (const url of orderEndpoints) {
+    try {
+      console.log(`🔧 Trying: ${url}`);
       
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (parseError) {
-        data = { rawResponse: responseText };
-      }
-
-      return { success: true, data };
-    } else {
-      const errorText = await response.text();
-      console.log(`❌ Failed: ${errorText.substring(0, 200)}`);
-      
-      return { 
-        success: false, 
-        error: `Failed to create order: ${response.status} - ${errorText}` 
+      // Convert our order data to match eSIM Access API format
+      const payload = {
+        planId: orderData.packageId,
+        customerEmail: orderData.customerEmail,
+        ...(orderData.customerName && { customerName: orderData.customerName }),
+        ...(orderData.referenceId && { referenceId: orderData.referenceId })
       };
+      
+      console.log('🔧 Payload:', JSON.stringify(payload, null, 2));
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${secretKey}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      console.log(`📊 Status: ${response.status}`);
+
+      if (response.ok) {
+        const responseText = await response.text();
+        console.log('✅ Order created successfully!');
+        console.log('📦 Response:', responseText);
+        
+        let data;
+        try {
+          data = JSON.parse(responseText);
+        } catch (parseError) {
+          data = { rawResponse: responseText };
+        }
+
+        return { success: true, data };
+      } else {
+        const errorText = await response.text();
+        console.log(`❌ Failed (${response.status}): ${errorText.substring(0, 200)}`);
+      }
+    } catch (error) {
+      console.log(`💥 Network error for ${url}: ${error.message}`);
     }
-  } catch (error) {
-    console.log(`💥 Network error: ${error.message}`);
-    return { 
-      success: false, 
-      error: `Network error: ${error.message}` 
-    };
   }
+
+  return { 
+    success: false, 
+    error: 'Unable to create order on any known endpoint' 
+  };
 }
 
 async function getOrder(orderId: string, secretKey: string): Promise<ESIMAccessResponse> {
   console.log('🔍 Getting order details for ID:', orderId);
   
-  try {
-    const url = `https://api.esimaccess.com/v1/orders/${orderId}`;
-    console.log(`🔧 Calling: ${url}`);
-    
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${secretKey}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-    });
+  // Try different possible endpoints for order details
+  const orderEndpoints = [
+    `https://api.esimaccess.com/v1/orders/${orderId}`,
+    `https://api.esimaccess.com/orders/${orderId}`,
+    `https://api.esimaccess.com/v2/orders/${orderId}`,
+  ];
 
-    console.log(`📊 Status: ${response.status}`);
-
-    if (response.ok) {
-      const responseText = await response.text();
-      console.log('✅ Order details retrieved successfully!');
-      console.log('📦 Response:', responseText);
+  for (const url of orderEndpoints) {
+    try {
+      console.log(`🔧 Trying: ${url}`);
       
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (parseError) {
-        data = { rawResponse: responseText };
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${secretKey}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      });
+
+      console.log(`📊 Status: ${response.status}`);
+
+      if (response.ok) {
+        const responseText = await response.text();
+        console.log('✅ Order details retrieved successfully!');
+        console.log('📦 Response:', responseText);
+        
+        let data;
+        try {
+          data = JSON.parse(responseText);
+        } catch (parseError) {
+          data = { rawResponse: responseText };
+        }
+
+        return { success: true, data };
       }
-
-      return { success: true, data };
-    } else {
-      const errorText = await response.text();
-      console.log(`❌ Failed: ${errorText.substring(0, 200)}`);
-      
-      return { 
-        success: false, 
-        error: `Failed to get order: ${response.status} - ${errorText}` 
-      };
+    } catch (error) {
+      console.log(`💥 Network error for ${url}: ${error.message}`);
     }
-  } catch (error) {
-    console.log(`💥 Network error: ${error.message}`);
-    return { 
-      success: false, 
-      error: `Network error: ${error.message}` 
-    };
   }
+
+  return { 
+    success: false, 
+    error: 'Unable to get order details from any known endpoint' 
+  };
 }
 
 async function downloadESIM(orderId: string, secretKey: string): Promise<ESIMAccessResponse> {
