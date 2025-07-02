@@ -126,15 +126,17 @@ export const useCreateOrderWithESIM = () => {
       if (esimOrderData && packageData) {
         console.log('Creating eSIM activation with proper URL handling:', esimOrderData);
         
-        // Use the proper web URL for activation_url (for browser access)
-        // This should be downloadUrl, shortUrl, or similar web-accessible URL
-        const webActivationUrl = esimOrderData.downloadUrl || esimOrderData.shortUrl || esimOrderData.url;
+        // Priority order for web activation URL:
+        // 1. shortUrl (this is what eSIM Access shows as "Short URL")
+        // 2. downloadUrl 
+        // 3. url (fallback)
+        const webActivationUrl = esimOrderData.shortUrl || esimOrderData.downloadUrl || esimOrderData.url;
         
         // The activationCode contains the LPA string for QR code scanning
         const lpaActivationCode = esimOrderData.activationCode;
         
-        console.log('Web URL:', webActivationUrl);
-        console.log('LPA Code:', lpaActivationCode);
+        console.log('Selected Web URL (shortUrl priority):', webActivationUrl);
+        console.log('LPA Code for QR:', lpaActivationCode);
         
         const { error: activationError } = await supabase
           .from('esim_activations')
@@ -143,7 +145,7 @@ export const useCreateOrderWithESIM = () => {
             user_id: user.id,
             status: 'pending',
             provisioning_status: 'completed',
-            activation_url: webActivationUrl, // Web URL for browser access
+            activation_url: webActivationUrl, // Web URL for browser access (prioritizing shortUrl)
             iccid: esimOrderData.iccid,
             activation_code: lpaActivationCode, // LPA string for QR code
             qr_code_data: lpaActivationCode, // QR code should contain LPA string
@@ -152,7 +154,10 @@ export const useCreateOrderWithESIM = () => {
               created_at: new Date().toISOString(),
               api_response: esimOrderData,
               web_url: webActivationUrl,
-              lpa_code: lpaActivationCode
+              lpa_code: lpaActivationCode,
+              shortUrl: esimOrderData.shortUrl,
+              downloadUrl: esimOrderData.downloadUrl,
+              url: esimOrderData.url
             }
           });
 
