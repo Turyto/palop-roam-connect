@@ -5,12 +5,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { X, DollarSign, Clock, Info } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { usePlans, useSupplierRates, type Plan } from "@/hooks/usePlans";
+import { usePlans, type Plan } from "@/hooks/usePlans";
+import SupplierInfoSection from "./edit-plan-modal/SupplierInfoSection";
+import TagsSection from "./edit-plan-modal/TagsSection";
+import CountrySelectionSection, { 
+  PALOP_CORE_COUNTRIES, 
+  PALOP_REGIONAL_COUNTRIES, 
+  PALOP_DIASPORA_COUNTRIES, 
+  PALOP_CPLP_COUNTRIES 
+} from "./edit-plan-modal/CountrySelectionSection";
 
 interface EditPlanModalProps {
   plan: Plan | null;
@@ -27,33 +33,6 @@ interface EditPlanFormData {
   margin_alert_threshold?: number;
 }
 
-const AVAILABLE_TAGS = [
-  "PALOP", "CPLP", "Premium", "Business", "Tourist", "Local", "Regional", "Global"
-];
-
-// Comprehensive PALOP-focused coverage countries
-const PALOP_CORE_COUNTRIES = [
-  // PALOP Countries
-  "Angola", "Mozambique", "Cape Verde", "Guinea-Bissau", "São Tomé and Príncipe",
-];
-
-const PALOP_REGIONAL_COUNTRIES = [
-  // Impactful African Neighbors
-  "Namibia", "South Africa", "Botswana", "Republic of Congo", "DRC", 
-  "Zambia", "Zimbabwe", "Senegal", "Guinea",
-];
-
-const PALOP_DIASPORA_COUNTRIES = [
-  // Major Diaspora Destinations
-  "Portugal", "France", "Spain", "UK", "Luxembourg", 
-  "Netherlands", "Switzerland", "Brazil", "USA",
-];
-
-const PALOP_CPLP_COUNTRIES = [
-  // Optional CPLP
-  "Timor-Leste", "Macau", "Equatorial Guinea",
-];
-
 const PALOP_DEFAULT_COUNTRIES = [
   ...PALOP_CORE_COUNTRIES,
   ...PALOP_REGIONAL_COUNTRIES,
@@ -61,25 +40,8 @@ const PALOP_DEFAULT_COUNTRIES = [
   ...PALOP_CPLP_COUNTRIES,
 ];
 
-// All available countries organized by region for better UX
-const ALL_AVAILABLE_COUNTRIES = [
-  // PALOP Core
-  ...PALOP_CORE_COUNTRIES,
-  // Regional Africa
-  ...PALOP_REGIONAL_COUNTRIES,
-  "Morocco", "Tunisia", "Algeria", "Egypt", "Nigeria", "Ghana", "Kenya", "Tanzania", "Uganda", "Rwanda",
-  // Diaspora Destinations
-  ...PALOP_DIASPORA_COUNTRIES,
-  "Canada", "Australia", "Germany", "Italy", "Belgium", "Austria",
-  // CPLP & Others
-  ...PALOP_CPLP_COUNTRIES,
-  // Additional coverage
-  "India", "China", "Japan", "UAE", "Qatar", "Turkey", "Russia",
-].sort();
-
 const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
   const { updatePlan, isUpdating } = usePlans();
-  const { supplierRates } = useSupplierRates();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
 
@@ -127,14 +89,6 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
       }
     }
   }, [plan, isOpen, reset, setValue]);
-
-  const planRates = plan ? supplierRates.filter(rate => rate.plan_id === plan.id) : [];
-  const lowestCost = planRates.length > 0 
-    ? Math.min(...planRates.map(rate => rate.wholesale_cost))
-    : 0;
-  const currentMargin = watchedPrice && lowestCost > 0 
-    ? ((watchedPrice - lowestCost) / watchedPrice) * 100 
-    : 0;
 
   const handleTagToggle = (tag: string) => {
     const newTags = selectedTags.includes(tag) 
@@ -201,44 +155,7 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {/* Supplier Info (Read-only) */}
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <Label className="text-sm font-medium text-gray-600 mb-3 block">
-              Current Supplier Information (Read-only)
-            </Label>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-gray-500" />
-                <div>
-                  <p className="text-sm text-gray-500">Lowest Wholesale Cost</p>
-                  <p className="font-semibold">€{lowestCost.toFixed(2)}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-gray-500" />
-                <div>
-                  <p className="text-sm text-gray-500">Last Synced</p>
-                  <p className="font-semibold">
-                    {planRates.length > 0 
-                      ? new Date(Math.max(...planRates.map(r => new Date(r.last_checked).getTime()))).toLocaleDateString()
-                      : 'Never'
-                    }
-                  </p>
-                </div>
-              </div>
-            </div>
-            {planRates.length > 0 && (
-              <div className="mt-3">
-                <p className="text-sm text-gray-500 mb-2">Active Suppliers:</p>
-                <div className="flex flex-wrap gap-2">
-                  {planRates.map((rate, index) => (
-                    <Badge key={index} variant="outline" className="text-xs">
-                      {rate.supplier_name}: €{rate.wholesale_cost.toFixed(2)}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          <SupplierInfoSection plan={plan} watchedPrice={watchedPrice} />
 
           <Separator />
 
@@ -278,11 +195,6 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
               {errors.retail_price && (
                 <p className="text-sm text-red-600 mt-1">{errors.retail_price.message}</p>
               )}
-              {watchedPrice && lowestCost > 0 && (
-                <p className={`text-sm mt-1 ${currentMargin >= 30 ? 'text-green-600' : currentMargin >= 20 ? 'text-yellow-600' : 'text-red-600'}`}>
-                  Current margin: {currentMargin.toFixed(1)}%
-                </p>
-              )}
             </div>
 
             {/* Margin Alert Override */}
@@ -313,55 +225,17 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
           </div>
 
           {/* Tags */}
-          <div>
-            <Label>Plan Tags</Label>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {AVAILABLE_TAGS.map(tag => (
-                <Badge
-                  key={tag}
-                  variant={selectedTags.includes(tag) ? "default" : "outline"}
-                  className="cursor-pointer"
-                  onClick={() => handleTagToggle(tag)}
-                >
-                  {tag}
-                  {selectedTags.includes(tag) && (
-                    <X className="h-3 w-3 ml-1" />
-                  )}
-                </Badge>
-              ))}
-            </div>
-          </div>
+          <TagsSection 
+            selectedTags={selectedTags}
+            onTagToggle={handleTagToggle}
+          />
 
           {/* Coverage Countries */}
-          <div>
-            <Label>Coverage Countries</Label>
-            {showPalopInfo && (
-              <div className="flex items-start gap-2 mt-1 mb-3 p-3 bg-blue-50 rounded-lg">
-                <Info className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                <p className="text-sm text-blue-700">
-                  PALOP plans include default coverage for key home, regional, and diaspora countries to best serve your community.
-                </p>
-              </div>
-            )}
-            <div className="flex flex-wrap gap-2 mt-2 max-h-40 overflow-y-auto p-2 border rounded-lg">
-              {ALL_AVAILABLE_COUNTRIES.map(country => (
-                <Badge
-                  key={country}
-                  variant={selectedCountries.includes(country) ? "default" : "outline"}
-                  className="cursor-pointer text-xs"
-                  onClick={() => handleCountryToggle(country)}
-                >
-                  {country}
-                  {selectedCountries.includes(country) && (
-                    <X className="h-3 w-3 ml-1" />
-                  )}
-                </Badge>
-              ))}
-            </div>
-            <p className="text-xs text-gray-500 mt-2">
-              Selected: {selectedCountries.length} countries
-            </p>
-          </div>
+          <CountrySelectionSection
+            selectedCountries={selectedCountries}
+            onCountryToggle={handleCountryToggle}
+            showPalopInfo={showPalopInfo}
+          />
 
           <DialogFooter className="flex gap-2">
             <Button type="button" variant="outline" onClick={handleClose}>
