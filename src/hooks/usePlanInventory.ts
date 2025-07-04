@@ -1,7 +1,9 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+
+// This hook is now deprecated since we moved to dynamic plan catalog
+// Keeping it for backward compatibility but it returns plan-based data
 
 export interface PlanInventoryItem {
   id: string;
@@ -21,93 +23,54 @@ export const usePlanInventory = () => {
   const { data: planInventory = [], isLoading, error, refetch } = useQuery({
     queryKey: ['plan-inventory'],
     queryFn: async () => {
-      console.log('Fetching plan inventory data...');
+      console.log('Legacy plan inventory hook called - returning plan-based data');
       
+      // Return plans data adapted to look like inventory
       const { data, error } = await supabase
-        .from('plan_inventory')
+        .from('plans')
         .select('*')
-        .order('plan_id', { ascending: true });
+        .eq('status', 'active')
+        .order('name', { ascending: true });
 
       if (error) {
-        console.error('Error fetching plan inventory:', error);
+        console.error('Error fetching plans:', error);
         throw error;
       }
 
-      console.log('Plan inventory data:', data);
-      return data as PlanInventoryItem[];
+      // Transform plans to look like inventory items
+      const adaptedData = data.map(plan => ({
+        id: plan.id,
+        plan_id: plan.id,
+        plan_name: plan.name,
+        available: 999, // Virtual availability - always available through suppliers
+        threshold_low: 100,
+        threshold_critical: 25,
+        created_at: plan.created_at || new Date().toISOString(),
+        updated_at: plan.updated_at || new Date().toISOString()
+      }));
+
+      console.log('Adapted plan data:', adaptedData);
+      return adaptedData as PlanInventoryItem[];
     },
   });
 
   const restockPlanMutation = useMutation({
     mutationFn: async ({ planId, amount }: { planId: string; amount: number }) => {
-      console.log('Restocking plan inventory:', planId, 'amount:', amount);
+      console.log('Legacy restock called for plan:', planId, 'amount:', amount);
       
-      // First get the current available amount
-      const { data: currentData, error: fetchError } = await supabase
-        .from('plan_inventory')
-        .select('available')
-        .eq('plan_id', planId)
-        .single();
-
-      if (fetchError) {
-        console.error('Error fetching current plan inventory:', fetchError);
-        throw fetchError;
-      }
-
-      // Update with the new amount
-      const newAvailable = currentData.available + amount;
-      
+      // In dynamic catalog, we don't restock - we just ensure plan is active
       const { data, error } = await supabase
-        .from('plan_inventory')
+        .from('plans')
         .update({ 
-          available: newAvailable,
+          status: 'active',
           updated_at: new Date().toISOString()
         })
-        .eq('plan_id', planId)
+        .eq('id', planId)
         .select()
         .single();
 
       if (error) {
-        console.error('Error restocking plan inventory:', error);
-        throw error;
-      }
-
-      return data;
-    },
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['plan-inventory'] });
-      toast({
-        title: "Plan Inventory Restocked",
-        description: `${variables.amount} ${data.plan_name} plans added to inventory`,
-      });
-    },
-    onError: (error) => {
-      console.error('Plan restock error:', error);
-      toast({
-        title: "Plan Restock Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  });
-
-  // Manual inventory adjustment for troubleshooting
-  const adjustPlanInventoryMutation = useMutation({
-    mutationFn: async ({ planId, newAmount }: { planId: string; newAmount: number }) => {
-      console.log('Manually adjusting plan inventory:', planId, 'to:', newAmount);
-      
-      const { data, error } = await supabase
-        .from('plan_inventory')
-        .update({ 
-          available: Math.max(newAmount, 0), // Ensure non-negative
-          updated_at: new Date().toISOString()
-        })
-        .eq('plan_id', planId)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error adjusting plan inventory:', error);
+        console.error('Error updating plan status:', error);
         throw error;
       }
 
@@ -115,15 +78,58 @@ export const usePlanInventory = () => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['plan-inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['plans'] });
       toast({
-        title: "Plan Inventory Adjusted",
-        description: `${data.plan_name} plan inventory updated to ${data.available}`,
+        title: "Plan Status Updated",
+        description: `${data.name} plan is now active and available`,
       });
     },
     onError: (error) => {
-      console.error('Plan inventory adjustment error:', error);
+      console.error('Plan update error:', error);
       toast({
-        title: "Plan Inventory Adjustment Failed",
+        title: "Plan Update Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  const adjustPlanInventoryMutation = useMutation({
+    mutationFn: async ({ planId, newAmount }: { planId: string; newAmount: number }) => {
+      console.log('Legacy inventory adjustment called for plan:', planId, 'amount:', newAmount);
+      
+      // In dynamic catalog, we toggle plan status based on "amount"
+      const status = newAmount > 0 ? 'active' : 'inactive';
+      
+      const { data, error } = await supabase
+        .from('plans')
+        .update({ 
+          status,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', planId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error adjusting plan status:', error);
+        throw error;
+      }
+
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['plan-inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['plans'] });
+      toast({
+        title: "Plan Status Adjusted",
+        description: `${data.name} plan is now ${data.status}`,
+      });
+    },
+    onError: (error) => {
+      console.error('Plan status adjustment error:', error);
+      toast({
+        title: "Plan Status Adjustment Failed",
         description: error.message,
         variant: "destructive",
       });
@@ -131,13 +137,8 @@ export const usePlanInventory = () => {
   });
 
   const getStatusInfo = (available: number, thresholdLow: number, thresholdCritical: number) => {
-    if (available <= thresholdCritical) {
-      return { status: 'critical', label: 'Critical', color: 'bg-red-100 text-red-800' };
-    }
-    if (available <= thresholdLow) {
-      return { status: 'low', label: 'Low', color: 'bg-yellow-100 text-yellow-800' };
-    }
-    return { status: 'healthy', label: 'Healthy', color: 'bg-green-100 text-green-800' };
+    // In dynamic catalog, status is always healthy since it's virtual
+    return { status: 'healthy', label: 'Available', color: 'bg-green-100 text-green-800' };
   };
 
   return {

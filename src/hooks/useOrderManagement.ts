@@ -20,18 +20,9 @@ export const useOrderManagement = () => {
 
       if (orderError) throw orderError;
 
-      // Check inventory availability
-      const { data: inventory, error: inventoryError } = await supabase
-        .from('inventory')
-        .select('available')
-        .eq('country', 'Cape Verde') // Default mapping
-        .eq('carrier', 'CVMóvel')
-        .single();
-
-      if (inventoryError) throw inventoryError;
-      if (inventory.available < 1) {
-        throw new Error('Insufficient inventory available');
-      }
+      // Since we moved to dynamic catalog, we don't need to check physical inventory
+      // Instead, we'll provision directly from our supplier network
+      console.log('Using dynamic catalog - no inventory check needed');
 
       // Generate activation URL
       const activationUrl = `https://esim.activate/${orderId}`;
@@ -66,18 +57,6 @@ export const useOrderManagement = () => {
 
       if (esimError) throw esimError;
 
-      // Deduct inventory
-      const { error: inventoryUpdateError } = await supabase
-        .from('inventory')
-        .update({ 
-          available: inventory.available - 1,
-          updated_at: new Date().toISOString()
-        })
-        .eq('country', 'Cape Verde')
-        .eq('carrier', 'CVMóvel');
-
-      if (inventoryUpdateError) throw inventoryUpdateError;
-
       // Update order status
       const { data: updatedOrder, error: updateError } = await supabase
         .from('orders')
@@ -97,7 +76,7 @@ export const useOrderManagement = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
-      queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['plans'] });
       toast({
         title: "Order Processed",
         description: "Order has been successfully processed and eSIM provisioning initiated.",
@@ -199,20 +178,24 @@ export const useOrderManagement = () => {
     }
   });
 
-  const checkInventoryAvailability = async (country = 'Cape Verde', carrier = 'CVMóvel') => {
+  const checkInventoryAvailability = async (planId?: string) => {
+    // In the new dynamic catalog system, availability is determined by active plans
+    // and supplier network connectivity rather than physical inventory
+    if (!planId) return true;
+
     const { data, error } = await supabase
-      .from('inventory')
-      .select('available')
-      .eq('country', country)
-      .eq('carrier', carrier)
+      .from('plans')
+      .select('status')
+      .eq('id', planId)
+      .eq('status', 'active')
       .single();
 
     if (error) {
-      console.error('Error checking inventory:', error);
+      console.error('Error checking plan availability:', error);
       return false;
     }
 
-    return data.available > 0;
+    return data?.status === 'active';
   };
 
   return {
