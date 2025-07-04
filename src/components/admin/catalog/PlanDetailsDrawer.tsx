@@ -1,4 +1,3 @@
-
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,8 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/comp
 import { ExternalLink, Globe, Tag, TrendingUp, Clock, DollarSign } from "lucide-react";
 import { useSupplierRates, type Plan } from "@/hooks/usePlans";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
+import { useState } from "react";
+import EditPlanModal from "./EditPlanModal";
 
 interface PlanDetailsDrawerProps {
   plan: Plan | null;
@@ -18,6 +19,7 @@ interface PlanDetailsDrawerProps {
 
 const PlanDetailsDrawer = ({ plan, isOpen, onClose }: PlanDetailsDrawerProps) => {
   const { supplierRates } = useSupplierRates();
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   if (!plan) return null;
 
@@ -43,9 +45,9 @@ const PlanDetailsDrawer = ({ plan, isOpen, onClose }: PlanDetailsDrawerProps) =>
         <SheetContent className="w-[600px] sm:w-[700px] overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="flex items-center justify-between">
-              {plan.name}
-              <Badge variant={plan.status === 'active' ? 'default' : 'secondary'}>
-                {plan.status}
+              {plan?.name}
+              <Badge variant={plan?.status === 'active' ? 'default' : 'secondary'}>
+                {plan?.status}
               </Badge>
             </SheetTitle>
           </SheetHeader>
@@ -202,12 +204,16 @@ const PlanDetailsDrawer = ({ plan, isOpen, onClose }: PlanDetailsDrawerProps) =>
                 <Label htmlFor="plan-status" className="text-sm font-medium">Plan Status</Label>
                 <Switch
                   id="plan-status"
-                  checked={plan.status === 'active'}
+                  checked={plan?.status === 'active'}
                   onCheckedChange={() => {}}
                 />
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setIsEditModalOpen(true)}
+                >
                   Edit Plan
                 </Button>
                 <Button variant="outline" size="sm">
@@ -218,6 +224,13 @@ const PlanDetailsDrawer = ({ plan, isOpen, onClose }: PlanDetailsDrawerProps) =>
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Edit Plan Modal */}
+      <EditPlanModal
+        plan={plan}
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+      />
     </TooltipProvider>
   );
 };
