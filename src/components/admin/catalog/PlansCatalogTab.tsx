@@ -5,9 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Eye, Edit, RefreshCw, Package, AlertTriangle } from "lucide-react";
+import { Eye, Edit, RefreshCw, Package, AlertTriangle, Plus } from "lucide-react";
 import PlanDetailsDrawer from "./PlanDetailsDrawer";
 import EditPlanModal from "./EditPlanModal";
+import CreatePlanModal from "./CreatePlanModal";
 import BulkActionsToolbar from "./BulkActionsToolbar";
 import type { Plan } from "@/hooks/usePlans";
 
@@ -16,6 +17,7 @@ const PlansCatalogTab = () => {
   const { supplierRates } = useSupplierRates();
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedPlanIds, setSelectedPlanIds] = useState<string[]>([]);
   const [showLowMarginOnly, setShowLowMarginOnly] = useState(false);
 
@@ -90,10 +92,19 @@ const PlansCatalogTab = () => {
             </Button>
           )}
         </div>
-        <Button variant="outline" onClick={() => window.location.reload()}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Sync Rates
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            onClick={() => setIsCreateModalOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Create New Plan
+          </Button>
+          <Button variant="outline" onClick={() => window.location.reload()}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Sync Rates
+          </Button>
+        </div>
       </div>
 
       {/* Bulk Actions Toolbar */}
@@ -267,6 +278,11 @@ const PlansCatalogTab = () => {
         plan={editingPlan}
         isOpen={!!editingPlan}
         onClose={() => setEditingPlan(null)}
+      />
+
+      <CreatePlanModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
       />
     </div>
   );
