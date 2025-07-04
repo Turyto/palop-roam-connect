@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -24,18 +23,20 @@ interface CreatePlanModalProps {
   onClose: () => void;
 }
 
+interface SupplierRate {
+  supplier_name: string;
+  wholesale_cost: number;
+  supplier_plan_id?: string;
+  supplier_link?: string;
+}
+
 interface CreatePlanFormData {
   name: string;
   retail_price: number;
   description: string;
   tags: string[];
   coverage: string[];
-  supplier_rates: {
-    supplier_name: string;
-    wholesale_cost: number;
-    supplier_plan_id?: string;
-    supplier_link?: string;
-  }[];
+  supplier_rates: SupplierRate[];
 }
 
 const PALOP_DEFAULT_COUNTRIES = [
@@ -49,7 +50,7 @@ const CreatePlanModal = ({ isOpen, onClose }: CreatePlanModalProps) => {
   const { createPlan, isCreating } = usePlans();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
-  const [supplierRates, setSupplierRates] = useState([
+  const [supplierRates, setSupplierRates] = useState<SupplierRate[]>([
     { supplier_name: '', wholesale_cost: 0, supplier_plan_id: '', supplier_link: '' }
   ]);
 
