@@ -128,39 +128,6 @@ export type Database = {
         }
         Relationships: []
       }
-      inventory: {
-        Row: {
-          available: number
-          carrier: string
-          country: string
-          created_at: string | null
-          id: string
-          threshold_critical: number
-          threshold_low: number
-          updated_at: string | null
-        }
-        Insert: {
-          available?: number
-          carrier: string
-          country: string
-          created_at?: string | null
-          id?: string
-          threshold_critical?: number
-          threshold_low?: number
-          updated_at?: string | null
-        }
-        Update: {
-          available?: number
-          carrier?: string
-          country?: string
-          created_at?: string | null
-          id?: string
-          threshold_critical?: number
-          threshold_low?: number
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       order_items: {
         Row: {
           created_at: string
@@ -271,35 +238,65 @@ export type Database = {
         }
         Relationships: []
       }
-      plan_inventory: {
+      plans: {
         Row: {
-          available: number
+          coverage: string[] | null
           created_at: string | null
+          description: string | null
           id: string
-          plan_id: string
-          plan_name: string
-          threshold_critical: number
-          threshold_low: number
+          name: string
+          retail_price: number
+          status: string
+          tags: string[] | null
           updated_at: string | null
         }
         Insert: {
-          available?: number
+          coverage?: string[] | null
           created_at?: string | null
+          description?: string | null
           id?: string
-          plan_id: string
-          plan_name: string
-          threshold_critical?: number
-          threshold_low?: number
+          name: string
+          retail_price: number
+          status?: string
+          tags?: string[] | null
           updated_at?: string | null
         }
         Update: {
-          available?: number
+          coverage?: string[] | null
           created_at?: string | null
+          description?: string | null
           id?: string
-          plan_id?: string
-          plan_name?: string
-          threshold_critical?: number
-          threshold_low?: number
+          name?: string
+          retail_price?: number
+          status?: string
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      pricing_rules: {
+        Row: {
+          created_at: string | null
+          exceptions: Json | null
+          global_markup: number | null
+          id: string
+          margin_alert_threshold: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          exceptions?: Json | null
+          global_markup?: number | null
+          id?: string
+          margin_alert_threshold?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          exceptions?: Json | null
+          global_markup?: number | null
+          id?: string
+          margin_alert_threshold?: number | null
           updated_at?: string | null
         }
         Relationships: []
@@ -447,6 +444,50 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      supplier_rates: {
+        Row: {
+          created_at: string | null
+          id: string
+          last_checked: string | null
+          plan_id: string | null
+          supplier_link: string | null
+          supplier_name: string
+          supplier_plan_id: string | null
+          updated_at: string | null
+          wholesale_cost: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          last_checked?: string | null
+          plan_id?: string | null
+          supplier_link?: string | null
+          supplier_name: string
+          supplier_plan_id?: string | null
+          updated_at?: string | null
+          wholesale_cost: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          last_checked?: string | null
+          plan_id?: string | null
+          supplier_link?: string | null
+          supplier_name?: string
+          supplier_plan_id?: string | null
+          updated_at?: string | null
+          wholesale_cost?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_rates_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       support_tickets: {
         Row: {

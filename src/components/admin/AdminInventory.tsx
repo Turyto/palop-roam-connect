@@ -1,87 +1,52 @@
 
-import { useInventory } from "@/hooks/useInventory";
-import { usePlanInventory } from "@/hooks/usePlanInventory";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RefreshCw, Package, Globe } from "lucide-react";
-import InventoryMetrics from "./inventory/InventoryMetrics";
-import PlanInventoryTab from "./inventory/PlanInventoryTab";
-import CarrierInventoryTab from "./inventory/CarrierInventoryTab";
+import { Package, DollarSign, Settings } from "lucide-react";
+import CatalogMetrics from "./catalog/CatalogMetrics";
+import PlansCatalogTab from "./catalog/PlansCatalogTab";
+import SupplierRatesTab from "./catalog/SupplierRatesTab";
+import PricingRulesTab from "./catalog/PricingRulesTab";
 
 const AdminInventory = () => {
-  const { inventory, isLoading: inventoryLoading, refetch: refetchInventory, getStatusInfo } = useInventory();
-  const { planInventory, isLoading: planLoading, refetch: refetchPlans, getStatusInfo: getPlanStatusInfo } = usePlanInventory();
-
-  const handleRefreshAll = () => {
-    refetchInventory();
-    refetchPlans();
-  };
-
-  // Calculate metrics
-  const planMetrics = {
-    totalPlans: planInventory.reduce((sum, plan) => sum + plan.available, 0),
-    lowStockPlans: planInventory.filter(plan => 
-      getPlanStatusInfo(plan.available, plan.threshold_low, plan.threshold_critical).status === 'low'
-    ).length,
-    criticalStockPlans: planInventory.filter(plan => 
-      getPlanStatusInfo(plan.available, plan.threshold_low, plan.threshold_critical).status === 'critical'
-    ).length
-  };
-
-  const carrierMetrics = {
-    totalCarriers: inventory.reduce((sum, item) => sum + item.available, 0),
-    lowStockCarriers: inventory.filter(item => 
-      getStatusInfo(item.available, item.threshold_low, item.threshold_critical).status === 'low'
-    ).length,
-    criticalStockCarriers: inventory.filter(item => 
-      getStatusInfo(item.available, item.threshold_low, item.threshold_critical).status === 'critical'
-    ).length
-  };
-
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Inventory Management</h2>
-          <p className="text-gray-600 mt-1">Monitor and manage eSIM stock levels</p>
+          <h2 className="text-2xl font-bold text-gray-900">Dynamic Catalog Management</h2>
+          <p className="text-gray-600 mt-1">Manage your virtual plan catalog, supplier rates, and pricing rules</p>
         </div>
-        <Button
-          variant="outline"
-          onClick={handleRefreshAll}
-          disabled={inventoryLoading || planLoading}
-          className="flex items-center gap-2"
-        >
-          <RefreshCw className={`h-4 w-4 ${(inventoryLoading || planLoading) ? 'animate-spin' : ''}`} />
-          Refresh All
-        </Button>
       </div>
 
       {/* Metrics Overview */}
-      <InventoryMetrics 
-        planMetrics={planMetrics}
-        carrierMetrics={carrierMetrics}
-      />
+      <CatalogMetrics />
 
       {/* Tabbed Interface */}
-      <Tabs defaultValue="plans" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 max-w-md">
-          <TabsTrigger value="plans" className="flex items-center gap-2">
+      <Tabs defaultValue="catalog" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3 max-w-md">
+          <TabsTrigger value="catalog" className="flex items-center gap-2">
             <Package className="h-4 w-4" />
-            Plans
+            Plans Catalog
           </TabsTrigger>
-          <TabsTrigger value="carriers" className="flex items-center gap-2">
-            <Globe className="h-4 w-4" />
-            Carriers
+          <TabsTrigger value="rates" className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4" />
+            Supplier Rates
+          </TabsTrigger>
+          <TabsTrigger value="pricing" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Pricing Rules
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="plans">
-          <PlanInventoryTab />
+        <TabsContent value="catalog">
+          <PlansCatalogTab />
         </TabsContent>
 
-        <TabsContent value="carriers">
-          <CarrierInventoryTab />
+        <TabsContent value="rates">
+          <SupplierRatesTab />
+        </TabsContent>
+
+        <TabsContent value="pricing">
+          <PricingRulesTab />
         </TabsContent>
       </Tabs>
     </div>
