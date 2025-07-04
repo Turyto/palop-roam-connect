@@ -1,7 +1,9 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+
+// This hook is now deprecated since we moved to dynamic plan catalog
+// Keeping it for backward compatibility but it returns empty data
 
 export interface InventoryItem {
   id: string;
@@ -18,93 +20,44 @@ export const useInventory = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Return empty data since we moved to dynamic catalog
   const { data: inventory = [], isLoading, error, refetch } = useQuery({
     queryKey: ['admin-inventory'],
     queryFn: async () => {
-      console.log('Fetching inventory data...');
-      
-      const { data, error } = await supabase
-        .from('inventory')
-        .select('*')
-        .order('country', { ascending: true });
-
-      if (error) {
-        console.error('Error fetching inventory:', error);
-        throw error;
-      }
-
-      console.log('Inventory data:', data);
-      return data as InventoryItem[];
+      console.log('Legacy inventory hook called - returning empty data');
+      console.log('Use usePlans hook for dynamic catalog management');
+      return [] as InventoryItem[];
     },
   });
 
   const restockMutation = useMutation({
     mutationFn: async ({ inventoryId, amount }: { inventoryId: string; amount: number }) => {
-      console.log('Restocking inventory:', inventoryId, 'amount:', amount);
-      
-      // First get the current available amount
-      const { data: currentData, error: fetchError } = await supabase
-        .from('inventory')
-        .select('available')
-        .eq('id', inventoryId)
-        .single();
-
-      if (fetchError) {
-        console.error('Error fetching current inventory:', fetchError);
-        throw fetchError;
-      }
-
-      // Update with the new amount
-      const newAvailable = currentData.available + amount;
-      
-      const { data, error } = await supabase
-        .from('inventory')
-        .update({ 
-          available: newAvailable,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', inventoryId)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error restocking inventory:', error);
-        throw error;
-      }
-
-      return data;
+      console.log('Legacy restock called - no action needed for dynamic catalog');
+      return null;
     },
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['admin-inventory'] });
+    onSuccess: () => {
       toast({
-        title: "Inventory Restocked",
-        description: `${variables.amount} eSIMs added to ${data.country} / ${data.carrier}`,
+        title: "Notice",
+        description: "This feature is deprecated. Use the dynamic plan catalog instead.",
       });
     },
-    onError: (error) => {
-      console.error('Restock error:', error);
+    onError: () => {
       toast({
-        title: "Restock Failed",
-        description: error.message,
+        title: "Notice",
+        description: "This feature is deprecated. Use the dynamic plan catalog instead.",
         variant: "destructive",
       });
     }
   });
 
   const getStatusInfo = (available: number, thresholdLow: number, thresholdCritical: number) => {
-    if (available <= thresholdCritical) {
-      return { status: 'critical', label: 'Critical', color: 'bg-red-100 text-red-800' };
-    }
-    if (available <= thresholdLow) {
-      return { status: 'low', label: 'Low', color: 'bg-yellow-100 text-yellow-800' };
-    }
     return { status: 'healthy', label: 'Healthy', color: 'bg-green-100 text-green-800' };
   };
 
   return {
     inventory,
-    isLoading,
-    error,
+    isLoading: false,
+    error: null,
     refetch,
     restock: (inventoryId: string, amount: number) => 
       restockMutation.mutate({ inventoryId, amount }),

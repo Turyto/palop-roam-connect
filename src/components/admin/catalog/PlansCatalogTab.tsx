@@ -142,7 +142,7 @@ const PlansCatalogTab = () => {
 
       {plans.length === 0 && (
         <div className="text-center py-12 text-gray-500">
-          <Package className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+          <RefreshCw className="h-12 w-12 mx-auto mb-4 text-gray-300" />
           <p>No plans available. Add your first plan to get started.</p>
         </div>
       )}
