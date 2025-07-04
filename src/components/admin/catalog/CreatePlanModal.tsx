@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { usePlans } from "@/hooks/usePlans";
+import { supabase } from "@/integrations/supabase/client";
 import TagsSection from "./edit-plan-modal/TagsSection";
 import CountrySelectionSection, { 
   PALOP_CORE_COUNTRIES, 
@@ -16,6 +17,7 @@ import CountrySelectionSection, {
   PALOP_DIASPORA_COUNTRIES, 
   PALOP_CPLP_COUNTRIES 
 } from "./edit-plan-modal/CountrySelectionSection";
+import SupplierRateFields from "./create-plan-modal/SupplierRateFields";
 
 interface CreatePlanModalProps {
   isOpen: boolean;
@@ -28,6 +30,12 @@ interface CreatePlanFormData {
   description: string;
   tags: string[];
   coverage: string[];
+  supplier_rates: {
+    supplier_name: string;
+    wholesale_cost: number;
+    supplier_plan_id?: string;
+    supplier_link?: string;
+  }[];
 }
 
 const PALOP_DEFAULT_COUNTRIES = [
@@ -41,12 +49,16 @@ const CreatePlanModal = ({ isOpen, onClose }: CreatePlanModalProps) => {
   const { createPlan, isCreating } = usePlans();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
+  const [supplierRates, setSupplierRates] = useState([
+    { supplier_name: '', wholesale_cost: 0, supplier_plan_id: '', supplier_link: '' }
+  ]);
 
   const {
     register,
     handleSubmit,
     reset,
     setValue,
+    watch,
     formState: { errors, isValid }
   } = useForm<CreatePlanFormData>({
     mode: 'onChange',
@@ -55,9 +67,27 @@ const CreatePlanModal = ({ isOpen, onClose }: CreatePlanModalProps) => {
       retail_price: 0,
       description: '',
       tags: [],
-      coverage: []
+      coverage: [],
+      supplier_rates: supplierRates
     }
   });
+
+  const retailPrice = watch('retail_price');
+
+  // Calculate margin for preview
+  const calculateMargin = () => {
+    const validRates = supplierRates.filter(rate => rate.wholesale_cost > 0);
+    if (validRates.length === 0 || retailPrice <= 0) return 0;
+    
+    const lowestCost = Math.min(...validRates.map(rate => rate.wholesale_cost));
+    return ((retailPrice - lowestCost) / retailPrice) * 100;
+  };
+
+  const getMarginColor = (margin: number) => {
+    if (margin >= 30) return "text-green-600";
+    if (margin >= 20) return "text-yellow-600";
+    return "text-red-600";
+  };
 
   // Check if plan is PALOP-focused
   const isPalopPlan = (planName: string, planTags: string[]) => {
@@ -99,9 +129,42 @@ const CreatePlanModal = ({ isOpen, onClose }: CreatePlanModalProps) => {
         status: 'active' as const
       };
 
-      createPlan(newPlan);
+      // Create the plan first
+      const { data: createdPlan, error: planError } = await supabase
+        .from('plans')
+        .insert([newPlan])
+        .select()
+        .single();
+
+      if (planError) throw planError;
+
+      // Create supplier rates for the new plan
+      const validSupplierRates = supplierRates
+        .filter(rate => rate.supplier_name.trim() && rate.wholesale_cost > 0)
+        .map(rate => ({
+          plan_id: createdPlan.id,
+          supplier_name: rate.supplier_name.trim(),
+          wholesale_cost: Number(rate.wholesale_cost),
+          supplier_plan_id: rate.supplier_plan_id?.trim() || null,
+          supplier_link: rate.supplier_link?.trim() || null,
+        }));
+
+      if (validSupplierRates.length > 0) {
+        const { error: ratesError } = await supabase
+          .from('supplier_rates')
+          .insert(validSupplierRates);
+
+        if (ratesError) {
+          console.error('Error creating supplier rates:', ratesError);
+          toast.error("Plan created but failed to add supplier rates");
+        }
+      }
+
       toast.success("Plan created successfully!");
       handleClose();
+      
+      // Refresh the plans list by invalidating the query
+      window.location.reload();
     } catch (error) {
       toast.error("Failed to create plan. Please try again.");
       console.error('Error creating plan:', error);
@@ -112,14 +175,16 @@ const CreatePlanModal = ({ isOpen, onClose }: CreatePlanModalProps) => {
     reset();
     setSelectedTags([]);
     setSelectedCountries([]);
+    setSupplierRates([{ supplier_name: '', wholesale_cost: 0, supplier_plan_id: '', supplier_link: '' }]);
     onClose();
   };
 
   const showPalopInfo = isPalopPlan('', selectedTags);
+  const currentMargin = calculateMargin();
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create New Plan</DialogTitle>
         </DialogHeader>
@@ -162,7 +227,16 @@ const CreatePlanModal = ({ isOpen, onClose }: CreatePlanModalProps) => {
               )}
             </div>
 
-            <div></div> {/* Empty div for grid spacing */}
+            {/* Margin Preview */}
+            <div>
+              <Label>Projected Margin</Label>
+              <div className={`text-2xl font-bold ${getMarginColor(currentMargin)}`}>
+                {currentMargin.toFixed(1)}%
+              </div>
+              <p className="text-sm text-gray-600">
+                Based on lowest wholesale cost
+              </p>
+            </div>
           </div>
 
           {/* Description */}
@@ -187,6 +261,14 @@ const CreatePlanModal = ({ isOpen, onClose }: CreatePlanModalProps) => {
             selectedCountries={selectedCountries}
             onCountryToggle={handleCountryToggle}
             showPalopInfo={showPalopInfo}
+          />
+
+          <Separator />
+
+          {/* Supplier Rates */}
+          <SupplierRateFields
+            supplierRates={supplierRates}
+            onSupplierRatesChange={setSupplierRates}
           />
 
           <DialogFooter className="flex gap-2">
