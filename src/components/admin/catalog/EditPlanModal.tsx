@@ -6,9 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { X, DollarSign, Clock } from "lucide-react";
+import { X, DollarSign, Clock, Info } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { usePlans, useSupplierRates, type Plan } from "@/hooks/usePlans";
@@ -32,10 +31,51 @@ const AVAILABLE_TAGS = [
   "PALOP", "CPLP", "Premium", "Business", "Tourist", "Local", "Regional", "Global"
 ];
 
-const AVAILABLE_COUNTRIES = [
-  "Cape Verde", "Guinea-Bissau", "São Tomé and Príncipe", "Angola", "Mozambique", 
-  "Portugal", "Brazil", "Timor-Leste", "Macau", "Equatorial Guinea"
+// Comprehensive PALOP-focused coverage countries
+const PALOP_CORE_COUNTRIES = [
+  // PALOP Countries
+  "Angola", "Mozambique", "Cape Verde", "Guinea-Bissau", "São Tomé and Príncipe",
 ];
+
+const PALOP_REGIONAL_COUNTRIES = [
+  // Impactful African Neighbors
+  "Namibia", "South Africa", "Botswana", "Republic of Congo", "DRC", 
+  "Zambia", "Zimbabwe", "Senegal", "Guinea",
+];
+
+const PALOP_DIASPORA_COUNTRIES = [
+  // Major Diaspora Destinations
+  "Portugal", "France", "Spain", "UK", "Luxembourg", 
+  "Netherlands", "Switzerland", "Brazil", "USA",
+];
+
+const PALOP_CPLP_COUNTRIES = [
+  // Optional CPLP
+  "Timor-Leste", "Macau", "Equatorial Guinea",
+];
+
+const PALOP_DEFAULT_COUNTRIES = [
+  ...PALOP_CORE_COUNTRIES,
+  ...PALOP_REGIONAL_COUNTRIES,
+  ...PALOP_DIASPORA_COUNTRIES,
+  ...PALOP_CPLP_COUNTRIES,
+];
+
+// All available countries organized by region for better UX
+const ALL_AVAILABLE_COUNTRIES = [
+  // PALOP Core
+  ...PALOP_CORE_COUNTRIES,
+  // Regional Africa
+  ...PALOP_REGIONAL_COUNTRIES,
+  "Morocco", "Tunisia", "Algeria", "Egypt", "Nigeria", "Ghana", "Kenya", "Tanzania", "Uganda", "Rwanda",
+  // Diaspora Destinations
+  ...PALOP_DIASPORA_COUNTRIES,
+  "Canada", "Australia", "Germany", "Italy", "Belgium", "Austria",
+  // CPLP & Others
+  ...PALOP_CPLP_COUNTRIES,
+  // Additional coverage
+  "India", "China", "Japan", "UAE", "Qatar", "Turkey", "Russia",
+].sort();
 
 const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
   const { updatePlan, isUpdating } = usePlans();
@@ -56,6 +96,13 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
 
   const watchedPrice = watch('retail_price');
 
+  // Check if plan is PALOP-focused
+  const isPalopPlan = (planName: string, planTags: string[]) => {
+    const nameIncludesPalop = planName.toLowerCase().includes('palop') || planName.toLowerCase().includes('essential palop');
+    const tagsIncludePalop = planTags.some(tag => tag.toLowerCase().includes('palop'));
+    return nameIncludesPalop || tagsIncludePalop;
+  };
+
   useEffect(() => {
     if (plan && isOpen) {
       reset({
@@ -65,10 +112,21 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
         tags: plan.tags || [],
         coverage: plan.coverage || []
       });
+      
       setSelectedTags(plan.tags || []);
-      setSelectedCountries(plan.coverage || []);
+      
+      // Smart coverage pre-population for PALOP plans
+      const existingCoverage = plan.coverage || [];
+      const shouldPrePopulate = isPalopPlan(plan.name, plan.tags || []) && existingCoverage.length === 0;
+      
+      if (shouldPrePopulate) {
+        setSelectedCountries(PALOP_DEFAULT_COUNTRIES);
+        setValue('coverage', PALOP_DEFAULT_COUNTRIES);
+      } else {
+        setSelectedCountries(existingCoverage);
+      }
     }
-  }, [plan, isOpen, reset]);
+  }, [plan, isOpen, reset, setValue]);
 
   const planRates = plan ? supplierRates.filter(rate => rate.plan_id === plan.id) : [];
   const lowestCost = planRates.length > 0 
@@ -84,6 +142,12 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
       : [...selectedTags, tag];
     setSelectedTags(newTags);
     setValue('tags', newTags);
+
+    // Auto-populate coverage when PALOP tag is added
+    if (tag === 'PALOP' && !selectedTags.includes(tag) && selectedCountries.length === 0) {
+      setSelectedCountries(PALOP_DEFAULT_COUNTRIES);
+      setValue('coverage', PALOP_DEFAULT_COUNTRIES);
+    }
   };
 
   const handleCountryToggle = (country: string) => {
@@ -123,6 +187,8 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
   };
 
   if (!plan) return null;
+
+  const showPalopInfo = isPalopPlan(plan.name, selectedTags);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -269,12 +335,20 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
           {/* Coverage Countries */}
           <div>
             <Label>Coverage Countries</Label>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {AVAILABLE_COUNTRIES.map(country => (
+            {showPalopInfo && (
+              <div className="flex items-start gap-2 mt-1 mb-3 p-3 bg-blue-50 rounded-lg">
+                <Info className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-blue-700">
+                  PALOP plans include default coverage for key home, regional, and diaspora countries to best serve your community.
+                </p>
+              </div>
+            )}
+            <div className="flex flex-wrap gap-2 mt-2 max-h-40 overflow-y-auto p-2 border rounded-lg">
+              {ALL_AVAILABLE_COUNTRIES.map(country => (
                 <Badge
                   key={country}
                   variant={selectedCountries.includes(country) ? "default" : "outline"}
-                  className="cursor-pointer"
+                  className="cursor-pointer text-xs"
                   onClick={() => handleCountryToggle(country)}
                 >
                   {country}
@@ -284,6 +358,9 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
                 </Badge>
               ))}
             </div>
+            <p className="text-xs text-gray-500 mt-2">
+              Selected: {selectedCountries.length} countries
+            </p>
           </div>
 
           <DialogFooter className="flex gap-2">
