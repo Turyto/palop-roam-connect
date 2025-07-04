@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { usePlans, useSupplierRates } from "@/hooks/usePlans";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -8,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, Edit, RefreshCw, Package, AlertTriangle } from "lucide-react";
 import PlanDetailsDrawer from "./PlanDetailsDrawer";
+import EditPlanModal from "./EditPlanModal";
 import BulkActionsToolbar from "./BulkActionsToolbar";
 import type { Plan } from "@/hooks/usePlans";
 
@@ -15,6 +15,7 @@ const PlansCatalogTab = () => {
   const { plans, isLoading, updatePlan } = usePlans();
   const { supplierRates } = useSupplierRates();
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+  const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [selectedPlanIds, setSelectedPlanIds] = useState<string[]>([]);
   const [showLowMarginOnly, setShowLowMarginOnly] = useState(false);
 
@@ -233,7 +234,11 @@ const PlansCatalogTab = () => {
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => setEditingPlan(plan)}
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
                     </div>
@@ -256,6 +261,12 @@ const PlansCatalogTab = () => {
         plan={selectedPlan}
         isOpen={!!selectedPlan}
         onClose={() => setSelectedPlan(null)}
+      />
+
+      <EditPlanModal
+        plan={editingPlan}
+        isOpen={!!editingPlan}
+        onClose={() => setEditingPlan(null)}
       />
     </div>
   );
