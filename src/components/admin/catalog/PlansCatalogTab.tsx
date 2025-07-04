@@ -166,7 +166,9 @@ const PlansCatalogTab = () => {
                     <div className="flex items-center gap-2">
                       {plan.name}
                       {isLowMargin && (
-                        <AlertTriangle className="h-4 w-4 text-red-500" title="Low margin alert" />
+                        <span title="Low margin alert">
+                          <AlertTriangle className="h-4 w-4 text-red-500" />
+                        </span>
                       )}
                     </div>
                   </TableCell>
