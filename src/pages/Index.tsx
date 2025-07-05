@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/auth";
 import Navbar from "@/components/Navbar";
 import EnhancedHeroSection from "@/components/EnhancedHeroSection";
 import PlanCards from "@/components/PlanCards";
-import CountriesSection from "@/components/CountriesSection";
+import EnhancedCoverageSection from "@/components/EnhancedCoverageSection";
 import DynamicTestimonials from "@/components/DynamicTestimonials";
 import TrustIndicators from "@/components/TrustIndicators";
 import CtaSection from "@/components/CtaSection";
@@ -38,7 +38,7 @@ const Index = () => {
       <main className="flex-grow">
         <EnhancedHeroSection />
         <PlanCards />
-        <CountriesSection />
+        <EnhancedCoverageSection />
         <DynamicTestimonials />
         <TrustIndicators />
         <CtaSection />
