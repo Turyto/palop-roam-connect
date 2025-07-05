@@ -1,7 +1,6 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Badge } from "@/components/ui/badge";
 import { Smartphone, Users, Briefcase, Globe } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -81,14 +80,14 @@ const CoverageFilter = ({ onFilterSelect }: { onFilterSelect: (clusterId: string
   ];
 
   return (
-    <div className="mb-8">
-      <p className="text-center text-gray-600 mb-4">Where do you need coverage?</p>
+    <div className="mb-12">
+      <p className="text-center text-gray-600 mb-6 text-lg">Where do you need coverage?</p>
       <div className="flex flex-wrap justify-center gap-3">
         {clusters.map((cluster) => (
           <Button
             key={cluster.id}
             variant="outline"
-            className="border-palop-green text-palop-green hover:bg-palop-green/10"
+            className="border-palop-green text-palop-green hover:bg-palop-green hover:text-white transition-all duration-200"
             onClick={() => onFilterSelect(cluster.id)}
           >
             {cluster.name}
@@ -117,94 +116,99 @@ const PlanCards = () => {
         
         <CoverageFilter onFilterSelect={handleFilterSelect} />
         
+        {/* Responsive Grid Layout */}
         <div className="max-w-7xl mx-auto">
-          <Carousel
-            opts={{
-              align: "start",
-              loop: true,
-            }}
-            className="w-full"
-          >
-            <CarouselContent className="-ml-2 md:-ml-4">
-              {plans.map((plan) => (
-                <CarouselItem key={plan.id} className="pl-2 md:pl-4 basis-full md:basis-1/2 lg:basis-1/3">
-                  <Card 
-                    id={`plan-${plan.id}`}
-                    className={`h-full card-hover ${plan.popular ? 'border-2 border-palop-green shadow-lg' : ''} relative`}
-                  >
-                    {plan.popular && (
-                      <div className="absolute -top-3 right-4 bg-palop-green text-white px-3 py-1 text-xs font-bold rounded-full z-10">
-                        Most Popular
-                      </div>
-                    )}
-                    
-                    <Badge className={`absolute -top-2 left-4 ${plan.badgeColor} text-white text-xs z-10`}>
-                      {plan.clusterName}
-                    </Badge>
-                    
-                    <CardHeader className="text-center pb-2 pt-8">
-                      <div className={`w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br ${plan.color} flex items-center justify-center text-palop-blue`}>
-                        {plan.icon}
-                      </div>
-                      <CardTitle className="text-xl">{plan.title}</CardTitle>
-                      <CardDescription className="text-gray-600 mb-2">{plan.tagline}</CardDescription>
-                      
-                      {/* Coverage Countries */}
-                      <div className="mb-4">
-                        <p className="text-xs text-gray-500 mb-2">Coverage Countries</p>
-                        <div className="flex flex-wrap gap-1 justify-center max-h-20 overflow-y-auto">
-                          {plan.countries.slice(0, 8).map((country) => (
-                            <CountryFlagChip
-                              key={country.code}
-                              name={country.name}
-                              flag={country.flag}
-                              size="sm"
-                            />
-                          ))}
-                          {plan.countries.length > 8 && (
-                            <span className="text-xs text-gray-500 self-center">
-                              +{plan.countries.length - 8} more
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </CardHeader>
-                    
-                    <CardContent className="text-center flex-grow">
-                      <div className="mb-4">
-                        <div className="text-3xl font-bold text-palop-green">€{plan.price}</div>
-                        <div className="text-sm text-gray-500">{plan.data} • {plan.duration}</div>
-                      </div>
-                      
-                      <ul className="space-y-2 text-sm">
-                        {plan.features.map((feature, index) => (
-                          <li key={index} className="flex items-center justify-center">
-                            <div className="w-2 h-2 bg-palop-green rounded-full mr-2"></div>
-                            {feature}
-                          </li>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {plans.map((plan) => (
+              <Card 
+                key={plan.id}
+                id={`plan-${plan.id}`}
+                className={`h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-palop-green/30 ${
+                  plan.popular ? 'border-2 border-palop-green shadow-lg scale-105 lg:scale-100' : 'border border-gray-200'
+                } relative flex flex-col`}
+              >
+                {plan.popular && (
+                  <div className="absolute -top-3 right-4 bg-palop-green text-white px-3 py-1 text-xs font-bold rounded-full z-10">
+                    Most Popular
+                  </div>
+                )}
+                
+                <Badge className={`absolute -top-2 left-4 ${plan.badgeColor} text-white text-xs z-10 font-semibold`}>
+                  {plan.clusterName}
+                </Badge>
+                
+                <CardHeader className="text-center pb-4 pt-8 flex-shrink-0">
+                  <div className={`w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br ${plan.color} flex items-center justify-center text-palop-blue`}>
+                    {plan.icon}
+                  </div>
+                  <CardTitle className="text-xl font-bold leading-tight">{plan.title}</CardTitle>
+                  <CardDescription className="text-gray-600 text-base leading-relaxed line-clamp-2">
+                    {plan.tagline}
+                  </CardDescription>
+                </CardHeader>
+                
+                <CardContent className="flex-grow px-6">
+                  {/* Coverage Countries - Fixed Height Container */}
+                  <div className="mb-6">
+                    <p className="text-xs text-gray-500 mb-3 font-medium">Coverage Countries</p>
+                    <div className="h-20 overflow-y-auto">
+                      <div className="flex flex-wrap gap-1">
+                        {plan.countries.slice(0, 12).map((country) => (
+                          <CountryFlagChip
+                            key={country.code}
+                            name={country.name}
+                            flag={country.flag}
+                            size="sm"
+                          />
                         ))}
-                      </ul>
-                    </CardContent>
-                    
-                    <CardFooter className="pt-4">
-                      <Button className="w-full bg-palop-green hover:bg-palop-green/90" asChild>
-                        <Link to={`/plans?cluster=${plan.id}`}>Choose Plan</Link>
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious className="hidden md:flex" />
-            <CarouselNext className="hidden md:flex" />
-          </Carousel>
+                        {plan.countries.length > 12 && (
+                          <span className="text-xs text-gray-500 self-center bg-gray-100 px-2 py-1 rounded-full font-medium">
+                            +{plan.countries.length - 12} more
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Pricing */}
+                  <div className="text-center mb-6">
+                    <div className="text-3xl font-bold text-palop-green">€{plan.price}</div>
+                    <div className="text-sm text-gray-500 mt-1 font-medium">{plan.data} • {plan.duration}</div>
+                  </div>
+                  
+                  {/* Features */}
+                  <ul className="space-y-2 text-sm">
+                    {plan.features.map((feature, index) => (
+                      <li key={index} className="flex items-center">
+                        <div className="w-2 h-2 bg-palop-green rounded-full mr-3 flex-shrink-0"></div>
+                        <span className="text-gray-700">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+                
+                <CardFooter className="pt-4 pb-6 px-6 mt-auto">
+                  <Button 
+                    className="w-full bg-palop-green hover:bg-palop-green/90 transition-colors duration-200 font-semibold" 
+                    asChild
+                  >
+                    <Link to={`/plans?cluster=${plan.id}`}>Choose Plan</Link>
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
         </div>
         
         <div className="text-center mt-12">
-          <p className="text-gray-600 mb-6">
+          <p className="text-gray-600 mb-6 text-base max-w-3xl mx-auto">
             Each plan includes the best local networks in covered countries to keep you connected wherever you are.
           </p>
-          <Button variant="outline" className="border-palop-green text-palop-green hover:bg-palop-green/10" asChild>
+          <Button 
+            variant="outline" 
+            className="border-palop-green text-palop-green hover:bg-palop-green hover:text-white transition-all duration-200 font-semibold" 
+            asChild
+          >
             <Link to="/plans">Compare All Plans</Link>
           </Button>
         </div>
