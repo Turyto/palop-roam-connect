@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Save, Settings } from "lucide-react";
+import WholesaleProvidersOverview from "./WholesaleProvidersOverview";
 
 const PricingRulesTab = () => {
   const { pricingRules, isLoading, updatePricingRules, isUpdating } = usePricingRules();
@@ -30,7 +31,7 @@ const PricingRulesTab = () => {
   }
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="max-w-4xl space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -96,6 +97,9 @@ const PricingRulesTab = () => {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Wholesale Providers Overview */}
+      <WholesaleProvidersOverview />
 
       <Card>
         <CardHeader>
