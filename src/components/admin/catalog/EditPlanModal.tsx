@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { usePlans, type Plan } from "@/hooks/usePlans";
+import { usePlans, useSupplierRates, type Plan } from "@/hooks/usePlans";
+import { supabase } from "@/integrations/supabase/client";
 import SupplierInfoSection from "./edit-plan-modal/SupplierInfoSection";
 import TagsSection from "./edit-plan-modal/TagsSection";
 import CountrySelectionSection, { 
@@ -31,6 +32,8 @@ interface EditPlanFormData {
   tags: string[];
   coverage: string[];
   margin_alert_threshold?: number;
+  wholesale_cost?: number;
+  supplier_name?: string;
 }
 
 const PALOP_DEFAULT_COUNTRIES = [
@@ -42,8 +45,10 @@ const PALOP_DEFAULT_COUNTRIES = [
 
 const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
   const { updatePlan, isUpdating } = usePlans();
+  const { supplierRates, refetch: refetchSupplierRates } = useSupplierRates();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
+  const [currentSupplierRate, setCurrentSupplierRate] = useState<any>(null);
 
   const {
     register,
@@ -67,12 +72,18 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
 
   useEffect(() => {
     if (plan && isOpen) {
+      // Find existing supplier rate for this plan
+      const existingRate = supplierRates.find(rate => rate.plan_id === plan.id);
+      setCurrentSupplierRate(existingRate);
+
       reset({
         name: plan.name,
         retail_price: plan.retail_price,
         description: plan.description || '',
         tags: plan.tags || [],
-        coverage: plan.coverage || []
+        coverage: plan.coverage || [],
+        wholesale_cost: existingRate?.wholesale_cost || 0,
+        supplier_name: existingRate?.supplier_name || ''
       });
       
       setSelectedTags(plan.tags || []);
@@ -88,7 +99,7 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
         setSelectedCountries(existingCoverage);
       }
     }
-  }, [plan, isOpen, reset, setValue]);
+  }, [plan, isOpen, reset, setValue, supplierRates]);
 
   const handleTagToggle = (tag: string) => {
     const newTags = selectedTags.includes(tag) 
@@ -112,6 +123,43 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
     setValue('coverage', newCountries);
   };
 
+  const updateSupplierRate = async (planId: string, wholesaleCost: number, supplierName: string) => {
+    try {
+      if (currentSupplierRate) {
+        // Update existing supplier rate
+        const { error } = await supabase
+          .from('supplier_rates')
+          .update({
+            wholesale_cost: wholesaleCost,
+            supplier_name: supplierName || currentSupplierRate.supplier_name,
+            last_checked: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', currentSupplierRate.id);
+
+        if (error) throw error;
+      } else if (wholesaleCost > 0 && supplierName) {
+        // Create new supplier rate
+        const { error } = await supabase
+          .from('supplier_rates')
+          .insert({
+            plan_id: planId,
+            wholesale_cost: wholesaleCost,
+            supplier_name: supplierName,
+            last_checked: new Date().toISOString()
+          });
+
+        if (error) throw error;
+      }
+      
+      // Refresh supplier rates
+      await refetchSupplierRates();
+    } catch (error) {
+      console.error('Error updating supplier rate:', error);
+      throw error;
+    }
+  };
+
   const onSubmit = async (data: EditPlanFormData) => {
     if (!plan) return;
 
@@ -124,8 +172,15 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
         coverage: selectedCountries
       };
 
+      // Update plan first
       updatePlan({ id: plan.id, updates });
-      toast.success("Plan updated successfully!");
+
+      // Update supplier rate if provided
+      if (data.wholesale_cost !== undefined && data.wholesale_cost >= 0) {
+        await updateSupplierRate(plan.id, data.wholesale_cost, data.supplier_name || 'Manual Entry');
+      }
+
+      toast.success("Plan and supplier rate updated successfully!");
       onClose();
     } catch (error) {
       toast.error("Failed to update plan. Please try again.");
@@ -137,6 +192,7 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
     reset();
     setSelectedTags([]);
     setSelectedCountries([]);
+    setCurrentSupplierRate(null);
     onClose();
   };
 
@@ -195,6 +251,34 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
               {errors.retail_price && (
                 <p className="text-sm text-red-600 mt-1">{errors.retail_price.message}</p>
               )}
+            </div>
+
+            {/* Wholesale Cost */}
+            <div>
+              <Label htmlFor="wholesale_cost">Wholesale Cost (€)</Label>
+              <Input
+                id="wholesale_cost"
+                type="number"
+                step="0.01"
+                min="0"
+                {...register('wholesale_cost', { 
+                  min: { value: 0, message: 'Cost must be 0 or greater' },
+                  valueAsNumber: true
+                })}
+                placeholder="0.00"
+              />
+              <p className="text-xs text-gray-500 mt-1">Update supplier wholesale cost</p>
+            </div>
+
+            {/* Supplier Name */}
+            <div>
+              <Label htmlFor="supplier_name">Supplier Name</Label>
+              <Input
+                id="supplier_name"
+                {...register('supplier_name')}
+                placeholder="e.g., AirHub, eSIM Access"
+              />
+              <p className="text-xs text-gray-500 mt-1">Supplier providing this plan</p>
             </div>
 
             {/* Margin Alert Override */}
