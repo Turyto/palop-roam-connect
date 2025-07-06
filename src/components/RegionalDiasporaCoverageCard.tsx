@@ -45,22 +45,29 @@ const RegionalDiasporaCoverageCard = () => {
   const hasMoreCountries = regionalDiasporaCountries.length > 8;
 
   return (
-    <Card className="card-hover h-full flex flex-col">
+    <Card className="card-hover cursor-pointer h-full flex flex-col">
       <CardHeader>
-        <div className="flex items-center space-x-3 mb-4">
-          <div className="p-2 bg-palop-blue/10 rounded-lg">
-            <Globe className="w-6 h-6 text-palop-blue" />
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <span className="text-4xl">🌍</span>
+            <div>
+              <CardTitle className="text-xl">Regional & Diaspora Countries</CardTitle>
+              <p className="text-sm text-gray-500 flex items-center">
+                <Globe className="w-4 h-4 mr-1" />
+                Extended Coverage
+              </p>
+            </div>
           </div>
-          <div>
-            <CardTitle className="text-xl">Regional & Diaspora Countries</CardTitle>
-            <p className="text-sm text-gray-500">
-              Extended coverage for PALOP travelers and diaspora
-            </p>
+          <div className="text-right">
+            <div className="text-2xl font-bold text-palop-blue">{regionalDiasporaCountries.length}+</div>
+            <div className="text-xs text-gray-500">Countries</div>
           </div>
         </div>
       </CardHeader>
       
       <CardContent className="flex-grow flex flex-col space-y-4">
+        <p className="text-gray-600">Extended coverage for PALOP travelers and diaspora across Africa, Europe, and CPLP countries.</p>
+        
         {/* Country Chips Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
           {displayedCountries.map((country, index) => (
@@ -95,15 +102,19 @@ const RegionalDiasporaCoverageCard = () => {
           </div>
         )}
 
-        {/* Coverage Summary */}
-        <div className="bg-gray-50 rounded-lg p-3 text-center">
-          <p className="text-sm text-gray-600">
-            Connect in <strong>{regionalDiasporaCountries.length}+ additional countries</strong> where PALOP communities live, travel, or do business.
-          </p>
+        <div className="flex items-center space-x-4 text-sm">
+          <div className="flex items-center">
+            <Users className="w-4 h-4 mr-1 text-palop-blue" />
+            <span>PALOP Communities</span>
+          </div>
+          <div className="flex items-center">
+            <Globe className="w-4 h-4 mr-1 text-palop-green" />
+            <span>Business Travel</span>
+          </div>
         </div>
 
         {/* Key Metrics Row */}
-        <div className="grid grid-cols-3 gap-3 text-sm">
+        <div className="grid grid-cols-3 gap-4 text-sm">
           <div className="text-center p-3 bg-palop-green/10 rounded-lg">
             <Zap className="h-5 w-5 text-palop-green mx-auto mb-1" />
             <div className="font-bold">~75 Mbps</div>
@@ -119,6 +130,13 @@ const RegionalDiasporaCoverageCard = () => {
             <div className="font-bold">{regionalDiasporaCountries.length}+</div>
             <div className="text-gray-600">Countries</div>
           </div>
+        </div>
+
+        {/* Coverage Summary */}
+        <div className="bg-gray-50 rounded-lg p-3 text-center">
+          <p className="text-sm text-gray-600">
+            Connect in <strong>{regionalDiasporaCountries.length}+ additional countries</strong> where PALOP communities live, travel, or do business.
+          </p>
         </div>
 
         {/* CTA Button */}
