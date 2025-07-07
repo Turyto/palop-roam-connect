@@ -1,3 +1,4 @@
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -162,6 +163,57 @@ const CountryDetailModal = ({ country, isOpen, onClose }: CountryDetailModalProp
         }
       ],
       "dataSources": ["REST Countries", "Tatoeba", "Nager.Date", "Open Food Facts"]
+    },
+    "São Tomé and Príncipe": {
+      "countryCode": "ST",
+      "countryName": "São Tomé and Príncipe",
+      "languageSection": {
+        "primaryLanguages": ["Portuguese", "Forro"],
+        "commonPhrases": [
+          { "phrase": "Bom dia", "meaning": "Good morning", "phonetic": "bohm DEE-ah" },
+          { "phrase": "Obrigado/a", "meaning": "Thank you", "phonetic": "oh-bree-GAH-doo" }
+        ],
+        "etiquetteNote": "Learn Forro basics to connect with locals."
+      },
+      "eventsSection": [
+        { "eventName": "Santo António Festival (13 June)", "description": "Local saints, street food, parades" },
+        { "eventName": "Independence Day (12 July)", "description": "Patriotic music and national pride" },
+        { "eventName": "São Lourenço Festival (August)", "description": "Island-wide celebration" },
+        { "eventName": "Cocoa Festival", "description": "Cultural showcase and chocolate markets" }
+      ],
+      "priceIndex": {
+        "tourist": [
+          {"item": "Street food meal", "priceExample": "€4"},
+          {"item": "Bottled water", "priceExample": "€0.60"},
+          {"item": "Local transport", "priceExample": "€0.50"}
+        ],
+        "business": [
+          {"item": "Hotel room", "priceExample": "€70"},
+          {"item": "Car rental (per day)", "priceExample": "€40"}
+        ],
+        "expat": [
+          {"item": "Monthly rent (1BR)", "priceExample": "€350"},
+          {"item": "Groceries", "priceExample": "€90"}
+        ]
+      },
+      "tipsSection": [
+        "Learn Forro basics to connect with locals.",
+        "Eat at roadside grills or stalls for fresh seafood.",
+        "Use public transport or shared taxis to save money.",
+        "Book flights early — limited routes and high demand during holidays."
+      ],
+      "culturalConnectivity": "A blend of Portuguese and African heritage, São Tomé & Príncipe is rich in Creole languages, music like Ússua and Socopé, and cocoa-based cuisine. Its calm island pace is rooted in traditions, community, and natural beauty.",
+      "bestTimesToVisit": [
+        {
+          "season": "Low Season (April–June)",
+          "description": "Lower prices, fewer tourists, lush landscapes."
+        },
+        {
+          "season": "Festival Season (June–August)", 
+          "description": "Join locals in religious and cultural parades."
+        }
+      ],
+      "dataSources": ["REST Countries", "Tatoeba", "Nager.Date", "Open Food Facts"]
     }
   };
 
@@ -289,8 +341,8 @@ const CountryDetailModal = ({ country, isOpen, onClose }: CountryDetailModalProp
           <TabsContent value="culture" className="space-y-6">
             <div className="bg-gradient-to-br from-palop-yellow/5 via-palop-green/5 to-palop-blue/5 p-6 rounded-lg space-y-6">
               
-              {/* Cultural Connectivity Section - only for Cape Verde */}
-              {country.name === "Cape Verde" && currentCultureData.culturalConnectivity && (
+              {/* Cultural Connectivity Section - only for Cape Verde and São Tomé & Príncipe */}
+              {(country.name === "Cape Verde" || country.name === "São Tomé and Príncipe") && currentCultureData.culturalConnectivity && (
                 <div className="bg-white/60 backdrop-blur-sm p-4 rounded-lg border border-palop-green/20">
                   <h4 className="font-semibold mb-3 flex items-center text-palop-green">
                     🌍 Cultural Connectivity
@@ -351,8 +403,8 @@ const CountryDetailModal = ({ country, isOpen, onClose }: CountryDetailModalProp
                 </div>
               </div>
 
-              {/* Best Times to Visit - only for Cape Verde */}
-              {country.name === "Cape Verde" && currentCultureData.bestTimesToVisit && (
+              {/* Best Times to Visit - only for Cape Verde and São Tomé & Príncipe */}
+              {(country.name === "Cape Verde" || country.name === "São Tomé and Príncipe") && currentCultureData.bestTimesToVisit && (
                 <div className="bg-white/60 backdrop-blur-sm p-4 rounded-lg border border-palop-yellow/20">
                   <h4 className="font-semibold mb-3 flex items-center text-palop-yellow">
                     ⏰ Best Times to Visit
@@ -427,7 +479,7 @@ const CountryDetailModal = ({ country, isOpen, onClose }: CountryDetailModalProp
               <div className="bg-white/60 backdrop-blur-sm p-4 rounded-lg border border-palop-red/20">
                 <h4 className="font-semibold mb-3 flex items-center text-palop-red">
                   <MapIcon className="w-5 h-5 mr-2" />
-                  {country.name === "Cape Verde" ? "Travel & Language Tips" : "Localized Travel Tips"}
+                  {(country.name === "Cape Verde" || country.name === "São Tomé and Príncipe") ? "Travel & Language Tips" : "Localized Travel Tips"}
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {currentCultureData.tipsSection.map((tip, index) => (
