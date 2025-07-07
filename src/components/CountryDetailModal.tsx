@@ -214,6 +214,57 @@ const CountryDetailModal = ({ country, isOpen, onClose }: CountryDetailModalProp
         }
       ],
       "dataSources": ["REST Countries", "Tatoeba", "Nager.Date", "Open Food Facts"]
+    },
+    "Guinea-Bissau": {
+      "countryCode": "GW",
+      "countryName": "Guinea-Bissau",
+      "languageSection": {
+        "primaryLanguages": ["Portuguese", "Crioulo"],
+        "commonPhrases": [
+          { "phrase": "N'sta bem?", "meaning": "How are you?", "phonetic": "n-sta bem" },
+          { "phrase": "Obrigadu", "meaning": "Thank you", "phonetic": "oh-bree-GAH-doo" }
+        ],
+        "etiquetteNote": "Use Crioulo greetings like 'N'sta bem?' when meeting locals."
+      },
+      "eventsSection": [
+        { "eventName": "Carnival in Bissau", "description": "Colorful parades and community spirit" },
+        { "eventName": "Bijagós Archipelago Festival", "description": "Indigenous island traditions" },
+        { "eventName": "Tabanca Festival", "description": "A celebration of identity and ancestry" },
+        { "eventName": "Bubaque Music Festival", "description": "Live performances under the stars" }
+      ],
+      "priceIndex": {
+        "tourist": [
+          {"item": "Street food meal", "priceExample": "€1.50"},
+          {"item": "Bottled water", "priceExample": "€0.30"},
+          {"item": "Local transport", "priceExample": "€0.25"}
+        ],
+        "business": [
+          {"item": "Hotel room", "priceExample": "€45"},
+          {"item": "Car rental (per day)", "priceExample": "€30"}
+        ],
+        "expat": [
+          {"item": "Monthly rent (1BR)", "priceExample": "€250"},
+          {"item": "Groceries", "priceExample": "€50"}
+        ]
+      },
+      "tipsSection": [
+        "Use Crioulo greetings like 'N'sta bem?' when meeting locals.",
+        "Use 'sept-places' (shared taxis) for longer distances.",
+        "Visit less touristy areas like Varela for more authenticity.",
+        "Shop in open markets for best prices on food and crafts."
+      ],
+      "culturalConnectivity": "Guinea-Bissau's cultural identity is rooted in Crioulo language, Tabanca ceremonies, and a rich oral tradition. With strong ties to music and communal living, the country thrives on vibrant festivals and grassroots expression.",
+      "bestTimesToVisit": [
+        {
+          "season": "Dry Season (November–May)",
+          "description": "Best for beach trips, cultural tours, and comfortable travel."
+        },
+        {
+          "season": "Carnival Season (February)", 
+          "description": "Join locals in the streets for drums, dance, and celebration."
+        }
+      ],
+      "dataSources": ["REST Countries", "Tatoeba", "Nager.Date", "Open Food Facts"]
     }
   };
 
@@ -341,8 +392,8 @@ const CountryDetailModal = ({ country, isOpen, onClose }: CountryDetailModalProp
           <TabsContent value="culture" className="space-y-6">
             <div className="bg-gradient-to-br from-palop-yellow/5 via-palop-green/5 to-palop-blue/5 p-6 rounded-lg space-y-6">
               
-              {/* Cultural Connectivity Section - only for Cape Verde and São Tomé & Príncipe */}
-              {(country.name === "Cape Verde" || country.name === "São Tomé and Príncipe") && currentCultureData.culturalConnectivity && (
+              {/* Cultural Connectivity Section - only for specific countries */}
+              {currentCultureData.culturalConnectivity && (
                 <div className="bg-white/60 backdrop-blur-sm p-4 rounded-lg border border-palop-green/20">
                   <h4 className="font-semibold mb-3 flex items-center text-palop-green">
                     🌍 Cultural Connectivity
@@ -403,8 +454,8 @@ const CountryDetailModal = ({ country, isOpen, onClose }: CountryDetailModalProp
                 </div>
               </div>
 
-              {/* Best Times to Visit - only for Cape Verde and São Tomé & Príncipe */}
-              {(country.name === "Cape Verde" || country.name === "São Tomé and Príncipe") && currentCultureData.bestTimesToVisit && (
+              {/* Best Times to Visit - only for specific countries */}
+              {currentCultureData.bestTimesToVisit && (
                 <div className="bg-white/60 backdrop-blur-sm p-4 rounded-lg border border-palop-yellow/20">
                   <h4 className="font-semibold mb-3 flex items-center text-palop-yellow">
                     ⏰ Best Times to Visit
@@ -479,7 +530,7 @@ const CountryDetailModal = ({ country, isOpen, onClose }: CountryDetailModalProp
               <div className="bg-white/60 backdrop-blur-sm p-4 rounded-lg border border-palop-red/20">
                 <h4 className="font-semibold mb-3 flex items-center text-palop-red">
                   <MapIcon className="w-5 h-5 mr-2" />
-                  {(country.name === "Cape Verde" || country.name === "São Tomé and Príncipe") ? "Travel & Language Tips" : "Localized Travel Tips"}
+                  {(country.name === "Cape Verde" || country.name === "São Tomé and Príncipe" || country.name === "Guinea-Bissau") ? "Travel & Language Tips" : "Localized Travel Tips"}
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {currentCultureData.tipsSection.map((tip, index) => (
