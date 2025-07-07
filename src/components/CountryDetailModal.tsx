@@ -109,7 +109,59 @@ const CountryDetailModal = ({ country, isOpen, onClose }: CountryDetailModalProp
         "Try local markets for authentic experiences.",
         "Cash is preferred in many places.",
         "Learn basic Portuguese phrases."
-      ]
+      ],
+      "dataSources": ["REST Countries", "Tatoeba", "Nager.Date", "Open Food Facts"]
+    },
+    "Cape Verde": {
+      "countryCode": "CV",
+      "countryName": "Cape Verde",
+      "languageSection": {
+        "primaryLanguages": ["Portuguese", "Cape Verdean Creole"],
+        "commonPhrases": [
+          { "phrase": "Bon dia", "meaning": "Good morning", "phonetic": "bohn DEE-ah" },
+          { "phrase": "Obrigadu", "meaning": "Thank you", "phonetic": "oh-bree-GAH-doo" }
+        ],
+        "etiquetteNote": "Speak a few words in Cape Verdean Creole – locals appreciate it."
+      },
+      "eventsSection": [
+        { "eventName": "Gamboa Music Festival (Praia)", "description": "Cape Verde's iconic music celebration in May" },
+        { "eventName": "Independence Day (5 July)", "description": "Nationwide festivities, parades, and concerts" },
+        { "eventName": "Carnival (Mindelo)", "description": "One of the most vibrant in Africa, full of dance and color" },
+        { "eventName": "Tabanka Festival", "description": "Cultural reenactments and music across islands" }
+      ],
+      "priceIndex": {
+        "tourist": [
+          {"item": "Local meal", "priceExample": "€8"},
+          {"item": "Bottled water", "priceExample": "€1"},
+          {"item": "Aluguer (shared taxi)", "priceExample": "€1.50"}
+        ],
+        "business": [
+          {"item": "Inter-island flight", "priceExample": "€80"},
+          {"item": "Hotel room", "priceExample": "€60"}
+        ],
+        "expat": [
+          {"item": "Monthly rent (1BR)", "priceExample": "€300"},
+          {"item": "Groceries", "priceExample": "€80"}
+        ]
+      },
+      "tipsSection": [
+        "Use shared taxis or 'aluguers' for budget-friendly island travel.",
+        "Eat at local 'lanchonetes' or street food stalls for tasty, affordable meals.",
+        "Book inter-island flights in advance – limited seats during festivals.",
+        "Festival Season (May–August): Enjoy music festivals and vibrant street parades."
+      ],
+      "culturalConnectivity": "A unique blend of African and Portuguese heritage, Cape Verde offers a warm, music-rich culture that shines through its morna, batuque rhythms, and island hospitality. From São Vicente's artistic pulse to Santiago's historical roots, each island tells a story.",
+      "bestTimesToVisit": [
+        {
+          "season": "Festival Season (May–August)",
+          "description": "Enjoy music festivals and vibrant street parades across Santiago, São Vicente, and Sal islands."
+        },
+        {
+          "season": "Off Season (October–November)", 
+          "description": "Quieter beaches, local immersion, and better value on flights and accommodation."
+        }
+      ],
+      "dataSources": ["REST Countries", "Tatoeba", "Nager.Date", "Open Food Facts"]
     }
   };
 
@@ -237,6 +289,18 @@ const CountryDetailModal = ({ country, isOpen, onClose }: CountryDetailModalProp
           <TabsContent value="culture" className="space-y-6">
             <div className="bg-gradient-to-br from-palop-yellow/5 via-palop-green/5 to-palop-blue/5 p-6 rounded-lg space-y-6">
               
+              {/* Cultural Connectivity Section - only for Cape Verde */}
+              {country.name === "Cape Verde" && currentCultureData.culturalConnectivity && (
+                <div className="bg-white/60 backdrop-blur-sm p-4 rounded-lg border border-palop-green/20">
+                  <h4 className="font-semibold mb-3 flex items-center text-palop-green">
+                    🌍 Cultural Connectivity
+                  </h4>
+                  <p className="text-gray-700 text-sm leading-relaxed">
+                    {currentCultureData.culturalConnectivity}
+                  </p>
+                </div>
+              )}
+
               {/* Language & Communication Section */}
               <div className="bg-white/60 backdrop-blur-sm p-4 rounded-lg border border-palop-green/20">
                 <h4 className="font-semibold mb-3 flex items-center text-palop-green">
@@ -275,7 +339,7 @@ const CountryDetailModal = ({ country, isOpen, onClose }: CountryDetailModalProp
               <div className="bg-white/60 backdrop-blur-sm p-4 rounded-lg border border-palop-blue/20">
                 <h4 className="font-semibold mb-3 flex items-center text-palop-blue">
                   <Calendar className="w-5 h-5 mr-2" />
-                  Events & Festivals
+                  {country.name === "Cape Verde" ? "Major Cultural Events" : "Events & Festivals"}
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {currentCultureData.eventsSection.map((event, index) => (
@@ -286,6 +350,23 @@ const CountryDetailModal = ({ country, isOpen, onClose }: CountryDetailModalProp
                   ))}
                 </div>
               </div>
+
+              {/* Best Times to Visit - only for Cape Verde */}
+              {country.name === "Cape Verde" && currentCultureData.bestTimesToVisit && (
+                <div className="bg-white/60 backdrop-blur-sm p-4 rounded-lg border border-palop-yellow/20">
+                  <h4 className="font-semibold mb-3 flex items-center text-palop-yellow">
+                    ⏰ Best Times to Visit
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {currentCultureData.bestTimesToVisit.map((period, index) => (
+                      <div key={index} className="bg-white/40 p-3 rounded border border-palop-yellow/10">
+                        <h5 className="font-medium text-palop-yellow mb-1">{period.season}</h5>
+                        <p className="text-sm text-gray-600">{period.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Price Index Section */}
               <div className="bg-white/60 backdrop-blur-sm p-4 rounded-lg border border-palop-yellow/20">
@@ -346,7 +427,7 @@ const CountryDetailModal = ({ country, isOpen, onClose }: CountryDetailModalProp
               <div className="bg-white/60 backdrop-blur-sm p-4 rounded-lg border border-palop-red/20">
                 <h4 className="font-semibold mb-3 flex items-center text-palop-red">
                   <MapIcon className="w-5 h-5 mr-2" />
-                  Localized Travel Tips
+                  {country.name === "Cape Verde" ? "Travel & Language Tips" : "Localized Travel Tips"}
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {currentCultureData.tipsSection.map((tip, index) => (
