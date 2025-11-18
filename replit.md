@@ -1,164 +1,126 @@
 # PALOP Roam Connect - eSIM Platform
 
-## Project Overview
-PALOP Roam Connect is a comprehensive eSIM platform designed to provide connectivity solutions for PALOP (Portuguese-speaking African countries) and neighboring regions. The platform enables users to purchase, manage, and activate eSIM plans with integrated payment processing and administrative tools.
+## Overview
+BuéChama eSIM is a comprehensive eSIM platform designed for PALOP (Portuguese-speaking African countries) communities. The platform provides affordable data and voice roaming plans specifically for travelers and communities from Angola, Cape Verde, Guinea-Bissau, Mozambique, and São Tomé and Príncipe.
 
-## Technology Stack
-- **Frontend**: React 18 + TypeScript + Vite
-- **UI Framework**: Tailwind CSS + shadcn/ui components
-- **Routing**: React Router DOM v7
-- **State Management**: TanStack Query (React Query v5)
-- **Authentication**: Supabase Auth
-- **Database**: PostgreSQL (via Supabase)
-- **Styling**: Tailwind CSS with custom theme system
-- **Maps**: Mapbox GL
-- **Icons**: Lucide React
+## Current State
+**Status:** ✅ Fully migrated from Lovable to Replit and running successfully
 
-## Project Structure
+The application has been successfully migrated from Lovable's environment to Replit. All features are functional:
+- Frontend running on Vite + React with full CSS styling
+- Supabase integration for authentication and database
+- Admin dashboard for managing eSIM plans, orders, and inventory
+- Customer portal for browsing plans and managing orders
+- Integration with eSIM Access API for provisioning
 
-```
-├── client/
-│   ├── src/
-│   │   ├── components/       # React components
-│   │   │   ├── admin/       # Admin dashboard components
-│   │   │   ├── ui/          # shadcn/ui components
-│   │   │   └── ...          # Feature components
-│   │   ├── pages/           # Page components
-│   │   ├── hooks/           # Custom React hooks
-│   │   ├── contexts/        # React contexts (Auth, etc)
-│   │   ├── integrations/    # Supabase integration
-│   │   └── lib/             # Utilities
-│   ├── public/              # Static assets
-│   └── index.html           # HTML entry point
-├── supabase/
-│   ├── functions/           # Edge functions
-│   │   ├── esim-access/    # eSIM provider integration
-│   │   ├── check-esim-status/ # Status checker
-│   │   └── get-esim-package/  # Package retrieval
-│   └── migrations/          # Database migrations
-└── package.json             # Dependencies
-```
+## Recent Changes (Migration from Lovable - Nov 18, 2024)
+1. **Project Structure Reorganization**
+   - Moved all frontend code from `src/` to `client/src/`
+   - Moved `index.html` and `public/` to `client/` directory
+   - Updated all configuration files to reflect new structure
 
-## Key Features
+2. **Configuration Updates**
+   - `vite.config.ts`: Updated to serve from `client/` directory and bind to port 5000
+   - `tailwind.config.ts`: Updated content paths to scan `client/` directory
+   - `tsconfig.json` and `tsconfig.app.json`: Updated path aliases for new structure
+   - `package.json`: Updated project name and scripts
 
-### Customer Features
-- **eSIM Plans**: Browse and purchase data plans for various regions
-- **Order Management**: View order history and track eSIM activations
-- **QR Code Access**: Download QR codes for eSIM activation
-- **Top-ups**: Recharge existing plans with data or validity extensions
-- **Referral System**: Earn rewards by referring new users
-- **Coverage Maps**: Interactive maps showing network coverage
-- **Country Information**: Detailed information about supported countries
+3. **Workflow Configuration**
+   - Configured "Start application" workflow to run `npm run dev` on port 5000
+   - Set output type to webview for proper frontend display
 
-### Admin Features
-- **Dashboard Analytics**: Overview of orders, revenue, and users
-- **Order Management**: Process and manage customer orders
-- **eSIM Provisioning**: Provision and manage eSIM activations
-- **Inventory Management**: Track plan and carrier inventory
-- **QR Code Management**: Generate and manage QR codes
-- **User Management**: Manage customer and admin accounts
-- **Support Tickets**: Handle customer support requests
-- **Plans Catalog**: Manage available plans and pricing
-- **Supplier Integration**: Manage wholesale supplier rates
+## Project Architecture
 
-## Database Schema
+### Frontend (client/src/)
+- **Framework:** React 18 with TypeScript
+- **Routing:** React Router DOM v7
+- **Styling:** Tailwind CSS with custom PALOP color scheme
+- **UI Components:** Shadcn/ui component library
+- **State Management:** TanStack Query (React Query) for server state
+- **Authentication:** Supabase Auth with role-based access control
 
-### Core Tables
+### Backend & Database
+- **Database:** Supabase PostgreSQL with Row Level Security (RLS)
+- **Authentication:** Supabase Auth
+- **Edge Functions:** Supabase Functions for eSIM provisioning
+- **API Integration:** eSIM Access API for real eSIM provisioning
+
+### Key Features
+1. **Customer Features:**
+   - Browse eSIM plans by country and data amount
+   - Purchase eSIM plans
+   - View order history and eSIM activations
+   - Download QR codes for eSIM activation
+   - Top-up existing eSIMs
+   - Referral system
+
+2. **Admin Features:**
+   - Manage plans catalog with supplier rates
+   - View and process orders
+   - Monitor eSIM provisioning status
+   - Manage inventory (plan-based and carrier-based)
+   - View QR codes and activations
+   - User management
+   - Support ticket system
+
+### Database Schema
+The database includes these main tables:
 - `profiles` - User profiles with role management (admin/customer)
 - `orders` - eSIM purchase orders
-- `order_items` - Order line items
-- `esim_activations` - eSIM activation records
-- `esim_packages` - Plan-to-provider package mappings
+- `esim_activations` - eSIM activation records with QR codes
+- `plans` - Available eSIM plans catalog
+- `supplier_rates` - Wholesale costs from suppliers
+- `pricing_rules` - Dynamic pricing configuration
 - `qr_codes` - QR code generation and tracking
-- `plans` - Plans catalog
-- `supplier_rates` - Wholesale supplier pricing
-- `pricing_rules` - Pricing and markup rules
-- `topup_orders` - Recharge orders
-- `topup_options` - Available top-up options
-- `referral_codes` - Referral tracking
-- `referral_rewards` - Referral rewards
+- `topup_orders` - Top-up purchases
+- `referral_codes` & `referral_rewards` - Referral program
 - `support_tickets` - Customer support tickets
-- `carrier_integrations` - eSIM provider integrations
-
-## Environment Variables
-
-The following environment variables are available (managed by Replit):
-- `DATABASE_URL` - PostgreSQL connection string
-- `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `PGDATABASE` - PostgreSQL credentials
-
-Additional required secrets (to be configured):
-- `ESIM_ACCESS_SECRET_KEY` - eSIM Access API key for provisioning
-
-## Running the Project
-
-### Development
-```bash
-npm run dev
-```
-Starts the Vite dev server on port 5000
-
-### Production Build
-```bash
-npm run build
-npm start
-```
-
-### Deployment
-The project is configured for Replit deployment with:
-- Deployment target: `autoscale`
-- Build command: `npm run build`
-- Run command: `npm run start`
-
-## Key User Flows
-
-### Customer Purchase Flow
-1. Browse available plans on `/plans`
-2. Select a plan and proceed to `/purchase`
-3. Complete payment and order creation
-4. eSIM provisioning happens automatically
-5. Download QR code from `/orders`
-
-### Admin Management Flow
-1. Access admin dashboard at `/admin/dashboard`
-2. Monitor orders and provisioning status
-3. Process pending eSIM activations
-4. Manage inventory and pricing
-5. Handle support tickets
-
-## Supabase Integration
-
-The project uses Supabase for:
-- **Authentication**: User signup/login with email/password
-- **Database**: PostgreSQL with Row Level Security (RLS)
-- **Edge Functions**: eSIM provider API integration
-- **Real-time**: Order status updates
-
-## Recent Changes (Migration to Replit)
-
-- ✅ Migrated from Lovable to Replit environment
-- ✅ Restructured project with `client/` directory for frontend
-- ✅ Updated Vite config to bind to `0.0.0.0:5000`
-- ✅ Configured workflow for webview output
-- ✅ Updated TypeScript paths for new structure
-- ✅ Maintained Supabase integration and migrations
-- ✅ PostgreSQL database created and ready
 
 ## User Preferences
+- **Code Style:** TypeScript with React functional components
+- **UI Library:** Shadcn/ui components
+- **Styling:** Tailwind CSS with PALOP color scheme (green, yellow, red)
+- **Database:** Supabase with RLS policies
 
-_To be updated as preferences are discovered_
+## Development Workflow
+```bash
+# Start development server
+npm run dev
 
-## Architecture Notes
+# Build for production
+npm run build
 
-- **Frontend-Only Architecture**: The app uses Supabase for all backend functionality
-- **Edge Functions**: Supabase Edge Functions handle eSIM provider integrations
-- **RLS Security**: All database access is secured with Row Level Security policies
-- **Role-Based Access**: Admin and customer roles with different permissions
-- **Real-time Updates**: Uses Supabase real-time for live order updates
+# Preview production build
+npm run start
+```
+
+## Environment Variables
+The following Supabase secrets are already configured:
+- `DATABASE_URL` - PostgreSQL connection string
+- `SUPABASE_URL` - Supabase project URL (configured in client code)
+- `SUPABASE_ANON_KEY` - Supabase anonymous key (configured in client code)
+- `ESIM_ACCESS_SECRET_KEY` - eSIM Access API key (for edge functions)
+
+## Tech Stack
+- **Frontend:** React 18, TypeScript, Vite, Tailwind CSS
+- **UI:** Shadcn/ui, Radix UI primitives, Lucide icons
+- **Data Fetching:** TanStack Query
+- **Forms:** React Hook Form with Zod validation
+- **Maps:** Mapbox GL
+- **Charts:** Recharts
+- **Backend:** Supabase (Auth, PostgreSQL, Edge Functions)
+- **eSIM Provisioning:** eSIM Access API integration
+
+## Important Notes
+1. The project uses Supabase migrations located in `supabase/migrations/`
+2. Edge functions are in `supabase/functions/` for eSIM API integration
+3. The admin dashboard requires `admin` role in the profiles table
+4. All sensitive API keys should be managed through Supabase secrets
+5. The Tailwind config removes the deprecated `@tailwindcss/line-clamp` plugin warning
 
 ## Next Steps
-
-1. Configure `ESIM_ACCESS_SECRET_KEY` for eSIM provisioning
-2. Test eSIM purchase and activation flow
-3. Verify admin dashboard functionality
-4. Configure Stripe for payment processing (if needed)
-5. Test deployment to production
+The project is ready for development. You can:
+1. Continue building new features
+2. Test the eSIM provisioning flow with real API credentials
+3. Deploy to production using Replit's deployment features
+4. Set up environment variables for production Supabase instance

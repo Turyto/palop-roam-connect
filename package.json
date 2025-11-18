@@ -43,6 +43,7 @@
     "@tailwindcss/line-clamp": "^0.4.4",
     "@tanstack/react-query": "^5.56.2",
     "@types/file-saver": "^2.0.7",
+    "caniuse-lite": "^1.0.30001755",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
