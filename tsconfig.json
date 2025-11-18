@@ -7,7 +7,8 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./client/src/*"],
+      "@assets/*": ["./client/public/*"]
     },
     "noImplicitAny": false,
     "noUnusedParameters": false,
