@@ -112,6 +112,7 @@ const PurchaseFormWithOrders = ({
 
   // Called by PaymentDetails after Stripe confirms payment
   const handlePaymentSuccess = async (confirmedPaymentIntentId: string) => {
+    const emailForOrder = guestEmail || user?.email || "";
     try {
       const result = await createOrderAsync({
         plan_id: plan.id,
@@ -121,10 +122,20 @@ const PurchaseFormWithOrders = ({
         price: plan.price,
         currency: plan.currency,
         payment_intent_id: confirmedPaymentIntentId,
-        customerEmail: guestEmail || user?.email || "",
+        customerEmail: emailForOrder,
       });
 
       setConfirmedOrderId(result.order.id);
+
+      // For guests (anonymous users), send a magic link so they can access their order later
+      const isGuest = user && !user.email;
+      if (isGuest && emailForOrder) {
+        await supabase.auth.signInWithOtp({
+          email: emailForOrder,
+          options: { shouldCreateUser: true },
+        });
+      }
+
       onConfirmation();
     } catch (error: any) {
       console.error("Order creation failed:", error);
@@ -142,6 +153,7 @@ const PurchaseFormWithOrders = ({
       <ConfirmationView
         plan={plan}
         orderId={confirmedOrderId}
+        guestEmail={guestEmail || undefined}
         onBackToPlans={onBackToPlans}
       />
     );

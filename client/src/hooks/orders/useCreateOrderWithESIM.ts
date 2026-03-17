@@ -17,6 +17,7 @@ interface OrderInsertWithESIM {
   currency: string;
   status: string;
   payment_status: string;
+  customer_email?: string;
   payment_intent_id?: string;
   esim_package_id?: string;
   esim_status?: string;
@@ -96,6 +97,7 @@ export const useCreateOrderWithESIM = () => {
         currency: orderData.currency || 'EUR',
         status: orderData.payment_intent_id ? 'completed' : 'pending',
         payment_status: orderData.payment_intent_id ? 'succeeded' : 'pending',
+        customer_email: customerEmail || undefined,
         payment_intent_id: orderData.payment_intent_id,
         ...(packageData && {
           esim_package_id: packageData.esim_access_package_id,

@@ -31,6 +31,7 @@ interface Order {
   payment_status: string;
   created_at: string;
   esim_delivered_at: string | null;
+  customer_email: string | null;
   profiles: {
     email: string;
     full_name: string | null;
@@ -105,7 +106,7 @@ const AdminOrdersTable = () => {
     }
 
     const filtered = orders.filter((order) => {
-      const email = order.profiles?.email || '';
+      const email = order.customer_email || order.profiles?.email || '';
       const planName = order.plan_name || '';
       const searchLower = searchTerm.toLowerCase();
       
@@ -164,7 +165,7 @@ const AdminOrdersTable = () => {
       ['Order ID', 'Customer Email', 'Customer Name', 'Plan', 'Price', 'Order Status', 'Payment Status', 'Date'].join(','),
       ...filteredOrders.map(order => [
         order.id,
-        order.profiles?.email || '',
+        order.customer_email || order.profiles?.email || '',
         order.profiles?.full_name || '',
         order.plan_name,
         `${order.price} ${order.currency}`,
@@ -349,7 +350,7 @@ const AdminOrdersTable = () => {
                           {order.id.slice(0, 8)}...
                         </TableCell>
                         <TableCell className="font-medium">
-                          {order.profiles?.email || 'N/A'}
+                          {order.customer_email || order.profiles?.email || 'N/A'}
                         </TableCell>
                         <TableCell>
                           {order.profiles?.full_name || 'N/A'}

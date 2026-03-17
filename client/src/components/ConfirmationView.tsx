@@ -1,6 +1,9 @@
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Check, Download, ExternalLink, Smartphone, Copy } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Check, Download, ExternalLink, Smartphone, Copy, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { ESIMPlan } from "@/pages/Purchase";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,11 +13,16 @@ import { Link } from "react-router-dom";
 interface ConfirmationViewProps {
   plan: ESIMPlan;
   orderId: string | null;
+  guestEmail?: string;
   onBackToPlans: () => void;
 }
 
-const ConfirmationView = ({ plan, orderId, onBackToPlans }: ConfirmationViewProps) => {
+const ConfirmationView = ({ plan, orderId, guestEmail, onBackToPlans }: ConfirmationViewProps) => {
   const { toast } = useToast();
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isSavingAccount, setIsSavingAccount] = useState(false);
+  const [accountSaved, setAccountSaved] = useState(false);
 
   const { data: qrData } = useQuery({
     queryKey: ["confirmation-qr", orderId],
@@ -52,6 +60,28 @@ const ConfirmationView = ({ plan, orderId, onBackToPlans }: ConfirmationViewProp
     toast({ title: "Copied!", description: "Activation code copied to clipboard." });
   };
 
+  const handleCreateAccount = async () => {
+    if (!guestEmail || !password) return;
+    if (password.length < 6) {
+      toast({ title: "Password too short", description: "Please use at least 6 characters.", variant: "destructive" });
+      return;
+    }
+    setIsSavingAccount(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ email: guestEmail, password });
+      if (error) {
+        toast({ title: "Could not create account", description: error.message, variant: "destructive" });
+      } else {
+        setAccountSaved(true);
+        toast({ title: "Account created!", description: "Your account is ready. You can now sign in anytime to manage your eSIMs." });
+      }
+    } catch {
+      toast({ title: "Something went wrong", description: "Please try again.", variant: "destructive" });
+    } finally {
+      setIsSavingAccount(false);
+    }
+  };
+
   const hasQR = qrData || activationData;
 
   return (
@@ -70,6 +100,19 @@ const ConfirmationView = ({ plan, orderId, onBackToPlans }: ConfirmationViewProp
           </p>
         )}
       </div>
+
+      {/* Guest magic-link notice */}
+      {guestEmail && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 flex items-start gap-3">
+          <Mail className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
+          <div className="text-sm text-blue-700">
+            <p className="font-semibold mb-1">Check your inbox</p>
+            <p>
+              We've emailed a secure link to <strong>{guestEmail}</strong>. Click it anytime to access your eSIM and order history — no password needed.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="bg-gray-50 p-4 rounded-lg mb-6">
         <h3 className="font-semibold mb-3 text-center">Order Summary</h3>
@@ -152,6 +195,56 @@ const ConfirmationView = ({ plan, orderId, onBackToPlans }: ConfirmationViewProp
         <div className="mb-6 bg-yellow-50 border border-yellow-100 rounded-lg p-4 text-center text-sm text-yellow-700">
           <p className="font-semibold mb-1">eSIM provisioning in progress</p>
           <p>Your QR code will appear here shortly. You can also check your <Link to="/orders" className="underline font-medium">orders page</Link> anytime.</p>
+        </div>
+      )}
+
+      {/* Create account prompt for guests */}
+      {guestEmail && !accountSaved && (
+        <div className="border border-gray-200 rounded-lg p-5 mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Lock className="h-4 w-4 text-gray-500" />
+            <h3 className="font-semibold text-gray-800">Save your account to manage future eSIMs</h3>
+          </div>
+          <p className="text-sm text-gray-500 mb-4">
+            Your email <strong>{guestEmail}</strong> is already set. Just add a password to create your account.
+          </p>
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="create-password" className="text-sm">Password</Label>
+              <div className="relative mt-1">
+                <Input
+                  id="create-password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="At least 6 characters"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  data-testid="input-create-password"
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+            <Button
+              onClick={handleCreateAccount}
+              disabled={isSavingAccount || !password}
+              className="w-full bg-palop-green hover:bg-palop-green/90"
+              data-testid="button-create-account"
+            >
+              {isSavingAccount ? "Creating account..." : "Create account"}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {guestEmail && accountSaved && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 flex items-center gap-3">
+          <Check className="h-5 w-5 text-green-600 shrink-0" />
+          <p className="text-sm text-green-700 font-medium">Account created! You can now sign in anytime at <Link to="/auth" className="underline">buechama.com</Link>.</p>
         </div>
       )}
 

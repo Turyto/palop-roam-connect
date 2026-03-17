@@ -185,6 +185,7 @@ export type Database = {
           completed_at: string | null
           created_at: string
           currency: string
+          customer_email: string | null
           data_amount: string
           duration_days: number
           esim_delivered_at: string | null
@@ -205,6 +206,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           currency?: string
+          customer_email?: string | null
           data_amount: string
           duration_days: number
           esim_delivered_at?: string | null
@@ -225,6 +227,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           currency?: string
+          customer_email?: string | null
           data_amount?: string
           duration_days?: number
           esim_delivered_at?: string | null
