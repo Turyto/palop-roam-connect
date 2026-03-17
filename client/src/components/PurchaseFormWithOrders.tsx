@@ -133,15 +133,7 @@ const PurchaseFormWithOrders = ({
 
       setConfirmedOrderId(result.order.id);
 
-      // For guests: send a rich HTML email with eSIM activation details (QR code,
-      // LPA code, ICCID, magic sign-in link) via the resend-esim-email edge function.
-      // The function uses Resend to deliver a transactional email. If Resend is not
-      // configured it falls back to a Supabase OTP magic-link-only email.
-      // Note: the edge function requires admin auth, so for the post-purchase guest
-      // flow we call signInWithOtp directly (customer-facing, no admin needed).
-      // The Resend email is sent by the admin "Resend eSIM Email" action in the admin UI.
-      // Here we use the lightweight OTP path: customer gets a sign-in link; eSIM
-      // details are visible immediately on the confirmation page.
+      // Send a magic-link sign-in email so guests can re-access their order later.
       if (isGuestCheckout && emailForOrder) {
         const { error: otpError } = await supabase.auth.signInWithOtp({
           email: emailForOrder,

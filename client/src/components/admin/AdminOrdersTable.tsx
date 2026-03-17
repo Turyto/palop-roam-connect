@@ -138,11 +138,10 @@ const AdminOrdersTable = () => {
 
   const handleExportCSV = () => {
     const csvContent = [
-      ['Order ID', 'Customer Email', 'Customer Name', 'Plan', 'Price', 'Order Status', 'Payment Status', 'Date'].join(','),
+      ['Order ID', 'Customer Email', 'Plan', 'Price', 'Order Status', 'Payment Status', 'Date'].join(','),
       ...filteredOrders.map(order => [
         order.id,
         order.customer_email || '',
-        '',
         order.plan_name,
         `${order.price} ${order.currency}`,
         order.status,
@@ -298,7 +297,6 @@ const AdminOrdersTable = () => {
                   <TableRow>
                     <TableHead>Order ID</TableHead>
                     <TableHead>Customer Email</TableHead>
-                    <TableHead>Customer Name</TableHead>
                     <TableHead>Plan Name</TableHead>
                     <TableHead>Data Amount</TableHead>
                     <TableHead>Price</TableHead>
@@ -326,10 +324,7 @@ const AdminOrdersTable = () => {
                           {order.id.slice(0, 8)}...
                         </TableCell>
                         <TableCell className="font-medium">
-                          {order.customer_email || 'N/A'}
-                        </TableCell>
-                        <TableCell>
-                          {'N/A'}
+                          {order.customer_email ?? <span className="text-gray-400 text-xs italic">no email</span>}
                         </TableCell>
                         <TableCell>{order.plan_name}</TableCell>
                         <TableCell>{order.data_amount}</TableCell>
