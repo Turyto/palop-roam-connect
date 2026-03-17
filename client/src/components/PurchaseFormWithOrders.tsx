@@ -43,6 +43,8 @@ const PurchaseFormWithOrders = ({
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [confirmedOrderId, setConfirmedOrderId] = useState<string | null>(null);
   const [guestEmail, setGuestEmail] = useState<string>("");
+  // True only when checkout was completed by an unauthenticated (anonymous) user
+  const [isGuestCheckout, setIsGuestCheckout] = useState(false);
 
   const stripePromise = useMemo(() => {
     const pk = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
@@ -90,10 +92,12 @@ const PurchaseFormWithOrders = ({
   // Checkout form submit → move to payment step (supports both guests and signed-in users)
   const onCheckoutSubmit = async (data: z.infer<typeof checkoutFormSchema>) => {
     const emailForOrder = data.email || user?.email || "";
-    setGuestEmail(emailForOrder);
 
     if (!user) {
-      // Sign in anonymously so the order can be saved with a valid user_id
+      // Guest path: sign in anonymously so the order can be saved with a valid user_id
+      setIsGuestCheckout(true);
+      setGuestEmail(emailForOrder);
+
       const { error: anonError } = await supabase.auth.signInAnonymously({
         options: { data: { email: emailForOrder } },
       });
@@ -112,7 +116,9 @@ const PurchaseFormWithOrders = ({
 
   // Called by PaymentDetails after Stripe confirms payment
   const handlePaymentSuccess = async (confirmedPaymentIntentId: string) => {
-    const emailForOrder = guestEmail || user?.email || "";
+    // For guests, use the email collected at checkout. For registered users, use their account email.
+    const emailForOrder = isGuestCheckout ? guestEmail : (user?.email || "");
+
     try {
       const result = await createOrderAsync({
         plan_id: plan.id,
@@ -127,9 +133,9 @@ const PurchaseFormWithOrders = ({
 
       setConfirmedOrderId(result.order.id);
 
-      // For guests (anonymous users), send a magic link so they can access their order later
-      const isGuest = user && !user.email;
-      if (isGuest && emailForOrder) {
+      // For guests: send a magic link so they can access their order and eSIM details later.
+      // (user.email is null for anonymous Supabase users)
+      if (isGuestCheckout && emailForOrder) {
         await supabase.auth.signInWithOtp({
           email: emailForOrder,
           options: { shouldCreateUser: true },
@@ -153,7 +159,7 @@ const PurchaseFormWithOrders = ({
       <ConfirmationView
         plan={plan}
         orderId={confirmedOrderId}
-        guestEmail={guestEmail || undefined}
+        guestEmail={isGuestCheckout ? guestEmail : undefined}
         onBackToPlans={onBackToPlans}
       />
     );
