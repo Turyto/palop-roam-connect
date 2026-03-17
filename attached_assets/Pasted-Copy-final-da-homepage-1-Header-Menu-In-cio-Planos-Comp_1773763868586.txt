@@ -1,0 +1,320 @@
+Copy final da homepage
+1. Header
+Menu
+
+Início
+
+Planos
+
+Compatibilidade
+
+Como Funciona
+
+FAQ
+
+Suporte
+
+Botão
+
+Comprar agora
+
+2. Hero Section
+Headline
+
+Internet imediata em Portugal e na Europa, sem chip físico
+
+Subheadline
+
+Ativa o teu eSIM em poucos minutos e fica logo online para usar WhatsApp, videochamadas, mapas, Uber, email e muito mais.
+
+Botão principal
+
+Comprar eSIM agora
+
+Botão secundário
+
+Ver compatibilidade do meu telemóvel
+
+Trust points
+
+Ativação rápida por QR Code
+Sem contrato
+Suporte simples em português
+
+3. Secção de identificação com o público
+Título
+
+Ideal para quem chega a Portugal e precisa de internet imediata
+
+Texto
+
+Se vens de Angola, Cabo Verde, Moçambique, Guiné-Bissau, São Tomé e Príncipe ou de outro país e precisas de internet logo à chegada, esta solução foi pensada para ti. Sem procurar lojas, sem chip físico, sem complicações.
+
+4. Como Funciona
+Título
+
+Como funciona
+
+Passo 1
+
+Escolhe o teu plano
+Seleciona o plano ideal para os teus dias de viagem, chegada ou estadia.
+
+Passo 2
+
+Recebe o eSIM por email
+Depois da compra, recebes o QR Code e as instruções para instalação.
+
+Passo 3
+
+Ativa em poucos minutos
+Instala no teu telemóvel compatível e começa logo a usar os teus dados móveis.
+
+Botão opcional
+
+Ver planos
+
+5. Benefícios principais
+Título
+
+Porque escolher o nosso eSIM
+
+Card 1
+
+Internet imediata
+Fica online rapidamente sem precisares de comprar um chip físico.
+
+Card 2
+
+Perfeito para o dia a dia
+Usa WhatsApp, videochamadas, mapas, apps de transporte, email e redes sociais.
+
+Card 3
+
+Sem contratos nem burocracia
+Compra online, ativa e usa. Simples, rápido e sem papelada.
+
+Card 4
+
+Ajuda quando precisares
+Tens instruções claras e apoio para te orientar na ativação.
+
+6. Secção de planos
+Título
+
+Escolhe o plano certo para ti
+
+Subtexto
+
+Planos simples para quem precisa de internet rápida e sem complicações em Portugal e na Europa.
+
+Plano 1
+
+Plano Chegada
+Perfeito para os primeiros dias em Portugal
+
+3 dias
+[X] GB
+
+Comprar plano
+
+Plano 2
+
+Plano Ligação
+Ideal para uma semana de internet e contacto com família
+
+7 dias
+[X] GB
+
+Comprar plano
+
+Plano 3
+
+Plano Completo
+Melhor opção para estadias mais longas
+
+30 dias
+[X] GB
+
+Comprar plano
+
+Nota abaixo dos planos
+
+Recebes o teu eSIM logo após a compra.
+
+7. Compatibilidade
+Título
+
+O teu telemóvel é compatível com eSIM?
+
+Texto
+
+A maioria dos iPhones mais recentes e muitos Android já suportam eSIM. Antes de comprar, confirma se o teu equipamento é compatível e se está desbloqueado para rede móvel.
+
+Botão principal
+
+Ver telemóveis compatíveis
+
+Botão secundário
+
+Como verificar no meu telemóvel
+
+8. Casos de uso
+Título
+
+Feito para o teu dia a dia em viagem ou na chegada a Portugal
+
+Texto introdutório
+
+O nosso eSIM foi pensado para te ajudar a ficar ligado desde o primeiro momento, sem depender de Wi-Fi e sem perder tempo à procura de uma loja.
+
+Lista
+
+Falar com família por WhatsApp e videochamada
+
+Pedir Uber e usar mapas logo à chegada
+
+Aceder ao email, documentos e apps importantes
+
+Estar online sem complicações
+
+Manter contacto imediato com quem precisas
+
+9. Suporte / ajuda na ativação
+Título
+
+Precisas de ajuda para ativar?
+
+Texto
+
+Criámos um processo simples para que consigas instalar o teu eSIM em poucos minutos. E se tiveres dúvidas, tens acesso a instruções claras e apoio para te orientar.
+
+Botão principal
+
+Ver guia de ativação
+
+Botão secundário
+
+Obter ajuda
+
+10. FAQ
+Título
+
+Perguntas frequentes
+
+Pergunta 1
+
+O que é um eSIM?
+Um eSIM é um cartão SIM digital que podes instalar no teu telemóvel sem usar chip físico.
+
+Pergunta 2
+
+Quando recebo o eSIM?
+Depois da confirmação do pagamento, recebes o QR Code e as instruções por email.
+
+Pergunta 3
+
+Posso usar WhatsApp e videochamadas?
+Sim. O eSIM fornece dados móveis para usares WhatsApp, Messenger, videochamadas, mapas, email e outras aplicações.
+
+Pergunta 4
+
+Funciona em qualquer telemóvel?
+Não. O teu telemóvel precisa de ser compatível com eSIM e, idealmente, estar desbloqueado para qualquer rede.
+
+Pergunta 5
+
+Preciso de ir a uma loja?
+Não. Todo o processo é online, desde a compra até à ativação.
+
+Pergunta 6
+
+E se eu tiver dificuldades na instalação?
+Podes seguir o guia passo a passo ou contactar o suporte para receber ajuda.
+
+Pergunta 7
+
+Posso ativar antes de viajar?
+Sim, mas depende do plano. Recomendamos sempre seguir as instruções de ativação que recebes após a compra.
+
+11. Secção de confiança
+Título
+
+Compra com mais confiança
+
+Texto
+
+Queremos tornar a tua experiência simples, clara e rápida desde o primeiro momento.
+
+Pontos
+
+Entrega digital imediata
+
+Instruções simples de ativação
+
+Suporte em português
+
+Processo rápido e sem complicações
+
+12. CTA final
+Headline
+
+Fica online em Portugal e na Europa sem complicações
+
+Texto
+
+Escolhe o teu plano, recebe o eSIM e ativa em poucos minutos.
+
+Botão principal
+
+Comprar agora
+
+Botão secundário
+
+Ver planos
+
+13. Footer
+Texto curto da marca
+
+PALOP Connect
+Internet móvel digital para Portugal e Europa, com ativação simples, rápida e sem complicações.
+
+Links sugeridos
+
+Planos
+
+Compatibilidade
+
+Como Funciona
+
+FAQ
+
+Suporte
+
+Termos e Condições
+
+Política de Privacidade
+
+Microcopy útil para o site
+
+Estas frases pequenas ajudam muito na conversão e podem ser usadas em botões, caixas informativas e áreas de checkout.
+
+Para checkout
+
+Recebes o eSIM logo após o pagamento
+
+Instalação simples em poucos minutos
+
+Sem chip físico. Sem loja. Sem complicações.
+
+Para compatibilidade
+
+Confirma primeiro se o teu telemóvel suporta eSIM
+
+Para suporte
+
+Precisas de ajuda? Estamos aqui para orientar a ativação
+
+Para prova de confiança
+
+Processo 100% digital
