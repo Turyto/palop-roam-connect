@@ -22,7 +22,7 @@ const SupportSection = () => {
 
           <p className="text-base md:text-lg text-gray-600 leading-relaxed">{t.support.body}</p>
 
-          <p className="text-sm text-palop-green font-medium">{t.support.microcopy}</p>
+          <p className="text-sm text-palop-green font-medium">{t.support.helperLine}</p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
             <Button

@@ -1,0 +1,485 @@
+Replit Implementation Brief
+Project: PALOP Connect Homepage Refinement
+Goal
+
+Refine the current homepage so it fully matches the intended landing-page spec and improves conversion readiness, trust, and product clarity.
+
+Context
+
+The current homepage structure is already strong and broadly aligned with the intended spec:
+
+Hero
+
+Audience section
+
+How it works
+
+Benefits
+
+Plans
+
+Compatibility
+
+Use cases
+
+Support
+
+FAQ
+
+Trust
+
+Final CTA
+
+Footer
+
+This task is not a redesign from scratch.
+It is a refinement pass focused on:
+
+improving the first impression
+
+removing weak/broken UI elements
+
+increasing clarity in the plans section
+
+strengthening trust and support cues
+
+polishing the page for conversion
+
+Priority 1 — Critical fixes
+Task 1: Fix final CTA section button state
+Problem
+
+The final CTA block currently shows:
+
+one populated CTA button
+
+one blank white button
+
+This appears broken and reduces trust near the bottom of the page.
+
+Required change
+
+Update the final CTA block so that:
+
+both buttons are fully populated, or
+
+only a single button is shown
+
+Preferred implementation
+
+Use:
+
+Title:
+Fica online em Portugal e na Europa sem complicações
+
+Subtitle:
+Escolhe o teu plano, recebe o eSIM e ativa em poucos minutos.
+
+Primary CTA:
+Comprar agora
+
+Secondary CTA:
+Ver planos
+
+Acceptance criteria
+
+no empty button is rendered
+
+final CTA section is visually complete
+
+both buttons have valid actions
+
+mobile layout is clean
+
+Task 2: Add a meaningful hero visual
+Problem
+
+The hero copy is strong, but the section feels visually empty and unfinished. There is too much unused whitespace and not enough product confidence on first view.
+
+Required change
+
+Add a relevant visual anchor to the hero section.
+
+Acceptable options
+
+Implement one of the following:
+
+smartphone mockup showing eSIM activation flow
+
+QR-code setup illustration
+
+product card stack with Portugal / Europa / eSIM cues
+
+stylized app/product screenshot relevant to digital eSIM purchase/activation
+
+Design guidance
+
+The visual should communicate:
+
+mobile-first product
+
+digital delivery
+
+easy activation
+
+trust
+
+Avoid
+
+generic stock travel photography
+
+unrelated telecom graphics
+
+purely decorative art with no product meaning
+
+Acceptance criteria
+
+hero section has a clear visual element
+
+first fold no longer feels empty
+
+layout remains balanced on desktop and mobile
+
+hero still prioritizes headline + CTA clarity
+
+Task 3: Make homepage plan cards commercially explicit
+Problem
+
+The plan section is structurally good, but the cards still feel too placeholder-like because they show ranges such as 1–2 GB and 3–5 GB. That creates uncertainty.
+
+Required change
+
+Update each featured homepage plan card to show:
+
+exact data amount
+
+exact duration
+
+exact price
+
+short usage-oriented subtitle
+
+Recommended content structure
+
+Plano Chegada
+Ideal para chegada, mensagens e mapas
+2 GB
+3 dias
+€4.99
+
+Plano Ligação
+Ideal para uso diário e contacto com família
+5 GB
+7 dias
+€9.99
+Badge: Mais popular
+
+Plano Completo
+Melhor para estadias mais longas
+10 GB
+30 dias
+€19.99
+
+Notes
+
+Use real mapped product values if available
+
+If prices are still placeholders internally, structure the component so exact values can be injected cleanly
+
+Homepage should continue to feature only 3 curated plans
+
+Acceptance criteria
+
+no data ranges displayed on featured plan cards
+
+all 3 cards show exact values
+
+the plan card hierarchy is easy to scan
+
+the “Mais popular” badge remains visually clear on the middle plan
+
+Priority 2 — High-value conversion improvements
+Task 4: Strengthen support CTA language
+Problem
+
+The support section is present, but the CTA language is still too generic.
+
+Required change
+
+Update the support section CTAs to feel more immediate and human.
+
+Preferred implementation
+
+Section title:
+Precisas de ajuda para ativar?
+
+Body:
+Criámos um processo simples para que possas instalar o teu eSIM em poucos minutos. Se tiveres dúvidas, tens acesso a instruções claras e apoio para te orientar.
+
+Primary CTA:
+Ver guia de ativação
+
+Secondary CTA:
+Falar com suporte
+
+If WhatsApp support exists
+
+Prefer:
+Obter ajuda no WhatsApp
+
+Acceptance criteria
+
+support section feels action-oriented
+
+secondary CTA is more explicit than “Obter ajuda”
+
+button action is real and wired correctly
+
+Task 5: Add practical reassurance to compatibility section
+Problem
+
+The compatibility section is good, but it needs one short practical warning to prevent confusion and support issues.
+
+Required change
+
+Add this microcopy below the compatibility description or below the CTA buttons:
+
+Importante: o equipamento deve suportar eSIM e estar desbloqueado para rede móvel.
+
+Acceptance criteria
+
+text is visible but secondary
+
+it does not clutter the section
+
+it reads as a practical pre-purchase note
+
+Task 6: Add two missing high-friction FAQ items
+Problem
+
+The FAQ is good, but it still misses two common buyer objections for data-only eSIM products.
+
+Required change
+
+Add these FAQ items:
+
+Question:
+O meu número de WhatsApp muda?
+
+Answer:
+Não. Na maioria dos casos, podes continuar a usar o teu número normal no WhatsApp, desde que a tua conta já esteja ativa no telemóvel.
+
+Question:
+Posso usar o meu SIM atual e o eSIM ao mesmo tempo?
+
+Answer:
+Em muitos telemóveis compatíveis, sim. Podes manter o teu SIM físico para chamadas e usar o eSIM para dados móveis, dependendo do equipamento.
+
+Acceptance criteria
+
+both items are added to the FAQ accordion
+
+accordion remains readable and performant
+
+ordering is logical with the existing FAQ items
+
+Priority 3 — Brand and trust refinement
+Task 7: Improve trust section practicality
+Problem
+
+The trust section is solid, but some current reassurance points are slightly generic.
+
+Required change
+
+Adjust the trust cards so they feel more practical and purchase-oriented.
+
+Recommended trust items
+
+Entrega imediata após pagamento
+
+Sem necessidade de loja física
+
+Suporte em português
+
+Ativação simples em telemóveis compatíveis
+
+Acceptance criteria
+
+trust section still has 4 items
+
+wording is more practical and user-centered
+
+cards remain visually balanced
+
+Task 8: Add a subtle brand-positioning cue in the hero
+Problem
+
+The page structure is strong, but the homepage still feels slightly template-generic rather than fully brand-specific.
+
+Required change
+
+Add one subtle supporting cue in the hero area.
+
+Choose one
+
+Eyebrow above headline:
+Internet móvel digital para Portugal e Europa
+
+Small supporting badge near CTA:
+Ideal para recém-chegados e viajantes
+
+Both, if it still looks clean
+
+Acceptance criteria
+
+homepage feels slightly more intentional and branded
+
+supporting cue does not overload the hero
+
+final hero remains minimal and premium
+
+Task 9: Tighten copy in selected areas
+Required changes
+Audience section
+
+Replace current paragraph with:
+
+Se vens de Angola, Cabo Verde, Moçambique, Guiné-Bissau, São Tomé e Príncipe ou de outro país e precisas de internet logo à chegada, esta solução foi feita para ti. Sem procurar lojas, sem chip físico, sem complicações.
+
+Hero subtitle
+
+Use:
+Ativa o teu eSIM em poucos minutos e fica logo online para usar WhatsApp, mapas, Uber, videochamadas, email e muito mais.
+
+Support micro-line
+
+If keeping a small helper line above buttons, use:
+Estamos aqui para te ajudar a ativar
+
+Acceptance criteria
+
+copy reads naturally in PT-PT
+
+copy remains consistent with the rest of the page
+
+no section becomes noticeably longer
+
+QA and implementation rules
+CTA consistency
+
+Make sure CTA labels follow a consistent hierarchy:
+
+Primary commercial CTA
+
+Comprar agora
+
+Comprar eSIM agora
+
+Browsing CTA
+
+Ver planos
+
+Utility CTA
+
+Ver telemóveis compatíveis
+
+Como verificar no meu telemóvel
+
+Ver guia de ativação
+
+Avoid inventing multiple variants for the same action.
+
+Mobile QA requirements
+
+This page must be carefully checked on mobile.
+
+Verify:
+
+hero headline wraps cleanly
+
+hero CTAs stack correctly
+
+hero trust bullets remain readable
+
+plan cards are easy to scan
+
+FAQ accordion is touch-friendly
+
+final CTA buttons display correctly
+
+section spacing is balanced
+
+sticky nav remains usable
+
+language switcher still works correctly
+
+Visual consistency rules
+
+preserve current clean/minimal aesthetic
+
+keep spacing generous but not empty
+
+do not add decorative clutter
+
+prioritize readability and actionability
+
+ensure icons remain consistent in size and style
+
+Suggested implementation order
+Round 1
+
+Fix final CTA blank button
+
+Add hero visual
+
+Make plan cards exact and explicit
+
+Round 2
+
+Strengthen support CTA
+
+Add compatibility microcopy
+
+Add FAQ objections
+
+Round 3
+
+Refine trust section
+
+Add hero eyebrow/badge
+
+Tighten copy
+
+Mobile QA pass
+
+Definition of done
+
+The homepage refinement is complete when:
+
+there are no broken or empty CTA elements
+
+the hero feels visually complete and product-specific
+
+the homepage plan cards show exact commercial information
+
+support and compatibility sections reduce key user hesitation
+
+FAQ addresses top practical objections
+
+trust section feels grounded and purchase-relevant
+
+desktop and mobile both feel polished and intentional
+
+Optional follow-up after this task
+
+Once this refinement pass is done, the next recommended task is:
+
+Create a dedicated high-conversion landing page for one narrower segment, for example:
+
+recém-chegados a Portugal
+
+viajantes para Portugal
+
+comunidade PALOP em Portugal
+
+That would let the homepage stay broad while improving ad/SEO conversion on segmented traffic.

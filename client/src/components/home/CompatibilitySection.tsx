@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Smartphone } from 'lucide-react';
+import { Smartphone, AlertCircle } from 'lucide-react';
 import { useLanguage } from '@/contexts/language';
 
 const CompatibilitySection = () => {
@@ -24,8 +24,6 @@ const CompatibilitySection = () => {
             {t.compatibility.body}
           </p>
 
-          <p className="text-sm text-palop-green font-medium">{t.compatibility.microcopy}</p>
-
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
             <Button
               asChild
@@ -42,6 +40,11 @@ const CompatibilitySection = () => {
             >
               <Link to="/support">{t.compatibility.secondaryCta}</Link>
             </Button>
+          </div>
+
+          <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-left">
+            <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-amber-800 leading-snug">{t.compatibility.warning}</p>
           </div>
         </div>
       </div>
