@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { LifeBuoy } from 'lucide-react';
 import { useLanguage } from '@/contexts/language';
@@ -29,7 +30,7 @@ const SupportSection = () => {
               className="bg-palop-green hover:bg-palop-green/90 text-white"
               data-testid="support-primary-cta"
             >
-              <a href="/esim">{t.support.primaryCta}</a>
+              <Link to="/esim">{t.support.primaryCta}</Link>
             </Button>
             <Button
               asChild
@@ -37,7 +38,7 @@ const SupportSection = () => {
               className="border-palop-green text-palop-green hover:bg-palop-green/5"
               data-testid="support-secondary-cta"
             >
-              <a href="/support">{t.support.secondaryCta}</a>
+              <Link to="/support">{t.support.secondaryCta}</Link>
             </Button>
           </div>
         </div>

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Smartphone } from 'lucide-react';
 import { useLanguage } from '@/contexts/language';
@@ -31,7 +32,7 @@ const CompatibilitySection = () => {
               className="bg-palop-green hover:bg-palop-green/90 text-white"
               data-testid="compatibility-primary-cta"
             >
-              <a href="/esim">{t.compatibility.primaryCta}</a>
+              <Link to="/esim">{t.compatibility.primaryCta}</Link>
             </Button>
             <Button
               asChild
@@ -39,7 +40,7 @@ const CompatibilitySection = () => {
               className="border-palop-green text-palop-green hover:bg-palop-green/5"
               data-testid="compatibility-secondary-cta"
             >
-              <a href="/support">{t.compatibility.secondaryCta}</a>
+              <Link to="/support">{t.compatibility.secondaryCta}</Link>
             </Button>
           </div>
         </div>
