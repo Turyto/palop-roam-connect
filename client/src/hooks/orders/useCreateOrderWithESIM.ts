@@ -94,8 +94,8 @@ export const useCreateOrderWithESIM = () => {
         duration_days: orderData.duration_days,
         price: orderData.price,
         currency: orderData.currency || 'EUR',
-        status: orderData.payment_intent_id ? 'active' : 'pending',
-        payment_status: orderData.payment_intent_id ? 'paid' : 'pending',
+        status: orderData.payment_intent_id ? 'completed' : 'pending',
+        payment_status: orderData.payment_intent_id ? 'succeeded' : 'pending',
         payment_intent_id: orderData.payment_intent_id,
         ...(packageData && {
           esim_package_id: packageData.esim_access_package_id,
