@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/auth";
+import { LanguageProvider } from "@/contexts/language";
 import { Suspense } from "react";
 import Index from "./pages/Index";
 import Plans from "./pages/Plans";
@@ -76,13 +77,15 @@ const App = () => {
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <AuthProvider>
-            <TooltipProvider>
-              <Suspense fallback={<LoadingFallback />}>
-                <AppRoutes />
-              </Suspense>
-              <Toaster />
-              <Sonner />
-            </TooltipProvider>
+            <LanguageProvider>
+              <TooltipProvider>
+                <Suspense fallback={<LoadingFallback />}>
+                  <AppRoutes />
+                </Suspense>
+                <Toaster />
+                <Sonner />
+              </TooltipProvider>
+            </LanguageProvider>
           </AuthProvider>
         </BrowserRouter>
       </QueryClientProvider>
