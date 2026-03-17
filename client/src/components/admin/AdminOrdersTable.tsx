@@ -32,10 +32,6 @@ interface Order {
   created_at: string;
   esim_delivered_at: string | null;
   customer_email: string | null;
-  profiles: {
-    email: string;
-    full_name: string | null;
-  } | null;
 }
 
 const AdminOrdersTable = () => {
@@ -74,27 +70,7 @@ const AdminOrdersTable = () => {
         throw ordersError;
       }
 
-      if (!ordersData || ordersData.length === 0) {
-        return [];
-      }
-
-      const userIds = [...new Set(ordersData.map(order => order.user_id))];
-      
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, email, full_name')
-        .in('id', userIds);
-
-      if (profilesError) {
-        console.error('Error fetching profiles:', profilesError);
-      }
-
-      const ordersWithProfiles = ordersData.map(order => ({
-        ...order,
-        profiles: profilesData?.find(profile => profile.id === order.user_id) || null
-      }));
-
-      return ordersWithProfiles as Order[];
+      return (ordersData || []) as Order[];
     },
   });
 
@@ -106,7 +82,7 @@ const AdminOrdersTable = () => {
     }
 
     const filtered = orders.filter((order) => {
-      const email = order.customer_email || order.profiles?.email || '';
+      const email = order.customer_email || '';
       const planName = order.plan_name || '';
       const searchLower = searchTerm.toLowerCase();
       
@@ -165,8 +141,8 @@ const AdminOrdersTable = () => {
       ['Order ID', 'Customer Email', 'Customer Name', 'Plan', 'Price', 'Order Status', 'Payment Status', 'Date'].join(','),
       ...filteredOrders.map(order => [
         order.id,
-        order.customer_email || order.profiles?.email || '',
-        order.profiles?.full_name || '',
+        order.customer_email || '',
+        '',
         order.plan_name,
         `${order.price} ${order.currency}`,
         order.status,
@@ -350,10 +326,10 @@ const AdminOrdersTable = () => {
                           {order.id.slice(0, 8)}...
                         </TableCell>
                         <TableCell className="font-medium">
-                          {order.customer_email || order.profiles?.email || 'N/A'}
+                          {order.customer_email || 'N/A'}
                         </TableCell>
                         <TableCell>
-                          {order.profiles?.full_name || 'N/A'}
+                          {'N/A'}
                         </TableCell>
                         <TableCell>{order.plan_name}</TableCell>
                         <TableCell>{order.data_amount}</TableCell>

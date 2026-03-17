@@ -257,15 +257,27 @@ const ConfirmationView = ({ plan, orderId, guestEmail, onBackToPlans }: Confirma
         >
           Buy Another eSIM
         </Button>
-        <Link to="/orders" className="flex-1">
+        {guestEmail ? (
           <Button
-            className="w-full bg-palop-green hover:bg-palop-green/90"
-            data-testid="button-view-orders"
+            variant="outline"
+            className="flex-1"
+            onClick={() => window.print()}
+            data-testid="button-save-details"
           >
             <Download className="h-4 w-4 mr-2" />
-            View My Orders
+            Save / Print Details
           </Button>
-        </Link>
+        ) : (
+          <Link to="/orders" className="flex-1">
+            <Button
+              className="w-full bg-palop-green hover:bg-palop-green/90"
+              data-testid="button-view-orders"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              View My Orders
+            </Button>
+          </Link>
+        )}
       </div>
     </div>
   );

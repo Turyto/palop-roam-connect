@@ -1,11 +1,13 @@
 
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Download, Eye, Copy, Calendar, User, Package, Euro, Wifi, Mail, FileText, ExternalLink } from "lucide-react";
+import { Download, Eye, Copy, Calendar, User, Package, Euro, Wifi, Mail, FileText, ExternalLink, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface OrderDetailsModalProps {
   order: any;
@@ -15,8 +17,48 @@ interface OrderDetailsModalProps {
 
 const OrderDetailsModal = ({ order, isOpen, onClose }: OrderDetailsModalProps) => {
   const { toast } = useToast();
+  const [isResending, setIsResending] = useState(false);
 
   if (!order) return null;
+
+  const handleResendEmail = async () => {
+    const email = order.customer_email;
+    if (!email) {
+      toast({
+        title: "No email on file",
+        description: "This order has no customer email address. Cannot send email.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsResending(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: false },
+      });
+      if (error) {
+        toast({
+          title: "Failed to send email",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Email sent!",
+          description: `A secure access link has been sent to ${email}.`,
+        });
+      }
+    } catch (err: any) {
+      toast({
+        title: "Failed to send email",
+        description: err.message || "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsResending(false);
+    }
+  };
 
   const handleCopyActivationUrl = async (url: string) => {
     try {
@@ -121,7 +163,7 @@ const OrderDetailsModal = ({ order, isOpen, onClose }: OrderDetailsModalProps) =
                       <User className="h-3 w-3" />
                       Customer Email
                     </label>
-                    <p className="font-medium">{order.customer_email || order.profiles?.email || 'N/A'}</p>
+                    <p className="font-medium">{order.customer_email || 'N/A'}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-500 flex items-center gap-1">
@@ -131,12 +173,6 @@ const OrderDetailsModal = ({ order, isOpen, onClose }: OrderDetailsModalProps) =
                     <p className="font-medium">{order.data_amount}</p>
                   </div>
                 </div>
-                {order.profiles?.full_name && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Customer Name</label>
-                    <p className="font-medium">{order.profiles.full_name}</p>
-                  </div>
-                )}
               </CardContent>
             </Card>
 
@@ -297,8 +333,15 @@ const OrderDetailsModal = ({ order, isOpen, onClose }: OrderDetailsModalProps) =
 
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-3 pt-4 border-t">
-            <Button variant="outline" className="flex items-center gap-2">
-              <Mail className="h-4 w-4" />
+            <Button
+              variant="outline"
+              className="flex items-center gap-2"
+              onClick={handleResendEmail}
+              disabled={isResending || !order.customer_email}
+              title={!order.customer_email ? "No customer email on this order" : "Send magic link to customer"}
+              data-testid="button-resend-esim-email"
+            >
+              {isResending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
               Resend eSIM Email
             </Button>
             <Button variant="outline" className="flex items-center gap-2">
