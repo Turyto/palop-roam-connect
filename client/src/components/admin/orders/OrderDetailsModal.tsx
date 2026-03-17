@@ -33,20 +33,21 @@ const OrderDetailsModal = ({ order, isOpen, onClose }: OrderDetailsModalProps) =
     }
     setIsResending(true);
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: { shouldCreateUser: false },
+      const { data, error } = await supabase.functions.invoke('resend-esim-email', {
+        body: { orderId: order.id },
       });
-      if (error) {
+
+      if (error || !data?.success) {
+        const msg = data?.error || error?.message || "Failed to send email";
         toast({
           title: "Failed to send email",
-          description: error.message,
+          description: msg,
           variant: "destructive",
         });
       } else {
         toast({
           title: "Email sent!",
-          description: `A secure access link has been sent to ${email}.`,
+          description: `A secure access link with eSIM details has been sent to ${email}.`,
         });
       }
     } catch (err: any) {
