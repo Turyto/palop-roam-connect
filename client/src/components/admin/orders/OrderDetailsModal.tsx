@@ -194,7 +194,7 @@ const OrderDetailsModal = ({ order, isOpen, onClose }: OrderDetailsModalProps) =
                       <User className="h-3 w-3" />
                       Customer Email
                     </label>
-                    <p className="font-medium">{order.customer_email || 'N/A'}</p>
+                    <p className="font-medium">{order.customer_email ?? <span className="text-gray-400 italic text-sm">no email on file</span>}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-500 flex items-center gap-1">
