@@ -1,6 +1,7 @@
 modules = ["nodejs-20", "web"]
 [agent]
 expertMode = true
+integrations = ["stripe:1.0.0"]
 
 [nix]
 channel = "stable-25_05"
@@ -41,3 +42,8 @@ externalPort = 80
 [[ports]]
 localPort = 5001
 externalPort = 3000
+
+[userenv]
+
+[userenv.shared]
+VITE_STRIPE_PUBLISHABLE_KEY = "pk_test_51TBtENL9w3YgrT2lVwnh31RmwMuJza5FAHT5rHNfWOIjmXSicgIxmgTbOZJuvkqEgqZVOrRfZxBdeMAtmAekEGVU00ReK87wnn"
