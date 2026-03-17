@@ -134,11 +134,15 @@ const PurchaseFormWithOrders = ({
       setConfirmedOrderId(result.order.id);
 
       // For guests: send a magic link so they can access their order and eSIM details later.
-      // (user.email is null for anonymous Supabase users)
+      // When clicked, the customer signs in and the orders page uses customer_email RLS
+      // to show their order (even though it was created under an anonymous user_id).
       if (isGuestCheckout && emailForOrder) {
         await supabase.auth.signInWithOtp({
           email: emailForOrder,
-          options: { shouldCreateUser: true },
+          options: {
+            shouldCreateUser: true,
+            emailRedirectTo: `${window.location.origin}/orders`,
+          },
         });
       }
 

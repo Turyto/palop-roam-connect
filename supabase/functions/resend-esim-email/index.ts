@@ -3,6 +3,32 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+async function verifyAdminUser(supabaseUrl: string, serviceKey: string, authHeader: string | null): Promise<boolean> {
+  if (!authHeader) return false;
+  const token = authHeader.replace('Bearer ', '');
+  try {
+    const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${token}` },
+    });
+    if (!userRes.ok) return false;
+    const user = await userRes.json();
+    const userId = user?.id;
+    if (!userId) return false;
+
+    const profileRes = await fetch(
+      `${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=role&limit=1`,
+      {
+        headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` },
+      }
+    );
+    if (!profileRes.ok) return false;
+    const profiles = await profileRes.json();
+    return profiles?.[0]?.role === 'admin';
+  } catch {
+    return false;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -15,6 +41,16 @@ Deno.serve(async (req) => {
     if (!supabaseUrl || !serviceRoleKey) {
       return new Response(JSON.stringify({ error: 'Server configuration error' }), {
         status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Verify the calling user is an authenticated admin
+    const authHeader = req.headers.get('authorization');
+    const isAdmin = await verifyAdminUser(supabaseUrl, serviceRoleKey, authHeader);
+    if (!isAdmin) {
+      return new Response(JSON.stringify({ error: 'Forbidden: admin access required' }), {
+        status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -58,7 +94,7 @@ Deno.serve(async (req) => {
 
     // Fetch eSIM activation details for this order
     const activationRes = await fetch(
-      `${supabaseUrl}/rest/v1/esim_activations?order_id=eq.${orderId}&select=*&limit=1`,
+      `${supabaseUrl}/rest/v1/esim_activations?order_id=eq.${orderId}&select=activation_code,activation_url,iccid,qr_code_data&limit=1`,
       {
         headers: {
           'apikey': serviceRoleKey,
@@ -72,7 +108,7 @@ Deno.serve(async (req) => {
 
     // Fetch QR code details for this order
     const qrRes = await fetch(
-      `${supabaseUrl}/rest/v1/qr_codes?order_id=eq.${orderId}&select=*&limit=1`,
+      `${supabaseUrl}/rest/v1/qr_codes?order_id=eq.${orderId}&select=qr_image_url,activation_url&limit=1`,
       {
         headers: {
           'apikey': serviceRoleKey,
@@ -84,64 +120,17 @@ Deno.serve(async (req) => {
     const qrCodes = await qrRes.json();
     const qrCode = qrCodes?.[0] ?? null;
 
-    // Generate a magic link for the customer using admin API
-    const appBaseUrl = req.headers.get('origin') || supabaseUrl;
-    const redirectTo = `${appBaseUrl}/orders`;
-
-    const generateLinkRes = await fetch(
-      `${supabaseUrl}/auth/v1/admin/generate_link`,
-      {
-        method: 'POST',
-        headers: {
-          'apikey': serviceRoleKey,
-          'Authorization': `Bearer ${serviceRoleKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type: 'magiclink',
-          email: customerEmail,
-          options: { redirect_to: redirectTo },
-        }),
-      }
-    );
-
-    const linkData = await generateLinkRes.json();
-    const magicLink = linkData?.action_link ?? null;
-
-    // Build the eSIM details payload to include in the email
     const lpaCode = activation?.activation_code ?? qrCode?.activation_url ?? null;
     const webUrl = activation?.activation_url ?? null;
     const iccid = activation?.iccid ?? null;
     const qrImageUrl = qrCode?.qr_image_url ?? null;
 
-    // Compose the email body
-    const emailSubject = `Your BuéChama eSIM — ${order.plan_name}`;
-    const emailBody = [
-      `Hello,`,
-      ``,
-      `Here are your eSIM details for your ${order.plan_name} plan:`,
-      ``,
-      iccid ? `ICCID: ${iccid}` : null,
-      lpaCode ? `LPA Activation Code: ${lpaCode}` : null,
-      webUrl ? `Activation Link: ${webUrl}` : null,
-      qrImageUrl ? `QR Code Image: ${qrImageUrl}` : null,
-      ``,
-      `How to install your eSIM:`,
-      `1. Go to Settings → Cellular / Mobile Data`,
-      `2. Tap "Add eSIM" or "Add Data Plan"`,
-      `3. Scan the QR code or enter the LPA code manually`,
-      ``,
-      magicLink
-        ? `Click the link below to sign in and access your full order details:\n${magicLink}`
-        : `Sign in at https://buechama.com to access your order history.`,
-      ``,
-      `Thank you for choosing BuéChama eSIM.`,
-    ]
-      .filter((line) => line !== null)
-      .join('\n');
+    // Determine redirect URL for the magic link — send customer to orders page
+    const origin = req.headers.get('origin') ?? '';
+    const redirectTo = origin ? `${origin}/orders` : `${supabaseUrl.replace('.supabase.co', '')}/orders`;
 
-    // Send the email via Supabase Auth admin OTP (which sends Supabase's templated email)
-    // as the delivery mechanism, while returning the composed eSIM content for the admin
+    // Send OTP magic link (Supabase delivers email with sign-in link, customer lands on /orders)
+    // This uses the Supabase admin OTP endpoint which supports create_user=true for guest emails
     const otpRes = await fetch(`${supabaseUrl}/auth/v1/otp`, {
       method: 'POST',
       headers: {
@@ -157,15 +146,15 @@ Deno.serve(async (req) => {
     });
 
     const otpResult = await otpRes.json();
-    const otpError = otpResult?.error_description ?? otpResult?.message ?? null;
     const emailSent = otpRes.ok;
+    const otpError = emailSent ? null : (otpResult?.error_description ?? otpResult?.message ?? 'OTP send failed');
 
     return new Response(
       JSON.stringify({
         success: emailSent,
         emailSent,
         customerEmail,
-        error: emailSent ? null : otpError,
+        error: otpError,
         esimDetails: {
           planName: order.plan_name,
           dataAmount: order.data_amount,
@@ -173,9 +162,7 @@ Deno.serve(async (req) => {
           lpaCode,
           webUrl,
           qrImageUrl,
-          magicLink,
         },
-        emailBody,
       }),
       {
         status: emailSent ? 200 : 500,
