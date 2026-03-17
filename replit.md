@@ -4,14 +4,35 @@
 BuéChama eSIM is a comprehensive eSIM platform designed for PALOP (Portuguese-speaking African countries) communities. The platform provides affordable data and voice roaming plans specifically for travelers and communities from Angola, Cape Verde, Guinea-Bissau, Mozambique, and São Tomé and Príncipe.
 
 ## Current State
-**Status:** ✅ Fully migrated from Lovable to Replit and running successfully
+**Status:** ✅ Running — Stripe payment integration in progress (requires API key setup)
 
-The application has been successfully migrated from Lovable's environment to Replit. All features are functional:
+The application has been successfully migrated from Lovable's environment to Replit:
 - Frontend running on Vite + React with full CSS styling
-- Supabase integration for authentication and database
+- Supabase integration for authentication and database (project: btallyhejhqfpqwaboee, eu-west-1)
 - Admin dashboard for managing eSIM plans, orders, and inventory
 - Customer portal for browsing plans and managing orders
 - Integration with eSIM Access API for provisioning
+- **Stripe payment processing** wired up (Stripe Elements, PaymentElement)
+
+## Required Environment Variables
+- `VITE_STRIPE_PUBLISHABLE_KEY` — Stripe publishable key (from Stripe dashboard, set in Replit secrets)
+- `STRIPE_SECRET_KEY` — must be set as a **Supabase project secret** for the `create-payment-intent` edge function
+- `ESIM_ACCESS_SECRET_KEY` — must be set as a Supabase project secret for eSIM provisioning
+
+## Supabase Edge Functions Deployed
+All deployed to project `btallyhejhqfpqwaboee`:
+- `create-payment-intent` — creates Stripe PaymentIntent, needs `STRIPE_SECRET_KEY`
+- `get-esim-package` — fetches eSIM package mapping for a plan
+- `esim-access` — creates eSIM orders with eSIM Access API, needs `ESIM_ACCESS_SECRET_KEY`
+- `check-esim-status` — checks eSIM provisioning status
+
+## Setting Supabase Secrets
+```bash
+curl -X POST "https://api.supabase.com/v1/projects/btallyhejhqfpqwaboee/secrets" \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '[{"name":"STRIPE_SECRET_KEY","value":"sk_test_..."}]'
+```
 
 ## Recent Changes (Migration from Lovable - Nov 18, 2024)
 1. **Project Structure Reorganization**

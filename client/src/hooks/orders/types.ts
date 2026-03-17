@@ -13,6 +13,7 @@ export interface CreateOrderData {
   duration_days: number;
   price: number;
   currency?: string;
+  payment_intent_id?: string;
 }
 
 export interface UpdateOrderData {

@@ -1,43 +1,94 @@
 
-import { Input } from "@/components/ui/input";
-import { CreditCard } from "lucide-react";
+import { useStripe, useElements, PaymentElement } from "@stripe/react-stripe-js";
+import { Button } from "@/components/ui/button";
+import { AlertCircle, Lock } from "lucide-react";
 
-const PaymentDetails = () => {
+interface StripePaymentFormProps {
+  onSuccess: (paymentIntentId: string) => void;
+  onBack: () => void;
+  isCreatingOrder: boolean;
+  amount: number;
+  currency: string;
+}
+
+const PaymentDetails = ({ onSuccess, onBack, isCreatingOrder, amount, currency }: StripePaymentFormProps) => {
+  const stripe = useStripe();
+  const elements = useElements();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+
+    const { error: submitError } = await elements.submit();
+    if (submitError) {
+      return;
+    }
+
+    const result = await stripe.confirmPayment({
+      elements,
+      redirect: "if_required",
+    });
+
+    if (result.error) {
+      // Error is shown by Stripe's PaymentElement automatically
+      console.error("Payment error:", result.error);
+    } else if (result.paymentIntent?.status === "succeeded") {
+      onSuccess(result.paymentIntent.id);
+    }
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
-      <div className="bg-gray-50 px-6 py-4 border-b">
-        <h2 className="font-semibold text-lg">Payment Details</h2>
-      </div>
-      <div className="p-6">
-        <div className="flex items-center space-x-2 mb-4 p-3 bg-gray-50 rounded-md">
-          <CreditCard className="text-gray-600" />
-          <span className="font-medium">Credit Card Payment</span>
-        </div>
-        
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Card Number</label>
-              <Input placeholder="1234 5678 9012 3456" className="w-full" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name on Card</label>
-              <Input placeholder="John Smith" className="w-full" />
-            </div>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-gray-50 px-6 py-4 border-b flex items-center justify-between">
+          <h2 className="font-semibold text-lg">Payment Details</h2>
+          <div className="flex items-center text-xs text-gray-500 gap-1">
+            <Lock className="h-3 w-3" />
+            Secured by Stripe
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
-              <Input placeholder="MM/YY" className="w-full" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">CVV</label>
-              <Input placeholder="123" className="w-full" />
-            </div>
+        </div>
+        <div className="p-6">
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-md flex items-start gap-2 text-sm text-blue-700">
+            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+            <span>
+              Test mode: use card <strong>4242 4242 4242 4242</strong>, any future expiry, any 3-digit CVC.
+            </span>
+          </div>
+          <PaymentElement
+            options={{
+              layout: "tabs",
+              defaultValues: { billingDetails: { address: { country: "PT" } } },
+            }}
+          />
+          <div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-400">
+            <Lock className="h-3 w-3" />
+            Your payment information is encrypted and secure
           </div>
         </div>
       </div>
-    </div>
+
+      <div className="flex justify-between">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onBack}
+          disabled={!stripe || isCreatingOrder}
+          data-testid="button-back-to-plans"
+        >
+          Back
+        </Button>
+        <Button
+          type="submit"
+          className="bg-palop-green hover:bg-palop-green/90"
+          disabled={!stripe || !elements || isCreatingOrder}
+          data-testid="button-complete-purchase"
+        >
+          {isCreatingOrder
+            ? "Creating Your Order..."
+            : `Pay €${amount.toFixed(2)}`}
+        </Button>
+      </div>
+    </form>
   );
 };
 
