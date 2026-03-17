@@ -11,7 +11,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
 import { useCreateOrderWithESIM } from "@/hooks/orders/useCreateOrderWithESIM";
 import { useAuth } from "@/contexts/auth";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import CartOverview from "./CartOverview";
 import PaymentDetails from "./PaymentDetails";
@@ -36,7 +35,6 @@ const PurchaseFormWithOrders = ({
 }: PurchaseFormWithOrdersProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const navigate = useNavigate();
   const { createOrderAsync, isCreatingOrder } = useCreateOrderWithESIM();
 
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -44,6 +42,7 @@ const PurchaseFormWithOrders = ({
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [confirmedOrderId, setConfirmedOrderId] = useState<string | null>(null);
+  const [guestEmail, setGuestEmail] = useState<string>("");
 
   const stripePromise = useMemo(() => {
     const pk = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
@@ -88,17 +87,26 @@ const PurchaseFormWithOrders = ({
       });
   }, [currentStep]);
 
-  // Checkout form submit → move to payment step
-  const onCheckoutSubmit = (data: z.infer<typeof checkoutFormSchema>) => {
+  // Checkout form submit → move to payment step (supports both guests and signed-in users)
+  const onCheckoutSubmit = async (data: z.infer<typeof checkoutFormSchema>) => {
+    const emailForOrder = data.email || user?.email || "";
+    setGuestEmail(emailForOrder);
+
     if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to complete your purchase.",
-        variant: "destructive",
+      // Sign in anonymously so the order can be saved with a valid user_id
+      const { error: anonError } = await supabase.auth.signInAnonymously({
+        options: { data: { email: emailForOrder } },
       });
-      navigate("/auth");
-      return;
+      if (anonError) {
+        toast({
+          title: "Could not start session",
+          description: "Please try again or sign in to continue.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
+
     onProceedToPayment();
   };
 
@@ -113,6 +121,7 @@ const PurchaseFormWithOrders = ({
         price: plan.price,
         currency: plan.currency,
         payment_intent_id: confirmedPaymentIntentId,
+        customerEmail: guestEmail || user?.email || "",
       });
 
       setConfirmedOrderId(result.order.id);

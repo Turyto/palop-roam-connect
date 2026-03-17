@@ -14,6 +14,7 @@ export interface CreateOrderData {
   price: number;
   currency?: string;
   payment_intent_id?: string;
+  customerEmail?: string;
 }
 
 export interface UpdateOrderData {

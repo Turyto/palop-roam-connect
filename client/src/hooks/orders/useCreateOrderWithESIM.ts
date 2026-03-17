@@ -31,7 +31,10 @@ export const useCreateOrderWithESIM = () => {
 
   const createOrderMutation = useMutation({
     mutationFn: async (orderData: CreateOrderData) => {
-      if (!user) throw new Error('User not authenticated');
+      if (!user) throw new Error('No active session. Please try again.');
+
+      // Use the explicitly passed email, or fall back to the signed-in user's email
+      const customerEmail = orderData.customerEmail || user.email || '';
 
       console.log('Creating order with eSIM integration:', orderData);
 
@@ -51,8 +54,8 @@ export const useCreateOrderWithESIM = () => {
           // Try to create eSIM order
           const esimResponse = await createESIMOrder({
             packageId: packageData.esim_access_package_id,
-            customerEmail: user.email || '',
-            customerName: user.user_metadata?.full_name || user.email || '',
+            customerEmail: customerEmail,
+            customerName: user.user_metadata?.full_name || customerEmail,
             referenceId: `temp-${Date.now()}` // Temporary reference
           });
 
