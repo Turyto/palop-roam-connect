@@ -61,6 +61,7 @@ const translations = {
       cta: 'Comprar plano',
       note: 'Recebes o teu eSIM logo após a compra.',
       gbLabel: 'de dados',
+      popularBadge: 'Popular',
     },
     compatibility: {
       title: 'O teu telemóvel é compatível com eSIM?',
@@ -197,6 +198,7 @@ const translations = {
       cta: 'Buy plan',
       note: 'You receive your eSIM immediately after purchase.',
       gbLabel: 'of data',
+      popularBadge: 'Popular',
     },
     compatibility: {
       title: 'Is your phone eSIM compatible?',

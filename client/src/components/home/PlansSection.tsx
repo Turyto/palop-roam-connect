@@ -42,7 +42,7 @@ const PlansSection = () => {
               >
                 {popular && (
                   <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-palop-green text-white text-xs font-semibold px-3 py-1 rounded-full">
-                    Popular
+                    {t.plans.popularBadge}
                   </span>
                 )}
 

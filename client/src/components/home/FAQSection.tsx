@@ -1,10 +1,13 @@
-import { useState } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { useLanguage } from '@/contexts/language';
 
 const FAQSection = () => {
   const { t } = useLanguage();
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   const faqs = [
     { q: t.faq.q1, a: t.faq.a1 },
@@ -25,32 +28,27 @@ const FAQSection = () => {
           </h2>
         </div>
 
-        <div className="max-w-2xl mx-auto space-y-2">
-          {faqs.map((faq, index) => (
-            <div
-              key={index}
-              className="border border-gray-100 rounded-xl overflow-hidden"
-              data-testid={`faq-item-${index}`}
-            >
-              <button
-                className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 transition-colors"
-                onClick={() => setOpenIndex(openIndex === index ? null : index)}
-                data-testid={`faq-toggle-${index}`}
+        <div className="max-w-2xl mx-auto">
+          <Accordion type="single" collapsible className="space-y-2">
+            {faqs.map((faq, index) => (
+              <AccordionItem
+                key={index}
+                value={`faq-${index}`}
+                className="border border-gray-100 rounded-xl px-5 overflow-hidden"
+                data-testid={`faq-item-${index}`}
               >
-                <span className="font-medium text-gray-900 pr-4">{faq.q}</span>
-                {openIndex === index ? (
-                  <ChevronUp className="h-5 w-5 text-palop-green flex-shrink-0" />
-                ) : (
-                  <ChevronDown className="h-5 w-5 text-palop-green flex-shrink-0" />
-                )}
-              </button>
-              {openIndex === index && (
-                <div className="px-5 pb-5">
-                  <p className="text-gray-600 leading-relaxed text-sm">{faq.a}</p>
-                </div>
-              )}
-            </div>
-          ))}
+                <AccordionTrigger
+                  className="text-left font-medium text-gray-900 hover:no-underline py-4"
+                  data-testid={`faq-toggle-${index}`}
+                >
+                  {faq.q}
+                </AccordionTrigger>
+                <AccordionContent className="text-gray-600 leading-relaxed">
+                  {faq.a}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
         </div>
       </div>
     </section>

@@ -1,5 +1,9 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState } from 'react';
 import translations, { Lang, Translations } from '@/lib/translations';
+
+type NestedValue<T> = T extends object
+  ? { [K in keyof T]: NestedValue<T[K]> }[keyof T]
+  : T;
 
 interface LanguageContextValue {
   lang: Lang;
