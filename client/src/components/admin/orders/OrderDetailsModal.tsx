@@ -57,8 +57,8 @@ const OrderDetailsModal = ({ order, isOpen, onClose }: OrderDetailsModalProps) =
           setResentDetails(data.esimDetails);
         }
         toast({
-          title: "Email sent!",
-          description: `A secure access link has been sent to ${email}. eSIM details are shown below.`,
+          title: "Sign-in link sent!",
+          description: `A secure sign-in link has been emailed to ${email}. When clicked, they will be taken to their orders page with full eSIM details.`,
         });
       }
     } catch (err: any) {
@@ -346,7 +346,7 @@ const OrderDetailsModal = ({ order, isOpen, onClose }: OrderDetailsModalProps) =
           {/* eSIM details panel shown after successful resend */}
           {resentDetails && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-2">
-              <p className="text-sm font-semibold text-green-800">Magic link sent — eSIM details for reference:</p>
+              <p className="text-sm font-semibold text-green-800">Sign-in link sent — eSIM details for admin reference (also visible to customer on their orders page after clicking the link):</p>
               {resentDetails.iccid && (
                 <p className="text-xs text-green-700"><span className="font-medium">ICCID:</span> {resentDetails.iccid}</p>
               )}

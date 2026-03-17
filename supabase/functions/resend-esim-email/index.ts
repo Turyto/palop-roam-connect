@@ -129,8 +129,14 @@ Deno.serve(async (req) => {
     const origin = req.headers.get('origin') ?? '';
     const redirectTo = origin ? `${origin}/orders` : `${supabaseUrl.replace('.supabase.co', '')}/orders`;
 
-    // Send OTP magic link (Supabase delivers email with sign-in link, customer lands on /orders)
-    // This uses the Supabase admin OTP endpoint which supports create_user=true for guest emails
+    // Scope note: this function sends a Supabase magic-link (OTP) email to the customer.
+    // The email body is the Supabase auth template containing only the sign-in link.
+    // When the customer clicks the link they are signed in and land on /orders where
+    // full eSIM details (QR code, LPA activation code, activation URL) are displayed
+    // via the customer_email RLS policy. The eSIM details are also returned in the
+    // JSON response so the admin UI can display them immediately without a page reload.
+    // A fully custom transactional email (eSIM details embedded in HTML email body)
+    // is out of scope; it would require integrating a transactional email service (e.g. Resend).
     const otpRes = await fetch(`${supabaseUrl}/auth/v1/otp`, {
       method: 'POST',
       headers: {

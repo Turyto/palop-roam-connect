@@ -133,17 +133,30 @@ const PurchaseFormWithOrders = ({
 
       setConfirmedOrderId(result.order.id);
 
-      // For guests: send a magic link so they can access their order and eSIM details later.
-      // When clicked, the customer signs in and the orders page uses customer_email RLS
-      // to show their order (even though it was created under an anonymous user_id).
+      // For guests: send a magic link so they can access their orders page later.
+      // The email contains a Supabase magic link. When clicked, the customer is
+      // signed in and the RLS policy (customer_email = auth.email()) lets them see
+      // this order on the /orders page where full eSIM details (QR code, LPA code)
+      // are displayed. The eSIM details themselves are already visible on the
+      // confirmation screen immediately after purchase.
       if (isGuestCheckout && emailForOrder) {
-        await supabase.auth.signInWithOtp({
+        const { error: otpError } = await supabase.auth.signInWithOtp({
           email: emailForOrder,
           options: {
             shouldCreateUser: true,
             emailRedirectTo: `${window.location.origin}/orders`,
           },
         });
+        if (otpError) {
+          // Non-fatal: order is created and eSIM details are on screen.
+          // Warn but still proceed to confirmation.
+          console.error("Failed to send access link email:", otpError);
+          toast({
+            title: "Order complete",
+            description: "Your eSIM is ready. We were unable to send the access link email — please save your details now.",
+            variant: "destructive",
+          });
+        }
       }
 
       onConfirmation();

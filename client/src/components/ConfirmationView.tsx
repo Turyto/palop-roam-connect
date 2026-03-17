@@ -108,7 +108,10 @@ const ConfirmationView = ({ plan, orderId, guestEmail, onBackToPlans }: Confirma
           <div className="text-sm text-blue-700">
             <p className="font-semibold mb-1">Check your inbox</p>
             <p>
-              We've emailed a secure link to <strong>{guestEmail}</strong>. Click it anytime to access your eSIM and order history — no password needed.
+              We've sent a sign-in link to <strong>{guestEmail}</strong>. Click it anytime to return to your orders page and view your eSIM details — no password needed.
+            </p>
+            <p className="mt-2 font-medium">
+              Your eSIM details are shown below — save or print them now.
             </p>
           </div>
         </div>
