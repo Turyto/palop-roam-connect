@@ -16,7 +16,11 @@ export const useFetchOrders = () => {
       if (!user) throw new Error('User not authenticated');
       
       console.log('Fetching orders for user:', user.id);
-      
+
+      // Rely on RLS to return all orders the user can access:
+      // - orders.user_id = auth.uid()  (own orders by user_id)
+      // - orders.customer_email = auth.email()  (guest orders accessed via magic link)
+      // No client-side user_id filter needed; RLS handles both cases.
       const { data, error } = await supabase
         .from('orders')
         .select(`
@@ -24,7 +28,6 @@ export const useFetchOrders = () => {
           order_items(*),
           esim_activations(*)
         `)
-        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) {

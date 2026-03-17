@@ -18,6 +18,12 @@ interface OrderDetailsModalProps {
 const OrderDetailsModal = ({ order, isOpen, onClose }: OrderDetailsModalProps) => {
   const { toast } = useToast();
   const [isResending, setIsResending] = useState(false);
+  const [resentDetails, setResentDetails] = useState<{
+    lpaCode: string | null;
+    iccid: string | null;
+    webUrl: string | null;
+    qrImageUrl: string | null;
+  } | null>(null);
 
   if (!order) return null;
 
@@ -32,6 +38,7 @@ const OrderDetailsModal = ({ order, isOpen, onClose }: OrderDetailsModalProps) =
       return;
     }
     setIsResending(true);
+    setResentDetails(null);
     try {
       const { data, error } = await supabase.functions.invoke('resend-esim-email', {
         body: { orderId: order.id },
@@ -45,9 +52,13 @@ const OrderDetailsModal = ({ order, isOpen, onClose }: OrderDetailsModalProps) =
           variant: "destructive",
         });
       } else {
+        // Show eSIM details in the admin UI after successful resend
+        if (data.esimDetails) {
+          setResentDetails(data.esimDetails);
+        }
         toast({
           title: "Email sent!",
-          description: `A secure access link with eSIM details has been sent to ${email}.`,
+          description: `A secure access link has been sent to ${email}. eSIM details are shown below.`,
         });
       }
     } catch (err: any) {
@@ -330,6 +341,25 @@ const OrderDetailsModal = ({ order, isOpen, onClose }: OrderDetailsModalProps) =
                 )}
               </CardContent>
             </Card>
+          )}
+
+          {/* eSIM details panel shown after successful resend */}
+          {resentDetails && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-2">
+              <p className="text-sm font-semibold text-green-800">Magic link sent — eSIM details for reference:</p>
+              {resentDetails.iccid && (
+                <p className="text-xs text-green-700"><span className="font-medium">ICCID:</span> {resentDetails.iccid}</p>
+              )}
+              {resentDetails.lpaCode && (
+                <p className="text-xs text-green-700 break-all"><span className="font-medium">LPA Code:</span> {resentDetails.lpaCode}</p>
+              )}
+              {resentDetails.webUrl && (
+                <p className="text-xs text-green-700 break-all"><span className="font-medium">Activation URL:</span> {resentDetails.webUrl}</p>
+              )}
+              {resentDetails.qrImageUrl && (
+                <p className="text-xs text-green-700 break-all"><span className="font-medium">QR Image:</span> {resentDetails.qrImageUrl}</p>
+              )}
+            </div>
           )}
 
           {/* Action Buttons */}
