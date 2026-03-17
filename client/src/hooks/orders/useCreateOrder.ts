@@ -25,7 +25,8 @@ export const useCreateOrder = () => {
         price: orderData.price,
         currency: orderData.currency || 'EUR',
         status: 'pending',
-        payment_status: 'pending'
+        payment_status: 'pending',
+        customer_email: orderData.customerEmail || user.email || undefined,
       };
 
       const { data: orderResult, error: orderError } = await supabase
