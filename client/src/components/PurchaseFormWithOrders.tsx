@@ -133,12 +133,15 @@ const PurchaseFormWithOrders = ({
 
       setConfirmedOrderId(result.order.id);
 
-      // For guests: send a magic link so they can access their orders page later.
-      // The email contains a Supabase magic link. When clicked, the customer is
-      // signed in and the RLS policy (customer_email = auth.email()) lets them see
-      // this order on the /orders page where full eSIM details (QR code, LPA code)
-      // are displayed. The eSIM details themselves are already visible on the
-      // confirmation screen immediately after purchase.
+      // For guests: send a rich HTML email with eSIM activation details (QR code,
+      // LPA code, ICCID, magic sign-in link) via the resend-esim-email edge function.
+      // The function uses Resend to deliver a transactional email. If Resend is not
+      // configured it falls back to a Supabase OTP magic-link-only email.
+      // Note: the edge function requires admin auth, so for the post-purchase guest
+      // flow we call signInWithOtp directly (customer-facing, no admin needed).
+      // The Resend email is sent by the admin "Resend eSIM Email" action in the admin UI.
+      // Here we use the lightweight OTP path: customer gets a sign-in link; eSIM
+      // details are visible immediately on the confirmation page.
       if (isGuestCheckout && emailForOrder) {
         const { error: otpError } = await supabase.auth.signInWithOtp({
           email: emailForOrder,
@@ -149,11 +152,10 @@ const PurchaseFormWithOrders = ({
         });
         if (otpError) {
           // Non-fatal: order is created and eSIM details are on screen.
-          // Warn but still proceed to confirmation.
           console.error("Failed to send access link email:", otpError);
           toast({
             title: "Order complete",
-            description: "Your eSIM is ready. We were unable to send the access link email — please save your details now.",
+            description: "Your eSIM is ready. We were unable to send the sign-in link — please save your details from this page.",
             variant: "destructive",
           });
         }
