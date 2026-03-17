@@ -154,7 +154,7 @@ const PurchaseFormWithOrders = ({
       }
 
       onConfirmation();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Order creation failed:", error);
       toast({
         title: "Order Error",

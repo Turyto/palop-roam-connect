@@ -9,8 +9,26 @@ import { Download, Eye, Copy, Calendar, User, Package, Euro, Wifi, Mail, FileTex
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
+interface AdminOrder {
+  id: string;
+  user_id: string;
+  plan_name: string;
+  data_amount: string;
+  duration_days: number;
+  price: number;
+  currency: string;
+  status: string;
+  payment_status: string;
+  payment_intent_id: string | null;
+  customer_email: string | null;
+  created_at: string;
+  esim_delivered_at: string | null;
+  esim_status: string | null;
+  esim_order_id: string | null;
+}
+
 interface OrderDetailsModalProps {
-  order: any;
+  order: AdminOrder | null;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -61,10 +79,11 @@ const OrderDetailsModal = ({ order, isOpen, onClose }: OrderDetailsModalProps) =
           description: `A secure sign-in link has been emailed to ${email}. When clicked, they will be taken to their orders page with full eSIM details.`,
         });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
       toast({
         title: "Failed to send email",
-        description: err.message || "Something went wrong. Please try again.",
+        description: message,
         variant: "destructive",
       });
     } finally {
