@@ -25,7 +25,7 @@ const OrderActions = ({
   const { t } = useLanguage();
   const o = t.orders;
 
-  const canTopUp = order.status === 'completed' && order.payment_status === 'succeeded';
+  const canTopUp = order.status === 'completed' && order.payment_status === 'succeeded' && !!order.esim_delivered_at;
 
   const handleDownloadReceipt = () => {
     console.log('Download receipt for order:', order.id);

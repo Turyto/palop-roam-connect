@@ -1,0 +1,261 @@
+Please perform a targeted cleanup pass on the public Orders page expanded details state and top-up flow so they match the updated public site experience, while preserving the current working order logic, status logic, provisioning logic, and admin/backend behavior.
+
+Main objective:
+The main Orders page shell is now modernized, but the expanded order details panel and top-up modal still feel legacy. They need a focused cleanup so the full public post-purchase experience feels coherent.
+
+Scope of this task:
+- Expanded order details state inside the modernized Orders page
+- Top-up button visibility logic in the Orders page
+- Top-up modal shell/content presentation
+- Localization cleanup for those areas
+- Clarification of user-facing status messaging
+
+Do NOT rebuild the underlying backend/order/top-up logic unless strictly necessary.
+
+Critical constraints:
+
+1. Preserve order logic and backend behavior
+- Do not break order retrieval
+- Do not break provisioning status logic
+- Do not break order status logic
+- Do not break payment status logic
+- Do not break QR code / eSIM download logic
+- Do not break top-up backend logic if it is real and already wired
+- Preserve all order IDs, payment IDs, provisioning metadata, and related backend integrations
+
+2. Preserve auth/admin/order-management behavior
+- Do not break login/authentication
+- Preserve Admin login and access
+- Preserve user login and session behavior
+- Preserve protected routes and admin dashboards
+- Do not alter backend order-management behavior unless strictly necessary and backward-compatible
+
+3. Preserve bilingual behavior
+- Reuse the same PT/EN localization system already used by the updated public site
+- Do not hardcode public-facing strings outside the translation/i18n structure
+- Ensure the expanded details panel and top-up modal follow locale properly
+
+4. Keep the current modern Orders page shell
+- Do not revert the already-modernized Orders shell/header/footer/cards
+- This is a targeted cleanup of the remaining legacy pockets inside the page
+
+Problems to solve:
+
+A. Expanded order details are still legacy
+Current issues observed:
+- English-only labels like “Usage Statistics”, “Plan Details”, “Order Information”, “Installation Guide”, etc.
+- raw/legacy support text tone
+- status language that does not clearly distinguish payment completion vs activation/provisioning state
+- older visual hierarchy inside the expanded panel
+
+B. Status presentation is confusing
+Observed mismatch example:
+- collapsed card shows “Em processamento”
+- expanded panel shows “Order Status: completed”
+- usage and validity look active
+- installation guide appears immediately
+
+This creates ambiguity.
+
+Need to present user-facing statuses more clearly and consistently.
+
+C. Top-up appears too prominently for processing orders
+The current Orders cards show “Adicionar dados” even when the order is still “Em processamento”.
+
+This may be premature or confusing.
+
+Need to make top-up visibility/priority depend on order state.
+
+D. Top-up modal shell is still legacy
+The modal appears functional, but still has:
+- English text
+- older layout style
+- dense presentation
+- weak alignment with the updated public site
+
+Need to refactor the modal shell/content presentation while preserving its working logic.
+
+Required refactor tasks:
+
+1) Expanded details localization + UX cleanup
+Please update the expanded order details panel so all public-facing visible labels are localized and aligned with the new site tone.
+
+Examples to localize/refactor:
+- “Usage Statistics”
+- “Plan Details”
+- “Order Information”
+- “Installation Guide”
+- “ESIM ACTIONS”
+- “Order Status: completed”
+- “Payment Status: succeeded”
+- any helper/support text shown in expanded details
+
+Use simple public-friendly labels.
+
+Suggested PT labels:
+- “Utilização”
+- “Detalhes do plano”
+- “Informação da encomenda”
+- “Como ativar”
+- “Ações do eSIM”
+- “Estado da encomenda”
+- “Estado do pagamento”
+
+Suggested EN labels:
+- “Usage”
+- “Plan details”
+- “Order information”
+- “How to activate”
+- “eSIM actions”
+- “Order status”
+- “Payment status”
+
+2) Clarify status model in the public UI
+Do not change backend status computation unless necessary.
+But improve the public-facing presentation so users can distinguish:
+
+- payment completed
+- activation in progress
+- ready to activate
+- active
+- expired
+
+Examples of good user-facing PT labels:
+- “Pagamento concluído”
+- “Ativação em preparação”
+- “Pronto para ativação”
+- “Ativo”
+- “Expirado”
+
+Examples in EN:
+- “Payment completed”
+- “Activation in progress”
+- “Ready to activate”
+- “Active”
+- “Expired”
+
+Important:
+If backend currently has multiple status dimensions (payment status, provisioning status, order status), present them in a clearer hierarchy rather than flattening everything into a single ambiguous label.
+
+3) Improve expanded panel content hierarchy
+The expanded panel should be easier to read.
+
+Recommended order:
+A. Current activation / usage status
+B. Plan details
+C. Order info
+D. QR code / eSIM actions
+E. Activation guide
+F. Support/help hint
+
+Keep useful data, but reduce the raw/internal-dashboard feel.
+
+4) Refactor activation guide copy
+Keep the guide if it is useful, but rewrite/localize it into simpler user-facing text.
+
+Suggested PT example:
+Title: “Como ativar”
+Steps:
+1. “Descarrega e guarda o QR Code no teu dispositivo”
+2. “Vai a Definições > Rede móvel / Dados móveis”
+3. “Seleciona ‘Adicionar eSIM’”
+4. “Lê o QR Code ou introduz os dados manualmente”
+5. “Segue as instruções do teu telemóvel”
+
+Suggested EN example:
+Title: “How to activate”
+Steps:
+1. “Download and save the QR code on your device”
+2. “Go to Settings > Mobile Network / Mobile Data”
+3. “Choose ‘Add eSIM’”
+4. “Scan the QR code or enter the details manually”
+5. “Follow your phone’s instructions”
+
+Support helper line should also be localized and modernized.
+
+5) Clarify coverage vs active network display
+If expanded details currently show things like:
+- purchased plan coverage
+- current network
+- country/network details
+
+Make sure these are labeled clearly so users do not think they bought the wrong plan.
+
+For example distinguish:
+- “Cobertura do plano”
+- “Rede ativa atual”
+or EN:
+- “Plan coverage”
+- “Current active network”
+
+6) Gate top-up by status
+Please review the visibility/priority of the top-up action.
+
+Recommended behavior:
+- If order is still processing / activation not ready: hide top-up OR visually disable/demote it
+- If order is active/ready and top-up is truly supported: show it as a secondary action
+- If top-up backend flow is not fully ready for certain statuses, do not present it prominently
+
+At minimum:
+Top-up should not feel like the main next step while an eSIM is still provisioning.
+
+7) Refactor top-up modal shell/content
+Keep the working top-up logic, but modernize the modal presentation.
+
+Tasks:
+- localize visible strings
+- simplify layout hierarchy
+- keep a clear current-plan summary
+- make boost/extension options easier to scan
+- align styling with the updated public site
+- keep modal actions secondary and clean
+
+If labels like “Data Boost” / “Time Extension” are shown, localize them too.
+
+Suggested PT options:
+- “Mais 1 GB”
+- “Mais 3 GB”
+- “Mais 5 GB”
+- “Mais 7 dias”
+
+Suggested EN examples:
+- “Add 1 GB”
+- “Add 3 GB”
+- “Add 5 GB”
+- “Add 7 days”
+
+Only keep the current option structure if it reflects real backend logic.
+
+8) Keep QR / download / eSIM actions useful
+If the order is ready and QR/download actions are real, keep them.
+If the order is not ready, make the state explicit instead of showing actions prematurely.
+
+The user should always understand:
+- whether the eSIM is ready
+- whether QR is available
+- whether they need to wait
+- where to get help
+
+Technical requirements:
+- Reuse current order/detail/top-up components if possible
+- Avoid backend rewrites
+- Refactor presentation and public-facing logic carefully
+- Preserve the modern Orders page shell already implemented
+
+Acceptance criteria:
+- Expanded details are localized and visually aligned with the new public site
+- Status messaging is clearer and less ambiguous
+- Activation guide is simpler and localized
+- Coverage/network labeling is clearer
+- Top-up no longer appears too prominently for processing orders
+- Top-up modal is visually modernized and localized
+- Existing order logic, provisioning logic, QR logic, and backend behavior remain intact
+- Auth/admin/order-management remain unaffected
+
+After implementing, provide:
+1. a short summary of what was cleaned up in expanded details
+2. how status presentation was improved without breaking backend logic
+3. what top-up visibility rule was applied by status
+4. confirmation that top-up backend/order logic was preserved
+5. confirmation that auth/admin/order-management logic was not altered
+6. any remaining legacy elements that still need later cleanup
