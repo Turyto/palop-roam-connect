@@ -7,9 +7,9 @@ interface CartOverviewProps {
 
 const CartOverview = ({ plan }: CartOverviewProps) => {
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
       <div className="bg-gray-50 px-6 py-4 border-b">
-        <h2 className="font-semibold text-lg">Cart Overview</h2>
+        <h2 className="font-semibold text-lg text-gray-900">Cart Overview</h2>
       </div>
       <div className="p-6">
         <table className="w-full">

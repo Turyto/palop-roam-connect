@@ -12,6 +12,16 @@ const translations = {
       buyNow: 'Comprar agora',
       signIn: 'Entrar',
     },
+    checkout: {
+      emailHelper: 'Receberás o teu eSIM e as instruções de ativação por email.',
+      paymentSecure: 'Pagamento seguro com Stripe',
+      paymentDigital: 'Entrega digital após a compra',
+      paymentSupport: 'Suporte disponível se precisares de ajuda',
+      selectedPlan: 'Plano selecionado',
+      data: 'Dados',
+      duration: 'Duração',
+      price: 'Preço',
+    },
     hero: {
       eyebrow: 'Internet móvel digital para Portugal e Europa',
       badge: 'Ideal para recém-chegados e viajantes',
@@ -310,6 +320,16 @@ const translations = {
       support: 'Support',
       buyNow: 'Buy now',
       signIn: 'Sign In',
+    },
+    checkout: {
+      emailHelper: 'You will receive your eSIM and activation instructions by email.',
+      paymentSecure: 'Secure payment with Stripe',
+      paymentDigital: 'Digital delivery after purchase',
+      paymentSupport: 'Support available if you need help',
+      selectedPlan: 'Selected plan',
+      data: 'Data',
+      duration: 'Duration',
+      price: 'Price',
     },
     hero: {
       eyebrow: 'Digital mobile internet for Portugal and Europe',

@@ -1,0 +1,197 @@
+Please refactor the public Cart / Purchase page so it matches the new Homepage and Plans page experience, while preserving the current working cart logic, selected-plan handoff, and Stripe payment flow.
+
+Main objective:
+Keep the current working purchase mechanics, but modernize and simplify the Purchase / Cart page shell so it feels like part of the same product journey as the updated Homepage and Plans page.
+
+Current public flow is now correct:
+Homepage → /plans → selected plan → /purchase?plan={id} → Cart / Payment → Confirmation
+
+The remaining problem:
+The Purchase / Cart page still looks and reads like an old-generation legacy page. It contains outdated brand/content blocks and too much extra marketing around the checkout experience.
+
+Goal:
+Refactor the page around the working logic so it becomes:
+clear → reassuring → focused on purchase completion
+
+Critical constraints:
+
+1. Preserve the working purchase mechanics
+- Do not break the current selected-plan handoff from `/plans` to `/purchase?plan={id}`
+- Do not break the current cart summary logic
+- Do not break the email capture flow
+- Do not break the Stripe payment integration
+- Do not break order creation
+- Do not break confirmation flow
+
+2. Preserve auth, admin, and order management
+- Do not remove, break, or alter login/authentication
+- Preserve Admin login
+- Preserve user login
+- Preserve admin dashboards, protected routes, order-management flows, and order visibility
+- Do not change backend auth/order/admin logic unless strictly necessary, and if any change is needed, keep it backward-compatible
+
+3. Preserve bilingual behavior
+- Reuse the same PT/EN localization system already used by the updated Homepage and Plans page
+- Do not hardcode public strings outside the translation/i18n structure
+- Ensure updated checkout labels and helper text work correctly in both PT and EN where applicable
+
+4. Keep Stripe and cart logic intact
+- Refactor the shell/content/layout around the current working Stripe and cart implementation
+- Do not rebuild the checkout engine if not necessary
+
+Refactor requirements:
+
+A. Make branding consistent with the new public site
+The Purchase / Cart page currently shows inconsistent legacy branding/content (examples seen previously include PALOPRoam / old PALOP messaging / older style content blocks).
+
+Please normalize the visible public-facing branding so it matches the updated site:
+- use the same public brand/header style as Homepage and Plans page
+- do not show conflicting legacy brand names in the public checkout shell
+- preserve internal technical identifiers if needed, but visible user-facing branding should be consistent
+
+B. Keep the page focused on checkout
+The checkout page should primarily contain:
+1. Header / stepper
+2. Selected plan summary
+3. Contact information
+4. Payment
+5. Minimal footer
+
+Remove or reduce user-facing non-essential marketing blocks such as:
+- “Connect with the PALOP Community”
+- large community promo boxes
+- testimonial/stat panels
+- legacy marketing cards not required for checkout completion
+- excessive old-brand proof sections
+
+The checkout page should not feel like a marketing page.
+It should feel like a purchase completion page.
+
+C. Preserve and simplify the stepper
+The current step sequence is useful:
+- Select plan
+- Cart overview
+- Data and payment
+- Confirmation
+
+Keep the step flow if it already works, but restyle/clean it so it matches the simpler new site aesthetic.
+
+Use short clear labels and consistent styling.
+
+D. Improve selected plan summary block
+Keep the selected plan visible and easy to confirm.
+
+The plan summary should clearly show:
+- plan name
+- data allowance
+- duration
+- coverage
+- price
+
+If the current summary already contains this data, keep the logic and just simplify the presentation.
+
+E. Improve contact information step clarity
+Near the email field, add a short reassurance/helper line such as:
+
+PT:
+"Receberás o teu eSIM e as instruções de ativação por email."
+
+EN:
+"You will receive your eSIM and activation instructions by email."
+
+This should reduce hesitation and clarify why email is required.
+
+F. Improve payment reassurance
+Around the payment section, add simple reassurance messaging such as:
+
+PT:
+- "Pagamento seguro com Stripe"
+- "Entrega digital após a compra"
+- "Suporte disponível se precisares de ajuda"
+
+EN:
+- "Secure payment with Stripe"
+- "Digital delivery after purchase"
+- "Support available if you need help"
+
+This can be a small reassurance strip or a compact helper block near the payment form.
+
+G. Keep CTA/actions simple
+At checkout/cart level, only keep the actions that help complete the purchase.
+
+Examples:
+- Back
+- Continue to payment
+- Pay €X.XX
+
+Avoid extra unrelated CTAs in the checkout area unless strictly useful.
+
+H. Footer cleanup
+Use a minimal, consistent footer.
+Do not overload checkout with large marketing footer blocks if not necessary.
+
+If a shared footer is required, keep it visually consistent with the updated public site.
+
+Implementation guidance:
+
+1. Reuse the existing purchase route and logic
+- `/purchase?plan={id}` should continue to work
+- the selected plan must continue to preload correctly
+- the current cart/payment mechanics should remain intact
+
+2. Refactor the page shell/components
+Consider organizing the page into cleaner components such as:
+- PurchaseHeader / PurchaseStepper
+- SelectedPlanSummary
+- ContactInformationSection
+- PaymentSection
+- PurchaseFooter
+
+3. Remove legacy public content dependencies
+- strip out old user-facing content blocks that are no longer aligned with the updated site
+- keep only what helps the user complete the purchase
+
+4. Keep the Purchase page consistent with Homepage and Plans page visual language
+- typography
+- spacing
+- button style
+- card styling
+- color usage
+- header behavior
+
+5. Verify route continuity
+After refactor, the user journey should remain:
+Homepage → `/plans` → choose plan → `/purchase?plan={id}` → payment → confirmation
+
+Suggested acceptance criteria:
+- selected plan still loads correctly from `/purchase?plan={id}`
+- cart summary still shows correct plan and amount
+- email step still works
+- Stripe payment still works
+- order creation still works
+- confirmation flow still works
+- no public user-facing legacy plan-selection step remains
+- visible branding matches the new public site
+- checkout page is simpler and less cluttered
+- PT/EN behavior still works where applicable
+- auth/admin/order-management remain unaffected
+
+Please preserve these mechanics while refactoring the shell:
+- existing selected plan mapping
+- existing Stripe/payment integration
+- existing order creation
+- existing auth/session behavior
+- existing admin order visibility
+
+Please remove or reduce these legacy user-facing blocks if still present:
+- community promo panels
+- testimonial/stat block
+- excessive old-brand marketing messaging
+- outdated legacy trust sections not needed at checkout
+
+After implementing, provide:
+1. a short summary of what was visually/content-wise refactored
+2. confirmation that plan handoff from `/plans` still works
+3. confirmation that Stripe/cart logic was preserved
+4. confirmation that auth/admin/order-management logic was not altered
+5. any remaining legacy elements that still need later cleanup

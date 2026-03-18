@@ -1,14 +1,12 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Check } from "lucide-react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import ESIMPlans from "@/components/ESIMPlans";
+import HomeHeader from "@/components/home/HomeHeader";
+import HomeFooter from "@/components/home/HomeFooter";
 import PurchaseFormWithOrders from "@/components/PurchaseFormWithOrders";
 import PurchaseSteps from "@/components/PurchaseSteps";
-import PlanValueProposition from "@/components/PlanValueProposition";
-import RealJourneysSection from "@/components/RealJourneysSection";
+import SelectedPlanSummary from "@/components/SelectedPlanSummary";
+import ESIMPlans from "@/components/ESIMPlans";
 
 type PurchaseStep = "plans" | "checkout" | "payment" | "confirmation";
 
@@ -27,7 +25,7 @@ const Purchase = () => {
   const planParam = searchParams.get('plan');
   const [currentStep, setCurrentStep] = useState<PurchaseStep>(planParam ? "checkout" : "plans");
   const [selectedPlan, setSelectedPlan] = useState<ESIMPlan | null>(null);
-  
+
   // Pre-defined plans — new public plans + legacy eSIM Access plans
   const availablePlans: ESIMPlan[] = [
     // New public plans (from /plans page)
@@ -185,7 +183,7 @@ const Purchase = () => {
     {
       id: "core",
       name: "Core",
-      data: "3-5 GB", 
+      data: "3-5 GB",
       days: 30,
       price: 12.50,
       currency: "EUR",
@@ -250,7 +248,7 @@ const Purchase = () => {
       id: "palop-neighbours1",
       name: "Palop Neighbours1",
       data: "100 MB",
-      days: 7,  
+      days: 7,
       price: 2.30,
       currency: "EUR",
       features: [
@@ -263,14 +261,14 @@ const Purchase = () => {
       ]
     },
     {
-      id: "palop-neighbours2", 
+      id: "palop-neighbours2",
       name: "Palop Neighbours2",
       data: "1 GB",
       days: 7,
       price: 7.70,
       currency: "EUR",
       features: [
-        "1 GB of Internet", 
+        "1 GB of Internet",
         "Valid for 7 days",
         "25+ African areas",
         "Multi-area coverage",
@@ -280,7 +278,6 @@ const Purchase = () => {
     }
   ];
 
-  // Set selected plan based on URL parameter
   useEffect(() => {
     if (planParam) {
       const plan = availablePlans.find(p => p.id === planParam);
@@ -290,93 +287,56 @@ const Purchase = () => {
       }
     }
   }, [planParam]);
-  
+
   const handlePlanSelection = (plan: ESIMPlan) => {
     setSelectedPlan(plan);
     setCurrentStep("checkout");
   };
-  
+
   const handleBackToPlans = () => {
     setCurrentStep("plans");
   };
-  
+
   const handleProceedToPayment = () => {
     setCurrentStep("payment");
   };
-  
+
   const handleConfirmation = () => {
     setCurrentStep("confirmation");
   };
-  
+
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      <HomeHeader />
+
+      <PurchaseSteps currentStep={currentStep} />
+
       <main className="flex-grow">
-        <div className="bg-gradient-to-r from-palop-green to-palop-blue">
-          <div className="container mx-auto px-4 py-8 text-center">
-            <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">PALOP eSIM</h1>
-            <p className="text-white text-xl opacity-90">Stay connected across all PALOP countries</p>
-          </div>
-        </div>
-        
-        <PurchaseSteps currentStep={currentStep} />
-        
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-8 max-w-6xl">
           {currentStep === "plans" && (
-            <>
-              <ESIMPlans onSelectPlan={handlePlanSelection} />
-              <RealJourneysSection />
-            </>
+            <ESIMPlans onSelectPlan={handlePlanSelection} />
           )}
-          
+
           {currentStep !== "plans" && selectedPlan && (
-            <div className="max-w-6xl mx-auto">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Left side - Plan details and value proposition */}
-                <div className="space-y-6">
-                  <div className="bg-white rounded-lg shadow-md p-6">
-                    <div className="text-center mb-6">
-                      <h2 className="text-2xl font-bold text-palop-green mb-2">{selectedPlan.name} Plan</h2>
-                      {(selectedPlan.id === 'palop-neighbours1' || selectedPlan.id === 'palop-neighbours2') && (
-                        <div className="mb-2">
-                          <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-                            Real eSIM Access • Live Provisioning
-                          </span>
-                        </div>
-                      )}
-                      <div className="text-3xl font-bold text-gray-800">€{selectedPlan.price.toFixed(2)}</div>
-                      <div className="text-gray-600">{selectedPlan.data} for {selectedPlan.days} days</div>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      {selectedPlan.features.map((feature, index) => (
-                        <div key={index} className="flex items-center">
-                          <Check className="h-4 w-4 text-palop-green mr-3" />
-                          <span className="text-sm">{feature}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <PlanValueProposition plan={selectedPlan} />
-                </div>
-                
-                {/* Right side - Purchase form */}
-                <div>
-                  <PurchaseFormWithOrders 
-                    plan={selectedPlan} 
-                    currentStep={currentStep}
-                    onBackToPlans={handleBackToPlans}
-                    onProceedToPayment={handleProceedToPayment}
-                    onConfirmation={handleConfirmation}
-                  />
-                </div>
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+              <div className="lg:col-span-2">
+                <SelectedPlanSummary plan={selectedPlan} />
+              </div>
+              <div className="lg:col-span-3">
+                <PurchaseFormWithOrders
+                  plan={selectedPlan}
+                  currentStep={currentStep}
+                  onBackToPlans={handleBackToPlans}
+                  onProceedToPayment={handleProceedToPayment}
+                  onConfirmation={handleConfirmation}
+                />
               </div>
             </div>
           )}
         </div>
       </main>
-      <Footer />
+
+      <HomeFooter />
     </div>
   );
 };
