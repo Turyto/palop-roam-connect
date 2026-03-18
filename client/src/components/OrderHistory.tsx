@@ -1,6 +1,6 @@
 import { useOrders } from "@/hooks/useOrders";
 import { useCustomerQRCodes } from "@/hooks/useCustomerQRCodes";
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import QRCodeDownloadModal from "./QRCodeDownloadModal";
 import TopUpCheckoutModal from "./order-history/TopUpCheckoutModal";
 import EmptyOrdersState from "./order-history/EmptyOrdersState";
@@ -8,6 +8,10 @@ import OrderCard from "./order-history/OrderCard";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/language";
 import { AlertCircle, Loader2 } from "lucide-react";
+
+const DevQAPreview = import.meta.env.DEV
+  ? lazy(() => import("./order-history/DevQAPreview"))
+  : null;
 
 const OrderHistory = () => {
   const { orders, ordersLoading, ordersError } = useOrders();
@@ -46,20 +50,17 @@ const OrderHistory = () => {
     );
   }
 
-  if (!orders || orders.length === 0) {
-    return <EmptyOrdersState />;
-  }
-
   const getOrderQRCode = (orderId: string) => {
     return qrCodes.find(qr => qr.order_id === orderId);
   };
 
   const canDownloadESIM = (order: any, qrCode: any) => {
-    const statusCheck = order.status === 'completed';
-    const paymentCheck = order.payment_status === 'succeeded';
-    const deliveredCheck = !!order.esim_delivered_at;
-    const qrCodeCheck = !!qrCode;
-    return statusCheck && paymentCheck && deliveredCheck && qrCodeCheck;
+    return (
+      order.status === 'completed' &&
+      order.payment_status === 'succeeded' &&
+      !!order.esim_delivered_at &&
+      !!qrCode
+    );
   };
 
   const handleDownloadESIM = (order: any) => {
@@ -98,27 +99,41 @@ const OrderHistory = () => {
     console.log('Resend email for order:', orderId);
   };
 
+  const hasOrders = orders && orders.length > 0;
+
   return (
     <div className="space-y-4">
-      {orders.map((order) => {
-        const qrCode = getOrderQRCode(order.id);
-        const canDownload = canDownloadESIM(order, qrCode);
-        const isExpanded = expandedOrders.has(order.id);
+      {/* Real orders list */}
+      {hasOrders ? (
+        orders.map((order) => {
+          const qrCode = getOrderQRCode(order.id);
+          const canDownload = canDownloadESIM(order, qrCode);
+          const isExpanded = expandedOrders.has(order.id);
 
-        return (
-          <OrderCard
-            key={order.id}
-            order={order}
-            qrCode={qrCode}
-            canDownload={canDownload}
-            isExpanded={isExpanded}
-            onToggleExpansion={toggleOrderExpansion}
-            onDownloadESIM={handleDownloadESIM}
-            onResendEmail={handleResendEmail}
-            onTopUp={handleTopUp}
-          />
-        );
-      })}
+          return (
+            <OrderCard
+              key={order.id}
+              order={order}
+              qrCode={qrCode}
+              canDownload={canDownload}
+              isExpanded={isExpanded}
+              onToggleExpansion={toggleOrderExpansion}
+              onDownloadESIM={handleDownloadESIM}
+              onResendEmail={handleResendEmail}
+              onTopUp={handleTopUp}
+            />
+          );
+        })
+      ) : (
+        <EmptyOrdersState />
+      )}
+
+      {/* Dev-only QA preview — automatically removed in production builds */}
+      {import.meta.env.DEV && DevQAPreview && (
+        <Suspense fallback={null}>
+          <DevQAPreview />
+        </Suspense>
+      )}
 
       <QRCodeDownloadModal
         isOpen={!!selectedQRCode}

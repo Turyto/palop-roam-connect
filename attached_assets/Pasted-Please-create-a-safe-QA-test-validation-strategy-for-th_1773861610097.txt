@@ -1,0 +1,163 @@
+Please create a safe QA / test-validation strategy for the new public eSIM activation state flow so we can verify all user-facing order states without waiting for real backend provisioning to happen naturally.
+
+Main objective:
+We have already implemented the public activation-state UX in the Orders page. The processing state is visible and looks correct. Now we need a reliable way to validate the other states:
+
+- processing
+- ready to activate
+- active
+- expired
+- error / support needed
+
+We do NOT want to break production logic or fake the real customer flow permanently. We need a controlled way to test and validate each state.
+
+Core goal:
+Make it possible to inspect and verify every public order state safely, using controlled test data or dev-only tooling.
+
+Critical constraints:
+
+1. Preserve production behavior
+- Do not break the current real order flow
+- Do not alter production checkout behavior
+- Do not alter real provisioning logic in production
+- Do not break auth, admin, admin orders, or backend order-management logic
+
+2. No unsafe hacks in production
+- Do not leave dangerous public state-switch controls exposed to normal users
+- Any test tooling must be dev-only, admin-only, local/staging-only, or otherwise safely gated
+- If using seeded test orders, clearly isolate them from real orders where possible
+
+3. Preserve current state-derivation logic
+- Do not rewrite the activation-state UI unnecessarily
+- The goal is to validate the existing state logic against controlled inputs
+
+PHASE 1 — Audit current state inputs
+
+First inspect the current code and data model used to derive the public activation states.
+
+Please identify:
+- which fields currently drive the user-facing activation state
+- whether the UI state is derived from fields such as:
+  - status
+  - payment_status
+  - esim_delivered_at
+  - qr_code / qrCode / qr_url / similar
+  - activated_at / expires_at
+  - provisioning status / delivery status
+- where this logic currently lives in code
+
+Please summarize the current activation state derivation before adding test support.
+
+PHASE 2 — Choose the safest validation approach
+
+Implement one safe validation strategy, preferring reuse of existing test/staging patterns if present.
+
+Preferred options, in order of priority:
+
+Option A — Seeded test orders in dev/staging
+Create a small set of seeded test orders representing each activation state.
+
+Option B — Dev-only state override
+Add a dev-only/test-only mechanism to override the displayed activation state for a known test order.
+
+Option C — Admin-only state preview tool
+If appropriate, create an admin-only preview mechanism for state validation.
+
+Important:
+Do NOT expose state manipulation to normal public users.
+
+PHASE 3 — Create validation coverage for these states
+
+We need to be able to verify these five states end-to-end in the Orders UI:
+
+1. Processing
+Expected UI:
+- PT: "Ativação em preparação"
+- waiting message shown
+- no QR code
+- no download button
+- no top-up
+- support CTA visible
+
+2. Ready to activate
+Expected UI:
+- PT: "Pronto para ativação"
+- green readiness block
+- QR visible (if real field exists)
+- download QR / eSIM button visible
+- activation guide visible
+- email reassurance visible
+
+3. Active
+Expected UI:
+- PT: "Ativo"
+- active-state message visible
+- QR view available if appropriate
+- top-up available only if supported
+- activation guide still accessible if intended
+
+4. Expired
+Expected UI:
+- PT: "Expirado"
+- expired messaging visible
+- buy new plan CTA visible
+- top-up/renew only if truly supported
+
+5. Error / needs support
+Expected UI:
+- PT: "Precisa de apoio"
+- error/support message visible
+- support CTA visible
+- no misleading ready/active actions
+
+PHASE 4 — Make QA easy to use
+
+Please make the validation approach easy for us to test.
+
+If using seeded test orders:
+- provide clear order names or markers for each state
+- label them clearly in dev/staging so they can be found quickly
+
+If using dev-only override:
+- provide simple usage instructions
+- example: query param, local toggle, or dev config
+- but only in a safe environment
+
+PHASE 5 — Add a QA checklist
+
+Please provide a short QA checklist for each state, covering:
+
+- status badge/title
+- helper message
+- QR visibility
+- activation guide visibility
+- top-up visibility
+- support action visibility
+- any order details that should appear
+
+PHASE 6 — Keep public UX clean
+
+Important:
+Do not clutter the public Orders page with visible test controls in production.
+
+If temporary developer aids are needed, gate them behind:
+- development environment
+- admin role
+- feature flag
+- or local/staging only
+
+Acceptance criteria:
+- the current activation-state derivation is clearly identified
+- there is a safe way to validate all five public states
+- production customer flow remains unaffected
+- no dangerous public state-toggling is exposed
+- auth/admin/order-management logic remains intact
+- we can visually test ready/active/expired/error states without waiting on live provisioning events
+
+After implementing, provide:
+1. how the current public activation state is derived
+2. which QA/testing strategy was chosen and why
+3. how to test each of the five states
+4. whether any existing old-code logic was reused
+5. confirmation that production/auth/admin/order logic was not altered
+6. any remaining backend dependencies needed for a full real-world validation
