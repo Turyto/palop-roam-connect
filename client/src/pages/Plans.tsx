@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import Navbar from '@/components/Navbar';
+import HomeHeader from '@/components/home/HomeHeader';
 import HomeFooter from '@/components/home/HomeFooter';
 import PlansHeroSection from '@/components/plans/PlansHeroSection';
 import CoverageSelectorSection from '@/components/plans/CoverageSelectorSection';
@@ -16,7 +16,7 @@ const Plans = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
+      <HomeHeader />
       <main className="flex-grow">
         <PlansHeroSection />
         <CoverageSelectorSection selectedTab={selectedTab} onTabChange={setSelectedTab} />

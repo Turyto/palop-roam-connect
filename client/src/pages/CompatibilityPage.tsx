@@ -1,4 +1,4 @@
-import Navbar from '@/components/Navbar';
+import HomeHeader from '@/components/home/HomeHeader';
 import HomeFooter from '@/components/home/HomeFooter';
 import CompatibilityHeroSection from '@/components/compatibility/CompatibilityHeroSection';
 import QuickCheckSection from '@/components/compatibility/QuickCheckSection';
@@ -10,7 +10,7 @@ import FinalCompatibilityCTASection from '@/components/compatibility/FinalCompat
 const CompatibilityPage = () => {
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
+      <HomeHeader />
       <main className="flex-grow">
         <CompatibilityHeroSection />
         <QuickCheckSection />

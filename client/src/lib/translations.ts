@@ -10,6 +10,7 @@ const translations = {
       faq: 'FAQ',
       support: 'Suporte',
       buyNow: 'Comprar agora',
+      signIn: 'Entrar',
     },
     hero: {
       eyebrow: 'Internet móvel digital para Portugal e Europa',
@@ -308,6 +309,7 @@ const translations = {
       faq: 'FAQ',
       support: 'Support',
       buyNow: 'Buy now',
+      signIn: 'Sign In',
     },
     hero: {
       eyebrow: 'Digital mobile internet for Portugal and Europe',

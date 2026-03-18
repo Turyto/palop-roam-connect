@@ -1,0 +1,172 @@
+Please perform a site-wide navigation and routing cleanup so the updated Homepage, Plans page, and Compatibility page work as one coherent funnel.
+
+Main objective:
+Make the new `/plans` page the official plans destination across the site, remove user-facing reliance on the old plans flow, and ensure sign-in remains available from the Homepage for Admin and other users.
+
+Core UX goal:
+simple, consistent, modern flow:
+Homepage → Plans page → Plan detail / purchase flow
+with utility routes like Compatibility and Support remaining easy to access.
+
+Critical requirements:
+
+1. Preserve authentication and admin access
+- Do not remove, break, or alter the existing login/authentication system.
+- Ensure the Homepage includes a visible and working Sign In entry point in the header/navigation.
+- Preserve Admin login capability.
+- Preserve login access for other users.
+- Preserve all existing auth logic, protected routes, session behavior, and order/admin functionality.
+- Do not change backend auth, admin dashboards, order-management logic, or protected route behavior unless absolutely necessary, and if any change is required, keep it backward-compatible.
+
+2. Preserve bilingual behavior
+- Reuse the same PT/EN localization system already used by the updated Homepage and Plans page.
+- Do not hardcode new nav labels outside the translation system.
+- Ensure updated navigation labels and CTA destinations behave correctly in both PT and EN.
+
+3. Safe refactor scope
+- Treat this as a navigation/routing cleanup and header consistency task, not a platform rebuild.
+- Reuse existing shared layout/header/footer/navigation patterns where possible.
+- Before removing any old routes/components, verify they are not used by admin, auth, orders, or other non-public flows.
+
+Site-wide routing decisions to implement:
+
+A. Canonical public routes
+- Homepage: `/`
+- Plans page: `/plans`
+- Compatibility page: `/compatibility`
+- Support page: `/support`
+- Activation guide page: keep current route if already in use and still relevant
+- Sign In page/flow: preserve the current existing route and logic
+
+B. Header / top navigation behavior
+Update the public site header so it behaves consistently across Homepage, Plans page, and Compatibility page.
+
+Required public nav behavior:
+- Home → `/`
+- Plans → `/plans`
+- Compatibility → `/compatibility`
+- Como Funciona / How It Works → existing correct modern route if it exists, otherwise use the current intended public info page
+- FAQ → existing intended FAQ section/page
+- Support → `/support`
+- Sign In → existing auth/login route
+
+Important:
+- The Homepage header “Plans” must no longer anchor to the plans section on the Homepage.
+- It must go to `/plans`.
+- The Homepage must visibly include the Sign In button/link in the header, matching the rest of the public site.
+
+C. Homepage CTA behavior
+Update Homepage CTA routing so it aligns with the new funnel.
+
+Required behavior:
+- Hero primary CTA (“Comprar eSIM agora” / equivalent) → `/plans`
+- Hero secondary CTA (“Verificar compatibilidade” / equivalent) → `/compatibility`
+- Header “Plans” → `/plans`
+- Header “Sign In” → current login/auth route
+
+Homepage featured plans section:
+This section should remain a preview section, not the canonical full plans experience.
+
+For first draft, use this safer routing:
+- Section-level CTA like “Ver planos” → `/plans`
+- Individual homepage plan buttons can also route to `/plans` for now unless the new plan detail pages are already ready and modernized
+
+Important:
+- No Homepage plan CTA should send users to the old plans page anymore.
+
+D. Plans page CTA behavior
+Ensure the new Plans page is the official public plan browsing page.
+
+Required behavior:
+- Hero “Ver planos” → `#featured-plans`
+- Hero “Verificar compatibilidade” → `/compatibility`
+- Utility/support CTA → intended modern support route
+- Final CTA “Comprar agora” → `#featured-plans`
+- Final CTA “Comparar planos” → `#compare-plans`
+
+Plan card buttons:
+- If modernized plan detail pages already exist, route each “Escolher plano” to the correct new plan detail page
+- If they do not exist yet, use a temporary clean fallback route that does NOT send the user into the old plans page
+- Preferred fallback for first draft: route all “Escolher plano” buttons to a temporary modern purchase/selection route or keep them on `/plans` until the next-step pages are ready
+- Do not send any user-facing plan CTA to the old plans page
+
+E. Compatibility page CTA behavior
+Ensure the Compatibility page works as a utility page, not a legacy guide.
+
+Required behavior:
+- “Ver lista de dispositivos” → `#device-list`
+- “Falar com suporte” → `/support`
+- final CTA “Ver planos” → `/plans`
+
+F. Legacy route cleanup
+There appears to be an old plans flow and old eSIM guide flow still being reached through some CTAs.
+Please audit and clean this up.
+
+Tasks:
+- Find all public CTAs, nav links, buttons, and anchor links that still route to the old plans page
+- Replace them with the new intended destinations
+- Find all public CTAs that still route to the old eSIM Guide when the user intent is compatibility
+- Replace them with `/compatibility`
+- Ensure no broken, circular, or outdated user-facing route chains remain
+
+Examples of bad flow to eliminate:
+Homepage → Homepage plans anchor → old plans page → new page
+
+Target flow instead:
+Homepage → `/plans`
+Homepage → `/compatibility`
+Plans page → modern next step
+Compatibility page → `/plans` or `/support`
+
+G. Header consistency
+Make sure the same modern public header/nav pattern is used consistently on:
+- Homepage
+- Plans page
+- Compatibility page
+- other public marketing/info pages where appropriate
+
+Include:
+- brand/logo
+- main public nav
+- PT/EN switcher if already used
+- Sign In button/link
+
+If different legacy headers still exist, consolidate to the modern public header where safe.
+
+Technical requirements:
+- Reuse existing shared header/navigation component if possible
+- If needed, create/refactor a shared public header component used across public pages
+- Preserve current auth hooks and login route behavior
+- Preserve admin and user login functionality
+- Preserve protected route logic
+- Preserve order-management/admin access
+- Do not break session-aware navigation if already implemented
+
+Suggested implementation tasks:
+1. Audit current public nav/header links and CTA destinations
+2. Update canonical public routes in shared navigation
+3. Update Homepage CTA destinations
+4. Update Plans page CTA destinations
+5. Update Compatibility page CTA destinations
+6. Remove or bypass old public-facing route dependencies
+7. Ensure Homepage has Sign In in the header
+8. Run bilingual/nav regression check
+9. Run auth/admin safety check
+
+Acceptance criteria:
+- Homepage header includes a working Sign In entry point
+- Admin and other users can still log in exactly as before
+- Public nav “Plans” goes to `/plans` everywhere relevant
+- Public compatibility CTAs go to `/compatibility`
+- Homepage no longer funnels users into the old plans page
+- No public CTA should require the user to go through the old plans page to reach the new experience
+- PT/EN nav behavior still works
+- No auth/admin/order-management functionality is broken
+
+Please provide after implementation:
+1. a short summary of all routing/nav changes made
+2. a list of old routes/links that were replaced or bypassed
+3. confirmation that Homepage now includes Sign In
+4. confirmation that Admin and user login flows still work
+5. confirmation that auth/admin/order-management logic was not altered
+6. any remaining placeholders where plan detail pages still need modernization

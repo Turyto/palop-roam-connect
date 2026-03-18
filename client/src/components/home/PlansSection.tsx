@@ -85,7 +85,7 @@ const PlansSection = () => {
                 variant={popular ? 'default' : 'outline'}
                 data-testid={`plan-cta-${key}`}
               >
-                <Link to="/purchase">{t.plans.cta}</Link>
+                <Link to="/plans">{t.plans.cta}</Link>
               </Button>
             </div>
           ))}

@@ -22,7 +22,7 @@ const FinalCTASection = () => {
             className="bg-white text-palop-green hover:bg-gray-50 font-semibold px-8"
             data-testid="final-cta-primary"
           >
-            <Link to="/purchase">{t.finalCta.primaryCta}</Link>
+            <Link to="/plans">{t.finalCta.primaryCta}</Link>
           </Button>
           <button
             onClick={scrollToPlans}

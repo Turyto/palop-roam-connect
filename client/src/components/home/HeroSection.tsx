@@ -147,18 +147,17 @@ const HeroSection = () => {
                 className="bg-palop-green hover:bg-palop-green/90 text-white text-base px-8 py-6"
                 data-testid="hero-primary-cta"
               >
-                <Link to="/purchase">{t.hero.primaryCta}</Link>
+                <Link to="/plans">{t.hero.primaryCta}</Link>
               </Button>
-              <button
-                onClick={() => {
-                  const el = document.querySelector('#compatibility');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="inline-flex items-center justify-center rounded-md border border-palop-green text-palop-green bg-transparent hover:bg-palop-green/5 transition-colors px-8 py-3 text-base font-medium"
+              <Button
+                asChild
+                variant="outline"
+                size="lg"
+                className="border-palop-green text-palop-green bg-transparent hover:bg-palop-green/5 px-8 py-6 text-base"
                 data-testid="hero-secondary-cta"
               >
-                {t.hero.secondaryCta}
-              </button>
+                <Link to="/compatibility">{t.hero.secondaryCta}</Link>
+              </Button>
             </div>
 
             <div className="flex flex-wrap gap-4 justify-center md:justify-start">

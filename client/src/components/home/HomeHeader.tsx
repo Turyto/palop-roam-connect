@@ -1,32 +1,53 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Menu, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/language';
+import { useAuth } from '@/contexts/auth';
+import UserMenu from '@/components/UserMenu';
 import type { Lang } from '@/lib/translations';
 
 const HomeHeader = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { lang, setLang, t } = useLanguage();
+  const { user, loading } = useAuth();
   const location = useLocation();
-
-  const navItems = [
-    { label: t.nav.home, href: '/' },
-    { label: t.nav.plans, href: '#plans' },
-    { label: t.nav.compatibility, href: '#compatibility' },
-    { label: t.nav.howItWorks, href: '#how-it-works' },
-    { label: t.nav.faq, href: '#faq' },
-    { label: t.nav.support, href: '#support' },
-  ];
+  const navigate = useNavigate();
 
   const isHome = location.pathname === '/';
 
-  const handleNavClick = (href: string) => {
+  type NavItem = { label: string; href: string; anchor?: string };
+
+  const navItems: NavItem[] = [
+    { label: t.nav.home, href: '/' },
+    { label: t.nav.plans, href: '/plans' },
+    { label: t.nav.compatibility, href: '/compatibility' },
+    { label: t.nav.howItWorks, href: '#how-it-works', anchor: 'how-it-works' },
+    { label: t.nav.faq, href: '#faq', anchor: 'faq' },
+    { label: t.nav.support, href: '/support' },
+  ];
+
+  const handleNavClick = (e: React.MouseEvent, item: NavItem) => {
     setIsOpen(false);
-    if (href.startsWith('#') && isHome) {
-      const el = document.querySelector(href);
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    if (item.anchor) {
+      e.preventDefault();
+      if (isHome) {
+        const el = document.querySelector(`#${item.anchor}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        navigate(`/#${item.anchor}`);
+      }
     }
+  };
+
+  const renderAuthSection = () => {
+    if (loading) return null;
+    if (user) return <UserMenu />;
+    return (
+      <Button asChild variant="outline" className="border-gray-300 text-gray-700 hover:border-palop-green hover:text-palop-green" data-testid="header-sign-in">
+        <Link to="/auth">{t.nav.signIn}</Link>
+      </Button>
+    );
   };
 
   return (
@@ -44,13 +65,8 @@ const HomeHeader = () => {
             {navItems.map((item) => (
               <a
                 key={item.label}
-                href={item.href}
-                onClick={(e) => {
-                  if (item.href.startsWith('#')) {
-                    e.preventDefault();
-                    handleNavClick(item.href);
-                  }
-                }}
+                href={item.anchor ? (isHome ? item.href : `/#${item.anchor}`) : item.href}
+                onClick={(e) => handleNavClick(e, item)}
                 className="text-sm font-medium text-gray-600 hover:text-palop-green transition-colors"
                 data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
               >
@@ -76,8 +92,9 @@ const HomeHeader = () => {
                 EN
               </button>
             </div>
+            {renderAuthSection()}
             <Button asChild className="bg-palop-green hover:bg-palop-green/90 text-white" data-testid="header-buy-now">
-              <Link to="/purchase">{t.nav.buyNow}</Link>
+              <Link to="/plans">{t.nav.buyNow}</Link>
             </Button>
           </div>
 
@@ -95,11 +112,8 @@ const HomeHeader = () => {
             {navItems.map((item) => (
               <a
                 key={item.label}
-                href={item.href}
-                onClick={(e) => {
-                  if (item.href.startsWith('#')) e.preventDefault();
-                  handleNavClick(item.href);
-                }}
+                href={item.anchor ? (isHome ? item.href : `/#${item.anchor}`) : item.href}
+                onClick={(e) => handleNavClick(e, item)}
                 className="block text-sm font-medium text-gray-700 hover:text-palop-green transition-colors py-1"
               >
                 {item.label}
@@ -120,8 +134,14 @@ const HomeHeader = () => {
                   EN
                 </button>
               </div>
+              {!loading && !user && (
+                <Button asChild variant="outline" size="sm" className="border-gray-300">
+                  <Link to="/auth">{t.nav.signIn}</Link>
+                </Button>
+              )}
+              {!loading && user && <UserMenu />}
               <Button asChild className="bg-palop-green text-white flex-1" size="sm">
-                <Link to="/purchase">{t.nav.buyNow}</Link>
+                <Link to="/plans">{t.nav.buyNow}</Link>
               </Button>
             </div>
           </div>
