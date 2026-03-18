@@ -1,30 +1,33 @@
-
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import PlansHero from "@/components/PlansHero";
-import PlanCards from "@/components/PlanCards";
-import PlanComparison from "@/components/PlanComparison";
-import PlanRecommendation from "@/components/PlanRecommendation";
-import RealJourneysSection from "@/components/RealJourneysSection";
-import TrustIndicators from "@/components/TrustIndicators";
-import CtaSection from "@/components/CtaSection";
+import { useState } from 'react';
+import Navbar from '@/components/Navbar';
+import HomeFooter from '@/components/home/HomeFooter';
+import PlansHeroSection from '@/components/plans/PlansHeroSection';
+import CoverageSelectorSection from '@/components/plans/CoverageSelectorSection';
+import FeaturedPlansSection from '@/components/plans/FeaturedPlansSection';
+import ReassuranceStripSection from '@/components/plans/ReassuranceStripSection';
+import SimpleComparisonSection from '@/components/plans/SimpleComparisonSection';
+import HelpChoosingSection from '@/components/plans/HelpChoosingSection';
+import UtilityLinksSection from '@/components/plans/UtilityLinksSection';
+import FinalPlansCTASection from '@/components/plans/FinalPlansCTASection';
+import { CoverageTab } from '@/content/plansPageContent';
 
 const Plans = () => {
+  const [selectedTab, setSelectedTab] = useState<CoverageTab>('europe');
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-grow">
-        <PlansHero />
-        <div id="plans">
-          <PlanCards />
-        </div>
-        <PlanRecommendation />
-        <PlanComparison />
-        <RealJourneysSection />
-        <TrustIndicators />
-        <CtaSection />
+        <PlansHeroSection />
+        <CoverageSelectorSection selectedTab={selectedTab} onTabChange={setSelectedTab} />
+        <FeaturedPlansSection selectedTab={selectedTab} />
+        <ReassuranceStripSection />
+        <SimpleComparisonSection />
+        <HelpChoosingSection />
+        <UtilityLinksSection />
+        <FinalPlansCTASection />
       </main>
-      <Footer />
+      <HomeFooter />
     </div>
   );
 };

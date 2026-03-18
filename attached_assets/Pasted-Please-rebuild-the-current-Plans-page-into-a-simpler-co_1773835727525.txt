@@ -1,0 +1,382 @@
+Please rebuild the current Plans page into a simpler conversion-oriented Plans Page v2 that matches the logic and tone of the updated homepage.
+
+Goal:
+Turn the current plans page from a dense marketing/product page into a clean decision page that helps users choose quickly and buy with confidence.
+
+Core UX logic:
+clear message → easy choice → reassurance → buy
+
+Important constraints:
+- This is for the existing Replit React codebase, not Lovable
+- Keep visual consistency with the updated homepage
+- Remove complexity from the current plans page
+- Do not leave any blank buttons or placeholder CTAs
+- Prioritize mobile usability
+- Use customer-readable plan names and categories
+- Keep the page modular with reusable React components
+
+Critical preservation requirements:
+
+1. Preserve bilingual behavior
+- The Plans page must remain fully bilingual in Portuguese and English, matching the homepage behavior.
+- Reuse the existing localization/i18n system already used on the homepage.
+- Do not hardcode copy directly in components unless it is routed through the translation structure.
+- All new section titles, subtitles, CTAs, trust bullets, plan labels, helper text, utility text, and comparison labels must exist in both PT and EN.
+- Preserve the existing language switcher behavior and ensure the Plans page responds correctly to locale changes.
+- If the site currently uses translation JSON/files/hooks, extend that same structure rather than creating a separate translation approach.
+
+2. Preserve authentication and admin functionality
+- Do not remove, break, or alter the existing login/authentication system.
+- Preserve the current ability to log in as Admin.
+- Preserve existing order-management functionality and any related admin routes, protected routes, dashboard access, and backend integrations.
+- This task should focus on refactoring the Plans page UI/content/flow only.
+- Avoid changes to backend auth logic, admin logic, order schemas, or protected route behavior unless strictly necessary, and if any such change is required, keep it backward-compatible.
+
+3. Safe refactor scope
+- Treat this as a frontend page restructure, not a platform-wide rebuild.
+- Reuse existing shared components, routing, localization, and auth patterns where possible.
+- If old plans-page components are removed, do not remove shared infrastructure used elsewhere in the app.
+- Before deleting code, verify it is not used by admin, auth, orders, checkout, or shared site functionality.
+
+Required new page structure:
+1. PlansHeroSection
+2. CoverageSelectorSection
+3. FeaturedPlansSection
+4. ReassuranceStripSection
+5. SimpleComparisonSection
+6. HelpChoosingSection
+7. UtilityLinksSection
+8. FinalPlansCTASection
+
+Remove from the main plans page flow:
+- current heavy PALOP mission-style hero
+- hero stats row
+- top embedded quiz
+- large comparison matrix
+- user stories carousel
+- map section
+- plan coverage matrix
+- duplicate “why choose” sections
+- partner network showcase
+- extra stats sections
+- any broken/blank CTA buttons
+
+Implementation details:
+
+1) PlansHeroSection
+Use:
+Eyebrow: "Simple eSIM plans for Portugal and Europe"
+Title: "Choose the right eSIM plan for your trip or stay"
+Subtitle: "Simple data plans for Portugal and Europe, with fast activation and no physical SIM card."
+
+Primary CTA:
+Label: "View plans"
+Href: "#featured-plans"
+
+Secondary CTA:
+Label: "Check device compatibility"
+Href: "/compatibility"
+
+Trust bullets:
+- "Instant delivery by email"
+- "Easy activation with QR code"
+- "Support available in Portuguese"
+
+Notes:
+- Keep this hero lighter than the homepage hero
+- No stats like 10K+ users, 99.9% uptime, 5G available
+- Optional subtle visual is okay, but not required
+
+2) CoverageSelectorSection
+Title: "Where do you need coverage?"
+Helper text: "Choose the coverage area that matches your trip or stay."
+
+Options:
+- Portugal
+- Europe
+- Multi-country
+
+Behavior:
+- Use tabs or pills
+- Default selected tab should be "Europe"
+- Selected tab controls which featured plans are displayed
+
+3) FeaturedPlansSection
+Title: "Featured plans"
+Subtitle: "Simple options to help you get connected quickly."
+
+Render max 3 plans per selected category.
+
+Use this content model:
+
+For Portugal:
+- Portugal Starter
+  Subtitle: "Best for arrival, messages and maps"
+  Data: "2 GB"
+  Validity: "3 days"
+  Price: "€4.99"
+  Coverage: "Portugal"
+  CTA: "Choose plan"
+  Href: "/plans/portugal-starter"
+
+- Portugal Weekly
+  Subtitle: "Best for short stays and daily use"
+  Data: "5 GB"
+  Validity: "7 days"
+  Price: "€8.99"
+  Coverage: "Portugal"
+  Badge: "Most popular"
+  CTA: "Choose plan"
+  Href: "/plans/portugal-weekly"
+
+- Portugal Monthly
+  Subtitle: "Best for longer stays"
+  Data: "10 GB"
+  Validity: "30 days"
+  Price: "€16.99"
+  Coverage: "Portugal"
+  CTA: "Choose plan"
+  Href: "/plans/portugal-monthly"
+
+For Europe:
+- Europe Weekly
+  Subtitle: "Best for travel, daily use and staying connected"
+  Data: "5 GB"
+  Validity: "7 days"
+  Price: "€9.99"
+  Coverage: "Portugal + Europe"
+  Badge: "Most popular"
+  CTA: "Choose plan"
+  Href: "/plans/europe-weekly"
+
+- Europe Monthly
+  Subtitle: "Best for longer stays and regular use"
+  Data: "10 GB"
+  Validity: "30 days"
+  Price: "€19.99"
+  Coverage: "Portugal + Europe"
+  CTA: "Choose plan"
+  Href: "/plans/europe-monthly"
+
+- Europe Plus
+  Subtitle: "Best for heavier usage across Europe"
+  Data: "20 GB"
+  Validity: "30 days"
+  Price: "€29.99"
+  Coverage: "Portugal + Europe"
+  CTA: "Choose plan"
+  Href: "/plans/europe-plus"
+
+For Multi-country:
+- PALOP Connect
+  Subtitle: "Best for travel across selected PALOP-linked routes"
+  Data: "5 GB"
+  Validity: "7 days"
+  Price: "€12.50"
+  Coverage: "Selected PALOP countries"
+  CTA: "Choose plan"
+  Href: "/plans/palop-connect"
+
+- Diaspora Europe
+  Subtitle: "Best for family visits and Europe-based travel"
+  Data: "10 GB"
+  Validity: "30 days"
+  Price: "€27.50"
+  Coverage: "Europe + selected PALOP-linked countries"
+  Badge: "Most popular"
+  CTA: "Choose plan"
+  Href: "/plans/diaspora-europe"
+
+- CPLP Global
+  Subtitle: "Best for broader Portuguese-speaking travel routes"
+  Data: "10 GB"
+  Validity: "30 days"
+  Price: "€22.00"
+  Coverage: "CPLP countries"
+  CTA: "Choose plan"
+  Href: "/plans/cplp-global"
+
+Rules for plan cards:
+- Exact values only, no ranges
+- Do not overload cards with too many bullets
+- Keep cards visually aligned with homepage style
+- One consistent badge style for “Most popular”
+- If real backend plan mapping exists, preserve it and map these display labels cleanly without breaking current product/order logic
+
+4) ReassuranceStripSection
+Title: "Buy with confidence"
+
+Items:
+- "Delivered instantly after payment"
+- "Activation in minutes with QR code"
+- "Works on compatible iPhone and Android devices"
+- "Support available if you need help"
+
+Notes:
+- Keep compact
+- Use 4 small cards or icon bullets
+- Do not turn into a large separate trust page
+
+5) SimpleComparisonSection
+Title: "Compare plans at a glance"
+Subtitle: "A simple overview to help you choose the best option for your trip."
+
+Keep comparison lightweight.
+Only show:
+- Plan
+- Data
+- Duration
+- Coverage
+- Price
+
+Rows:
+- Portugal Starter | 2 GB | 3 days | Portugal | €4.99
+- Europe Weekly | 5 GB | 7 days | Portugal + Europe | €9.99
+- Europe Monthly | 10 GB | 30 days | Portugal + Europe | €19.99
+
+CTA:
+Label: "View all plan details"
+Href: "/plans/compare"
+
+Important:
+- No giant feature matrix
+- No dense checklist comparison
+
+6) HelpChoosingSection
+Title: "Not sure which plan to choose?"
+Description: "Answer a few quick questions or speak to support to find the right eSIM for your trip."
+
+Primary CTA:
+Label: "Find my plan"
+Href: "/plans/quiz"
+
+Secondary CTA:
+Label: "Talk to support"
+Href: "/support"
+
+Notes:
+- If the quiz already exists, link to it here
+- Do not embed the full quiz before the main plans
+- This should be optional and secondary
+
+7) UtilityLinksSection
+Title: "Before you buy"
+
+Three cards:
+1.
+Title: "Check device compatibility"
+Description: "Make sure your phone supports eSIM and is unlocked for mobile network use."
+CTA: "Check compatibility"
+Href: "/compatibility"
+
+2.
+Title: "View activation guide"
+Description: "See how to install and activate your eSIM in a few minutes."
+CTA: "View guide"
+Href: "/help/activation"
+
+3.
+Title: "Get help"
+Description: "Need support before buying? We can help you choose and activate."
+CTA: "Talk to support"
+Href: "/support"
+
+Notes:
+- Keep equal card height
+- Keep language practical and simple
+
+8) FinalPlansCTASection
+Title: "Ready to stay connected?"
+Description: "Choose your plan, receive your eSIM and activate it in minutes."
+
+Primary CTA:
+Label: "Buy now"
+Href: "#featured-plans"
+
+Secondary CTA:
+Label: "Compare plans"
+Href: "#compare-plans"
+
+Notes:
+- No blank buttons
+- Keep styling aligned with homepage final CTA
+
+Technical implementation requirements:
+- Build modular React components under something like:
+  src/components/plans/
+- Keep content in a dedicated content file, e.g.:
+  src/content/plansPageContent.ts
+- Use state to switch featured plans by selected coverage tab
+- Reuse shared header/footer if available
+- Preserve existing routing conventions where possible
+- Make this page mobile-first and easy to scan
+- Keep button language consistent:
+  Primary purchase CTA: "Choose plan", "Buy now"
+  Browsing CTA: "View plans", "Compare plans"
+  Utility CTA: "Check compatibility", "View guide", "Talk to support"
+
+Suggested file structure:
+src/
+  components/
+    plans/
+      PlansHeroSection.tsx
+      CoverageSelectorSection.tsx
+      FeaturedPlansSection.tsx
+      ReassuranceStripSection.tsx
+      SimpleComparisonSection.tsx
+      HelpChoosingSection.tsx
+      UtilityLinksSection.tsx
+      FinalPlansCTASection.tsx
+  content/
+      plansPageContent.ts
+  pages/
+      PlansPage.tsx
+
+Also do a cleanup pass:
+- remove old sections from the current plans page that no longer belong
+- remove any duplicate trust content
+- remove unused imports/components
+- ensure no broken CTA buttons remain
+- ensure anchor links like #featured-plans and #compare-plans work
+
+Localization requirements:
+- Add all new Plans page strings in both English and Portuguese
+- Hook the new components into the same language toggle behavior used by the homepage
+- Ensure section labels, buttons, plan descriptions, comparison labels, helper text, and trust items switch correctly with locale
+- Preserve the existing PT/EN UX patterns already in the site
+
+Safety requirements:
+- Do not change login route behavior
+- Do not change admin dashboard behavior
+- Do not change order-management logic
+- Do not remove protected routes
+- Do not break existing checkout, order creation, or admin order visibility
+- If any page-level refactor touches shared components, verify those components are not relied on by admin/auth/order flows before modifying them
+
+Mobile QA requirements:
+- coverage pills/tabs must work cleanly on mobile
+- featured plan cards must remain readable
+- price/data/duration should not wrap awkwardly
+- CTAs must be easy to tap
+- comparison section must stay simple
+- utility cards should stack cleanly
+- final CTA buttons must render correctly
+- language switching must still work correctly on this page
+- no section should feel too long before plans appear
+
+Definition of done:
+- the plans page is significantly simpler than the current version
+- it feels like a natural continuation of the updated homepage
+- it remains bilingual in PT and EN
+- users can choose a plan quickly
+- the page is focused on decision-making and purchase, not on excessive explanation
+- no broken or blank buttons
+- admin login and order-management capabilities remain intact
+- desktop and mobile are both clean and conversion-oriented
+
+After implementing, provide:
+1. a short summary of what changed
+2. any route/content assumptions made
+3. any placeholders that still need real backend plan mapping
+4. confirmation that bilingual behavior still works
+5. confirmation that admin/auth/order-management flows were not altered
