@@ -1,0 +1,150 @@
+Please refactor the public purchase funnel so the new Plans page connects directly to the existing Cart / Stripe checkout flow, while removing the old Plans page from the public user journey.
+
+Main objective:
+Keep the updated Homepage and new Plans page as the public-facing experience, suppress the old Plans page from the main funnel, and preserve the current working Cart / Stripe checkout experience.
+
+Target public flow:
+Homepage → `/plans` → selected plan goes directly to Cart / Checkout → Stripe payment → confirmation
+
+Current problem to solve:
+Right now the flow is:
+Homepage → new Plans page → old Plans page → Cart / Stripe
+
+This is incorrect because the old Plans page is still acting as an unnecessary intermediate selection step.
+
+Desired outcome:
+- The old Plans page should no longer be part of the public funnel
+- The new Plans page should be the final plan-selection page
+- Clicking “Escolher plano” on the new Plans page should take the user directly into the existing working cart/checkout flow with the correct plan preselected
+- Preserve the current Cart and Stripe integration
+
+Critical constraints:
+
+1. Preserve checkout / payment behavior
+- Do not rebuild the cart flow if it already works
+- Do not replace or rework the Stripe integration unless absolutely necessary
+- Reuse the current working Cart / Stripe checkout mechanism
+- Preserve existing order creation logic, payment flow, confirmation flow, and any related backend integrations
+
+2. Preserve auth, admin, and order management
+- Do not remove, break, or alter login/authentication
+- Preserve Admin login
+- Preserve user login
+- Preserve admin dashboards, protected routes, order-management flows, and order visibility
+- Do not change backend auth/order/admin logic unless strictly required, and if any change is needed, keep it backward-compatible
+
+3. Preserve bilingual behavior
+- Reuse the same PT/EN localization system already used on the Homepage and new Plans page
+- Do not hardcode new public labels outside the translation/i18n structure
+- Ensure any updated buttons or plan labels still work correctly in both PT and EN if applicable
+
+Implementation task:
+
+A. Audit the current old Plans page → Cart transition
+First inspect how the existing old Plans page passes the selected plan into the working cart/checkout flow.
+
+Determine whether the current mechanism uses:
+- route params / slug
+- query params
+- navigation state
+- context/store
+- backend product id lookup
+- or another cart initialization pattern
+
+Important:
+Do not invent a brand-new checkout handoff if the current one already works.
+Reuse the current mechanism.
+
+B. Connect the new Plans page directly to the working cart flow
+Update each “Escolher plano” button on the new Plans page so it directly triggers the same working cart initialization logic currently used by the old Plans page.
+
+Examples:
+- Europe Weekly → cart/checkout preloaded with Europe Weekly
+- Europe Monthly → cart/checkout preloaded with Europe Monthly
+- Europe Plus → cart/checkout preloaded with Europe Plus
+- Portugal Starter / Portugal Weekly / Portugal Monthly → same principle
+- Multi-country plans → same principle
+
+Important:
+- Users must no longer be routed through the old Plans page
+- The selected plan should go directly into the existing working cart/checkout flow
+
+C. Suppress the old Plans page from the public funnel
+Remove or bypass all public CTA paths that send users to the old Plans page.
+
+This includes:
+- new Plans page plan buttons
+- any Homepage plan preview buttons if they still hit the old page
+- any CTA or route dependency that still requires the user to visit the old Plans page before reaching the cart
+
+The old Plans page may remain in code temporarily if needed for backward compatibility or admin/internal reasons, but it must no longer be part of the public purchase journey.
+
+D. Preserve current public routing architecture
+Keep or confirm:
+- Homepage → `/`
+- Plans page → `/plans`
+- Compatibility page → `/compatibility`
+- Sign In → existing auth route
+- Support → current intended support route
+
+E. Maintain header/navigation continuity
+Ensure the public header still works across Homepage, Plans page, and Compatibility page.
+Keep:
+- brand/logo
+- public nav
+- PT/EN switcher if already used
+- Sign In button
+- Comprar agora CTA if already present
+
+Do not break admin or auth-related navigation.
+
+Technical guidance:
+- Reuse the existing checkout/cart route and plan-selection mechanism
+- If the current cart expects a product id, slug, or payload, map each new Plans page card to the corresponding existing product/cart identifier
+- If the new display names differ from old internal product names, preserve the backend mapping cleanly
+- Keep public display labels modern, but map them to existing checkout-compatible products behind the scenes if needed
+
+Examples of acceptable implementation patterns:
+- `/cart?planId=...`
+- `/checkout?product=...`
+- navigation state with selected plan payload
+- context/store dispatch before redirect
+
+But only use the pattern already powering the current working cart flow if possible.
+
+What to avoid:
+- Do not keep the old Plans page as an intermediate public step
+- Do not create a duplicate second checkout path if the existing Stripe/cart path already works
+- Do not break order creation
+- Do not break payment confirmation
+- Do not break admin order visibility
+
+Suggested implementation checklist:
+1. Inspect old Plans page selection logic
+2. Identify cart/checkout initialization method
+3. Map new Plans page cards to existing internal plan identifiers
+4. Update each new plan card CTA to call the working cart handoff directly
+5. Remove/bypass public dependencies on old Plans page
+6. Test full purchase path from:
+   Homepage → `/plans` → choose plan → cart → payment
+7. Verify orders still appear in existing admin/order views
+8. Verify auth/admin flows were not changed
+
+Acceptance criteria:
+- From Homepage, user goes to `/plans`
+- From new Plans page, selecting a plan goes directly to the existing cart/checkout flow
+- No public plan-selection flow routes through the old Plans page anymore
+- Cart still shows the correct selected plan
+- Stripe test flow still works
+- Existing order creation still works
+- Existing admin/order-management still works
+- PT/EN behavior is preserved where relevant
+- No auth behavior is broken
+
+Please provide after implementation:
+1. a short summary of the funnel-routing changes made
+2. an explanation of how plan selection is now passed from the new Plans page into the cart
+3. a list of any old public routes/links that were removed or bypassed
+4. confirmation that the current Stripe/cart flow was preserved
+5. confirmation that admin/auth/order-management logic was not altered
+6. any remaining placeholders or product mappings that still need refinement

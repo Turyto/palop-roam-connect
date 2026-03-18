@@ -28,8 +28,145 @@ const Purchase = () => {
   const [currentStep, setCurrentStep] = useState<PurchaseStep>(planParam ? "checkout" : "plans");
   const [selectedPlan, setSelectedPlan] = useState<ESIMPlan | null>(null);
   
-  // Pre-defined plans including new real eSIM Access plans
+  // Pre-defined plans — new public plans + legacy eSIM Access plans
   const availablePlans: ESIMPlan[] = [
+    // New public plans (from /plans page)
+    {
+      id: "portugal-starter",
+      name: "Portugal Starter",
+      data: "2 GB",
+      days: 3,
+      price: 4.99,
+      currency: "EUR",
+      features: [
+        "2 GB of Internet",
+        "Valid for 3 days",
+        "Portugal coverage",
+        "Instant QR delivery",
+        "No contract required"
+      ]
+    },
+    {
+      id: "portugal-weekly",
+      name: "Portugal Weekly",
+      data: "5 GB",
+      days: 7,
+      price: 8.99,
+      currency: "EUR",
+      features: [
+        "5 GB of Internet",
+        "Valid for 7 days",
+        "Portugal coverage",
+        "Instant QR delivery",
+        "No contract required"
+      ]
+    },
+    {
+      id: "portugal-monthly",
+      name: "Portugal Monthly",
+      data: "10 GB",
+      days: 30,
+      price: 16.99,
+      currency: "EUR",
+      features: [
+        "10 GB of Internet",
+        "Valid for 30 days",
+        "Portugal coverage",
+        "Instant QR delivery",
+        "No contract required"
+      ]
+    },
+    {
+      id: "europe-weekly",
+      name: "Europe Weekly",
+      data: "5 GB",
+      days: 7,
+      price: 9.99,
+      currency: "EUR",
+      features: [
+        "5 GB of Internet",
+        "Valid for 7 days",
+        "Portugal + Europe coverage",
+        "Instant QR delivery",
+        "No contract required"
+      ]
+    },
+    {
+      id: "europe-monthly",
+      name: "Europe Monthly",
+      data: "10 GB",
+      days: 30,
+      price: 19.99,
+      currency: "EUR",
+      features: [
+        "10 GB of Internet",
+        "Valid for 30 days",
+        "Portugal + Europe coverage",
+        "Instant QR delivery",
+        "No contract required"
+      ]
+    },
+    {
+      id: "europe-plus",
+      name: "Europe Plus",
+      data: "20 GB",
+      days: 30,
+      price: 29.99,
+      currency: "EUR",
+      features: [
+        "20 GB of Internet",
+        "Valid for 30 days",
+        "Portugal + Europe coverage",
+        "Instant QR delivery",
+        "No contract required"
+      ]
+    },
+    {
+      id: "palop-connect",
+      name: "PALOP Connect",
+      data: "5 GB",
+      days: 7,
+      price: 12.50,
+      currency: "EUR",
+      features: [
+        "5 GB of Internet",
+        "Valid for 7 days",
+        "Selected PALOP-linked countries",
+        "Instant QR delivery",
+        "No contract required"
+      ]
+    },
+    {
+      id: "diaspora-europe",
+      name: "Diaspora Europe",
+      data: "10 GB",
+      days: 30,
+      price: 27.50,
+      currency: "EUR",
+      features: [
+        "10 GB of Internet",
+        "Valid for 30 days",
+        "Europe + selected PALOP-linked countries",
+        "Instant QR delivery",
+        "No contract required"
+      ]
+    },
+    {
+      id: "cplp-global",
+      name: "CPLP Global",
+      data: "10 GB",
+      days: 30,
+      price: 22.00,
+      currency: "EUR",
+      features: [
+        "10 GB of Internet",
+        "Valid for 30 days",
+        "CPLP countries coverage",
+        "Instant QR delivery",
+        "No contract required"
+      ]
+    },
+    // Legacy eSIM Access plans (preserved for backward compatibility)
     {
       id: "lite",
       name: "Lite",

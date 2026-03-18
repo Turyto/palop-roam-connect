@@ -26,7 +26,7 @@ export const planCards: PlanCard[] = [
     price: '€4.99',
     coverageLabel: { pt: 'Portugal', en: 'Portugal' },
     popular: false,
-    href: '/purchase',
+    href: '/purchase?plan=portugal-starter',
   },
   {
     id: 'portugal-weekly',
@@ -39,7 +39,7 @@ export const planCards: PlanCard[] = [
     price: '€8.99',
     coverageLabel: { pt: 'Portugal', en: 'Portugal' },
     popular: true,
-    href: '/purchase',
+    href: '/purchase?plan=portugal-weekly',
   },
   {
     id: 'portugal-monthly',
@@ -52,7 +52,7 @@ export const planCards: PlanCard[] = [
     price: '€16.99',
     coverageLabel: { pt: 'Portugal', en: 'Portugal' },
     popular: false,
-    href: '/purchase',
+    href: '/purchase?plan=portugal-monthly',
   },
   {
     id: 'europe-weekly',
@@ -65,7 +65,7 @@ export const planCards: PlanCard[] = [
     price: '€9.99',
     coverageLabel: { pt: 'Portugal + Europa', en: 'Portugal + Europe' },
     popular: true,
-    href: '/purchase',
+    href: '/purchase?plan=europe-weekly',
   },
   {
     id: 'europe-monthly',
@@ -78,7 +78,7 @@ export const planCards: PlanCard[] = [
     price: '€19.99',
     coverageLabel: { pt: 'Portugal + Europa', en: 'Portugal + Europe' },
     popular: false,
-    href: '/purchase',
+    href: '/purchase?plan=europe-monthly',
   },
   {
     id: 'europe-plus',
@@ -91,7 +91,7 @@ export const planCards: PlanCard[] = [
     price: '€29.99',
     coverageLabel: { pt: 'Portugal + Europa', en: 'Portugal + Europe' },
     popular: false,
-    href: '/purchase',
+    href: '/purchase?plan=europe-plus',
   },
   {
     id: 'palop-connect',
@@ -104,7 +104,7 @@ export const planCards: PlanCard[] = [
     price: '€12.50',
     coverageLabel: { pt: 'Países PALOP selecionados', en: 'Selected PALOP countries' },
     popular: false,
-    href: '/purchase',
+    href: '/purchase?plan=palop-connect',
   },
   {
     id: 'diaspora-europe',
@@ -117,7 +117,7 @@ export const planCards: PlanCard[] = [
     price: '€27.50',
     coverageLabel: { pt: 'Europa + países PALOP selecionados', en: 'Europe + selected PALOP-linked countries' },
     popular: true,
-    href: '/purchase',
+    href: '/purchase?plan=diaspora-europe',
   },
   {
     id: 'cplp-global',
@@ -130,7 +130,7 @@ export const planCards: PlanCard[] = [
     price: '€22.00',
     coverageLabel: { pt: 'Países CPLP', en: 'CPLP countries' },
     popular: false,
-    href: '/purchase',
+    href: '/purchase?plan=cplp-global',
   },
 ];
 
