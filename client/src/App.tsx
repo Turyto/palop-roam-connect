@@ -18,6 +18,7 @@ import Auth from "./pages/Auth";
 import Orders from "./pages/Orders";
 import AdminDashboard from "./pages/AdminDashboard";
 import CompatibilityPage from "./pages/CompatibilityPage";
+import HowItWorksPage from "./pages/HowItWorksPage";
 import NotFound from "./pages/NotFound";
 
 // Create QueryClient with proper configuration
@@ -67,6 +68,7 @@ const AppRoutes = () => (
     <Route path="/auth" element={<Auth />} />
     <Route path="/orders" element={<Orders />} />
     <Route path="/compatibility" element={<CompatibilityPage />} />
+    <Route path="/how-it-works" element={<HowItWorksPage />} />
     <Route path="/admin/dashboard" element={<AdminDashboard />} />
     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
     <Route path="*" element={<NotFound />} />

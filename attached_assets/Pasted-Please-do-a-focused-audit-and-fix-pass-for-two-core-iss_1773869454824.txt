@@ -1,0 +1,166 @@
+Please do a focused audit and fix pass for two core issues that now take priority before we move on to Support:
+
+1. Navigation consistency — specifically the “Como Funciona” item in the top navbar
+2. Orders access continuity after purchase — users appear to lose direct access to Orders unless they use the email sign-in link
+
+Main objective:
+Ensure the public site navigation behaves consistently across all top-level pages, and ensure the post-purchase journey allows users to reach their Orders reliably and immediately after checkout without unnecessary friction.
+
+Why this matters:
+Right now, the public flow has improved significantly, but two important UX issues remain:
+- “Como Funciona” appears to behave like an old homepage section/anchor instead of a proper standalone page route
+- After purchase, users may no longer be able to see their orders directly and seem to depend on the email sign-in link to get back to their order details
+
+These should be addressed before we move on to Support.
+
+Critical constraints:
+
+1. Preserve current working purchase/order logic
+- Do not break checkout
+- Do not break Stripe integration
+- Do not break order creation
+- Do not break confirmation flow
+- Do not break order retrieval logic
+- Do not break admin/order-management backend behavior
+
+2. Preserve auth/admin/session behavior unless a targeted fix is needed
+- Do not break login/authentication
+- Preserve Admin login and dashboard access
+- Preserve user login/session behavior
+- Preserve protected routes
+- If session continuity needs adjustment after checkout, keep it safe and backward-compatible
+
+3. Preserve bilingual behavior
+- Reuse the same PT/EN localization system already used across the updated public site
+- Do not hardcode public strings outside the translation/i18n structure
+
+PHASE 1 — Audit current top navigation behavior
+
+Please inspect the current top navbar links and confirm what each item points to:
+- Início
+- Planos
+- Compatibilidade
+- Como Funciona
+- FAQ
+- Suporte
+
+Identify:
+- which are true standalone routes
+- which still point to homepage anchors or legacy route patterns
+- whether “Como Funciona” is currently:
+  - linking to `/`
+  - linking to `/#...`
+  - linking to an old anchor
+  - rendering homepage content unexpectedly
+  - or using some outdated route logic
+
+Please summarize the current routing behavior before changing anything.
+
+PHASE 2 — Fix “Como Funciona” navigation consistency
+
+We need navbar behavior to be consistent.
+
+Desired behavior:
+- “Como Funciona” should behave like a proper standalone page route, consistent with:
+  - `/plans`
+  - `/compatibility`
+
+Recommended target:
+- route should be something like `/how-it-works`
+- top navbar item should point there
+- page should render the proper dedicated “Como Funciona” page content
+
+Important:
+- If the homepage still has a short how-it-works section, that is fine
+- But the navbar item itself should go to the standalone page, not back to homepage anchor behavior
+
+Acceptance criteria for this part:
+- clicking “Como Funciona” from any page goes to the dedicated standalone page
+- it no longer behaves like a homepage section jump
+- header/nav remains consistent across the site
+- PT/EN behavior remains intact
+
+PHASE 3 — Audit Orders access continuity after purchase
+
+Please inspect the current post-purchase Orders access flow.
+
+Observed issue:
+After purchase, the success page now shows a message like:
+“Check your inbox — We've sent a sign-in link... Click it anytime to return to your orders page and view your eSIM details…”
+
+This suggests the app may now depend too heavily on the email magic link for Orders access, and the user may lose direct access to Orders immediately after purchase.
+
+Please determine:
+- Is the Orders page protected behind auth/session?
+- Is the purchaser supposed to remain able to access Orders immediately in the same session after checkout?
+- Is the magic link intended as:
+  - the primary Orders access method
+  - or only a fallback recovery method?
+- Is purchase currently happening as:
+  - authenticated user
+  - anonymous/guest
+  - guest converted to a customer session
+  - or another pattern?
+- What exact condition causes the user to “lose” access to Orders after purchase?
+
+Please summarize the current logic clearly before changing anything.
+
+PHASE 4 — Fix immediate post-purchase Orders continuity
+
+Desired UX:
+After successful purchase, the user should be able to access their Orders directly and immediately in the same journey/session, without feeling forced to leave and come back only through email.
+
+Preferred behavior:
+- Immediate same-session access to Orders should work after checkout/confirmation
+- The email magic link should remain as a useful fallback/recovery mechanism, not the only practical route back to Orders
+
+Please fix this in the safest possible way based on the existing auth/order logic.
+
+Important:
+- Do not remove the email sign-in link flow if it is valuable for recovery
+- Do not weaken route protection unsafely
+- Do not expose other users’ orders
+- Preserve correct auth and order ownership rules
+
+Possible implementation directions (choose the safest one based on the current architecture):
+- preserve the purchaser session properly through confirmation → orders
+- ensure the just-purchased user/order email is correctly linked to a valid session for immediate access
+- improve confirmation → orders route continuity
+- only rely on email magic link when session continuity is not available
+
+PHASE 5 — Verify confirmation-page Orders CTA behavior
+
+Please specifically test and verify:
+- From confirmation, “View My Orders” should lead to the intended Orders page
+- If the user is still in a valid same-session state, they should be able to see their orders immediately
+- If session is unavailable, fallback messaging should be clear and intentional
+
+If fallback is needed, the UX should still be explicit and graceful.
+
+PHASE 6 — Preserve core protections
+
+Important:
+Any Orders-access fix must preserve:
+- order privacy
+- route protection
+- admin/private data separation
+- existing backend integrity
+
+Do not create an insecure shortcut just to make Orders visible.
+
+Acceptance criteria:
+1. “Como Funciona” is a true standalone route/page from the top navbar
+2. Navbar routing is consistent across top-level public pages
+3. Post-purchase users can access Orders directly in the intended immediate flow when appropriate
+4. Email magic link remains available as fallback/recovery if needed
+5. Orders/auth/admin/backend protections remain intact
+6. No checkout/order/Stripe logic is broken
+
+After implementing, provide:
+1. a summary of the current and corrected navbar routing
+2. confirmation of how “Como Funciona” now routes
+3. a summary of how Orders access currently worked before the fix
+4. what was changed to improve post-purchase Orders continuity
+5. confirmation that email magic-link recovery is still available
+6. confirmation that auth/admin/order/backend logic was not broken
+7. any remaining follow-up items or architectural caveats

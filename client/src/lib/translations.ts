@@ -158,6 +158,10 @@ const translations = {
       step3Title: 'Ativa em poucos minutos',
       step3Body: 'Instala no teu telemóvel compatível e começa logo a usar os teus dados móveis.',
       cta: 'Ver planos',
+      pageSubtitle: 'Tudo o que precisas de saber sobre como funciona o nosso eSIM — do início ao fim, em três passos simples.',
+      ctaTitle: 'Pronto para começar?',
+      ctaBody: 'Escolhe o plano que melhor se adapta à tua viagem ou estadia.',
+      ctaButton: 'Escolher um plano',
     },
     benefits: {
       title: 'Porque escolher o nosso eSIM',
@@ -573,6 +577,10 @@ const translations = {
       step3Title: 'Activate in minutes',
       step3Body: 'Install on your compatible phone and start using your mobile data right away.',
       cta: 'See plans',
+      pageSubtitle: 'Everything you need to know about how our eSIM works — from start to finish in three simple steps.',
+      ctaTitle: 'Ready to get started?',
+      ctaBody: 'Choose the plan that best fits your trip or stay.',
+      ctaButton: 'Choose a plan',
     },
     benefits: {
       title: 'Why choose our eSIM',

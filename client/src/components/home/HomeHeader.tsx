@@ -22,7 +22,7 @@ const HomeHeader = () => {
     { label: t.nav.home, href: '/' },
     { label: t.nav.plans, href: '/plans' },
     { label: t.nav.compatibility, href: '/compatibility' },
-    { label: t.nav.howItWorks, href: '#how-it-works', anchor: 'how-it-works' },
+    { label: t.nav.howItWorks, href: '/how-it-works' },
     { label: t.nav.faq, href: '#faq', anchor: 'faq' },
     { label: t.nav.support, href: '/support' },
   ];

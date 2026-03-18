@@ -260,7 +260,7 @@ const ConfirmationView = ({ plan, orderId, guestEmail, onBackToPlans }: Confirma
         >
           Buy Another eSIM
         </Button>
-        {guestEmail ? (
+        {guestEmail && (
           <Button
             variant="outline"
             className="flex-1"
@@ -270,17 +270,15 @@ const ConfirmationView = ({ plan, orderId, guestEmail, onBackToPlans }: Confirma
             <Download className="h-4 w-4 mr-2" />
             Save / Print Details
           </Button>
-        ) : (
-          <Link to="/orders" className="flex-1">
-            <Button
-              className="w-full bg-palop-green hover:bg-palop-green/90"
-              data-testid="button-view-orders"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              View My Orders
-            </Button>
-          </Link>
         )}
+        <Link to="/orders" className="flex-1">
+          <Button
+            className="w-full bg-palop-green hover:bg-palop-green/90"
+            data-testid="button-view-orders"
+          >
+            View My Orders
+          </Button>
+        </Link>
       </div>
     </div>
   );
