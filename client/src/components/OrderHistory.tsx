@@ -1,20 +1,21 @@
-
 import { useOrders } from "@/hooks/useOrders";
 import { useCustomerQRCodes } from "@/hooks/useCustomerQRCodes";
 import { useState } from "react";
 import QRCodeDownloadModal from "./QRCodeDownloadModal";
 import TopUpCheckoutModal from "./order-history/TopUpCheckoutModal";
-import OrderHistoryHeader from "./order-history/OrderHistoryHeader";
 import EmptyOrdersState from "./order-history/EmptyOrdersState";
 import OrderCard from "./order-history/OrderCard";
-import LoyaltySection from "./order-history/LoyaltySection";
 import { useToast } from "@/hooks/use-toast";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useLanguage } from "@/contexts/language";
+import { AlertCircle, Loader2 } from "lucide-react";
 
 const OrderHistory = () => {
   const { orders, ordersLoading, ordersError } = useOrders();
   const { qrCodes } = useCustomerQRCodes();
   const { toast } = useToast();
+  const { t } = useLanguage();
+  const o = t.orders;
+
   const [selectedQRCode, setSelectedQRCode] = useState<{
     activationUrl: string;
     orderId: string;
@@ -28,72 +29,41 @@ const OrderHistory = () => {
   if (ordersLoading) {
     return (
       <div className="flex items-center justify-center min-h-[200px]">
-        <div className="text-lg">Loading orders...</div>
+        <Loader2 className="h-6 w-6 text-palop-green animate-spin mr-2" />
+        <span className="text-gray-500 text-sm">{o.loading}</span>
       </div>
     );
   }
 
   if (ordersError) {
     return (
-      <div className="text-center text-red-600 min-h-[200px] flex items-center justify-center">
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Error Loading Orders</h3>
-          <p>Unable to load your order history. Please try again later.</p>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-[200px] text-center">
+        <AlertCircle className="h-8 w-8 text-red-400 mb-3" />
+        <h3 className="font-semibold text-gray-800 mb-1">{o.error}</h3>
+        <p className="text-gray-500 text-sm">{o.errorDesc}</p>
       </div>
     );
   }
 
   if (!orders || orders.length === 0) {
-    return (
-      <div className="space-y-6">
-        <OrderHistoryHeader />
-        <EmptyOrdersState />
-      </div>
-    );
+    return <EmptyOrdersState />;
   }
 
   const getOrderQRCode = (orderId: string) => {
-    const qrCode = qrCodes.find(qr => qr.order_id === orderId);
-    console.log('🔍 Looking for QR code for order:', orderId);
-    console.log('📋 Available QR codes:', qrCodes);
-    console.log('✅ Found QR code:', qrCode);
-    return qrCode;
+    return qrCodes.find(qr => qr.order_id === orderId);
   };
 
   const canDownloadESIM = (order: any, qrCode: any) => {
-    console.log('🚀 CHECKING CAN DOWNLOAD for order:', order.id);
-    console.log('📊 Order details:', {
-      status: order.status,
-      payment_status: order.payment_status,
-      esim_delivered_at: order.esim_delivered_at,
-      hasQRCode: !!qrCode
-    });
-    
     const statusCheck = order.status === 'completed';
     const paymentCheck = order.payment_status === 'succeeded';
     const deliveredCheck = !!order.esim_delivered_at;
     const qrCodeCheck = !!qrCode;
-    
-    console.log('✅ Status checks:', {
-      statusCheck,
-      paymentCheck,
-      deliveredCheck,
-      qrCodeCheck
-    });
-    
-    const result = statusCheck && paymentCheck && deliveredCheck && qrCodeCheck;
-    console.log('🎯 FINAL RESULT for canDownload:', result);
-    
-    return result;
+    return statusCheck && paymentCheck && deliveredCheck && qrCodeCheck;
   };
 
   const handleDownloadESIM = (order: any) => {
-    console.log('Download eSIM clicked for order:', order.id);
     const qrCode = getOrderQRCode(order.id);
-    
     if (qrCode) {
-      console.log('QR Code found:', qrCode);
       setSelectedQRCode({
         activationUrl: qrCode.activation_url,
         orderId: order.id,
@@ -101,14 +71,10 @@ const OrderHistory = () => {
         dataAmount: order.data_amount,
         status: qrCode.status
       });
-    } else {
-      console.log('No QR code found for order:', order.id);
-      console.log('Available QR codes:', qrCodes);
     }
   };
 
   const handleTopUp = (order: any) => {
-    console.log('Top-up clicked for order:', order.id);
     setSelectedTopUpOrder(order);
   };
 
@@ -123,7 +89,6 @@ const OrderHistory = () => {
   };
 
   const handleResendEmail = (orderId: string) => {
-    // Show success toast for resend email
     toast({
       title: "eSIM Details Sent!",
       description: "Your eSIM activation details have been resent to your email address.",
@@ -132,68 +97,26 @@ const OrderHistory = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <OrderHistoryHeader />
+    <div className="space-y-4">
+      {orders.map((order) => {
+        const qrCode = getOrderQRCode(order.id);
+        const canDownload = canDownloadESIM(order, qrCode);
+        const isExpanded = expandedOrders.has(order.id);
 
-      <Tabs defaultValue="orders" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="orders">My Orders</TabsTrigger>
-          <TabsTrigger value="loyalty">Loyalty & Rewards</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="orders">
-          {ordersLoading && (
-            <div className="flex items-center justify-center min-h-[200px]">
-              <div className="text-lg">Loading orders...</div>
-            </div>
-          )}
-
-          {ordersError && (
-            <div className="text-center text-red-600 min-h-[200px] flex items-center justify-center">
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Error Loading Orders</h3>
-                <p>Unable to load your order history. Please try again later.</p>
-              </div>
-            </div>
-          )}
-
-          {!orders || orders.length === 0 ? (
-            <EmptyOrdersState />
-          ) : (
-            <div className="grid gap-6">
-              {orders.map((order) => {
-                const qrCode = getOrderQRCode(order.id);
-                const canDownload = canDownloadESIM(order, qrCode);
-                const isExpanded = expandedOrders.has(order.id);
-                
-                console.log('🎨 RENDERING ORDER CARD:', {
-                  orderId: order.id,
-                  canDownload,
-                  hasQRCode: !!qrCode
-                });
-                
-                return (
-                  <OrderCard
-                    key={order.id}
-                    order={order}
-                    qrCode={qrCode}
-                    canDownload={canDownload}
-                    isExpanded={isExpanded}
-                    onToggleExpansion={toggleOrderExpansion}
-                    onDownloadESIM={handleDownloadESIM}
-                    onResendEmail={handleResendEmail}
-                    onTopUp={handleTopUp}
-                  />
-                );
-              })}
-            </div>
-          )}
-        </TabsContent>
-        
-        <TabsContent value="loyalty">
-          <LoyaltySection />
-        </TabsContent>
-      </Tabs>
+        return (
+          <OrderCard
+            key={order.id}
+            order={order}
+            qrCode={qrCode}
+            canDownload={canDownload}
+            isExpanded={isExpanded}
+            onToggleExpansion={toggleOrderExpansion}
+            onDownloadESIM={handleDownloadESIM}
+            onResendEmail={handleResendEmail}
+            onTopUp={handleTopUp}
+          />
+        );
+      })}
 
       <QRCodeDownloadModal
         isOpen={!!selectedQRCode}

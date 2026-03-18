@@ -1,0 +1,232 @@
+Please refactor the public Orders page so it matches the updated Homepage, Plans page, Compatibility page, and Purchase/Confirmation flow, while preserving the current working order data, provisioning status logic, and admin/order-management backend behavior.
+
+Main objective:
+Modernize the public Orders page so the confirmation CTA “View My Orders” leads to a clean, consistent, user-facing order experience instead of the old legacy orders dashboard.
+
+Current problem:
+The funnel is now:
+Homepage → Plans → Purchase → Confirmation
+but when the user clicks “View My Orders”, they are still taken to the old Orders page.
+
+This creates a legacy break in the public post-purchase journey.
+
+Desired outcome:
+The Orders page should become a modern, simple public account/orders view that helps the user:
+1. see what they bought
+2. understand its status
+3. know whether the eSIM is provisioning or ready
+4. access next actions like QR code, activation help, or support
+
+Critical constraints:
+
+1. Preserve order logic and backend behavior
+- Do not break current order retrieval
+- Do not break provisioning status logic
+- Do not break order IDs, order history, or order visibility
+- Preserve admin/order-management backend behavior and data integrity
+- Do not change backend order schemas unless strictly necessary, and if any change is needed, keep it backward-compatible
+
+2. Preserve auth and admin behavior
+- Do not break login/authentication
+- Preserve Admin login and access
+- Preserve user login and session behavior
+- Preserve protected routes and admin dashboards
+- This task is a public Orders page shell/content refactor, not a backend order-system rebuild
+
+3. Preserve bilingual behavior
+- Reuse the same PT/EN localization system already used by the updated Homepage, Plans page, Compatibility page, and Purchase page
+- Do not hardcode public strings outside the translation/i18n structure
+- Ensure Orders page labels, statuses, headings, and action buttons respond correctly to locale
+
+4. Keep the working public route
+- Keep or confirm the intended public Orders route
+- The confirmation page CTA “View My Orders” should lead to the modernized Orders page, not an old legacy dashboard shell
+
+Refactor requirements:
+
+A. Replace the old public-facing Orders shell
+The old Orders page currently feels like a legacy dashboard with outdated branding/layout and includes non-essential sections like loyalty/rewards.
+
+Please modernize the visible public page shell so it matches the new site style:
+- consistent public branding
+- consistent header/nav
+- consistent footer
+- cleaner spacing/typography/card style
+- no legacy dashboard feel in the main public experience
+
+B. Remove or reduce non-essential legacy sections
+Reduce or remove public-facing sections that do not belong in the main post-purchase flow, such as:
+- Loyalty & Rewards tab in the primary orders experience
+- outdated promotional/account-dashboard blocks
+- old footer/branding shell
+- unrelated loyalty/community sections that distract from order tracking
+
+If loyalty/rewards logic must remain for technical reasons, it should not dominate the primary public “My Orders” experience.
+
+C. Keep the page focused on order tracking
+The public Orders page should primarily include:
+
+1. Page title / intro
+2. Orders list
+3. Per-order status and key info
+4. Expandable order details or details area
+5. Relevant next actions
+6. Minimal footer
+
+D. Recommended page content structure
+
+1) OrdersHeroSection
+Simple and minimal, not a large marketing hero.
+
+PT:
+Title: "As minhas encomendas"
+Subtitle: "Acompanha as tuas compras e o estado de ativação do teu eSIM."
+
+EN:
+Title: "My Orders"
+Subtitle: "Track your purchases and your eSIM activation status."
+
+2) OrdersListSection
+Each order card should clearly show:
+- plan name
+- coverage/country if relevant
+- purchase date
+- price
+- duration
+- order ID
+- current status
+
+Statuses should be user-readable and localized.
+Examples:
+PT:
+- "Em processamento"
+- "Pronto para ativação"
+- "Concluído"
+- "Expirado"
+
+EN:
+- "Processing"
+- "Ready to activate"
+- "Completed"
+- "Expired"
+
+3) Order details / expanded panel
+When expanded, an order can show:
+- order ID
+- plan summary
+- provisioning status
+- QR code availability status
+- activation instructions link if available
+- support/help link if needed
+
+4) Action buttons per order
+Depending on actual logic/status, support actions like:
+PT:
+- "Ver detalhes"
+- "Ver QR Code"
+- "Ver instruções de ativação"
+- "Falar com suporte"
+- "Comprar outro eSIM"
+- "Adicionar mais dados" (only if real and supported)
+
+EN equivalents:
+- "View details"
+- "View QR code"
+- "View activation guide"
+- "Talk to support"
+- "Buy another eSIM"
+- "Add more data"
+
+Important:
+Only show actions that are actually valid given the current order state and supported logic.
+
+E. Simplify status messaging
+The current example showed text like “Processing eSIM” and also a top-up area.
+Keep the underlying logic if it is real, but present it more clearly and more consistently with the new site.
+
+Examples:
+PT:
+- "Ativação em preparação"
+- "QR Code disponível"
+- "Pronto para ativação"
+- "Validade ativa até [date]"
+
+EN:
+- "Activation in progress"
+- "QR code available"
+- "Ready to activate"
+- "Active until [date]"
+
+F. Keep top-up only if it is real
+If “Top-Up Plan” / “Add More Data or Time” is a real supported flow, it can stay.
+But present it as a secondary action, not the main focus of the page.
+
+If it is still placeholder-ish or not fully ready, downplay it or hide it for now.
+
+G. Header / footer consistency
+Use the same public header style as the updated Homepage/Plans/Compatibility/Purchase flow.
+Keep:
+- brand/logo
+- public nav
+- PT/EN switcher if already used
+- sign in/account behavior as currently implemented
+
+Use a minimal consistent footer.
+Do not use the old legacy footer/branding shell.
+
+H. Route continuity
+Ensure the success-page CTA “View My Orders” points to this modernized Orders page.
+Do not leave the confirmation page sending users into the old legacy orders dashboard shell.
+
+Technical requirements:
+
+1. Preserve current order data source and retrieval logic
+- Reuse existing order fetching logic if it works
+- Preserve authenticated access/session behavior
+- Do not break admin visibility into the same orders backend
+
+2. Refactor only the public orders presentation
+- This is a frontend/public UX refactor
+- Avoid backend rewrites unless required for compatibility
+
+3. Reuse shared layout components if available
+- shared public header
+- shared footer
+- shared localization patterns
+- shared card/button styles
+
+4. Suggested component structure (adapt as needed)
+src/
+  components/
+    orders/
+      OrdersHeroSection.tsx
+      OrdersListSection.tsx
+      OrderCard.tsx
+      OrderDetailsPanel.tsx
+      OrderActions.tsx
+  pages/
+      OrdersPage.tsx
+
+What to remove or reduce from the current public Orders page:
+- legacy hero shell
+- loyalty/rewards prominence in the main public flow
+- outdated footer/branding
+- unnecessary old dashboard visual complexity
+
+Acceptance criteria:
+- “View My Orders” from confirmation leads to a modernized Orders page
+- Orders page matches the updated public site style
+- order data still loads correctly
+- statuses remain correct
+- order details remain accessible
+- top-up stays only if real and supported
+- PT/EN behavior works
+- auth/admin/order-management logic remains intact
+- no backend order behavior is broken
+
+After implementing, provide:
+1. a short summary of what was visually/content-wise refactored
+2. confirmation that order retrieval and status logic were preserved
+3. confirmation that auth/admin/order-management logic was not altered
+4. confirmation that the confirmation-page CTA now points to the modernized Orders page
+5. any remaining legacy elements or placeholders that still need later cleanup

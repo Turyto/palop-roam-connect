@@ -1,12 +1,15 @@
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import HomeHeader from "@/components/home/HomeHeader";
+import HomeFooter from "@/components/home/HomeFooter";
 import OrderHistory from "@/components/OrderHistory";
+import OrdersHeroSection from "@/components/orders/OrdersHeroSection";
 import { useAuth } from "@/contexts/auth";
+import { useLanguage } from "@/contexts/language";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 const Orders = () => {
   const { user, loading } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -17,8 +20,8 @@ const Orders = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-gray-500 text-sm">{t.orders.loading}</div>
       </div>
     );
   }
@@ -28,21 +31,18 @@ const Orders = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      <HomeHeader />
+
+      <OrdersHeroSection />
+
       <main className="flex-grow">
-        <div className="bg-gradient-to-r from-palop-green to-palop-blue">
-          <div className="container mx-auto px-4 py-8 text-center">
-            <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">My Orders</h1>
-            <p className="text-white text-xl opacity-90">Track your eSIM purchases and downloads</p>
-          </div>
-        </div>
-        
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-8 max-w-6xl">
           <OrderHistory />
         </div>
       </main>
-      <Footer />
+
+      <HomeFooter />
     </div>
   );
 };
