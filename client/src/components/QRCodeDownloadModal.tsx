@@ -11,18 +11,20 @@ interface QRCodeDownloadModalProps {
   status: 'pending' | 'active' | 'revoked';
   activationCode?: string;
   iccid?: string;
+  coverage?: string;
 }
 
-const QRCodeDownloadModal = ({ 
-  isOpen, 
-  onClose, 
-  activationUrl, 
-  orderId, 
-  planName, 
+const QRCodeDownloadModal = ({
+  isOpen,
+  onClose,
+  activationUrl,
+  orderId,
+  planName,
   dataAmount,
   status,
   activationCode,
-  iccid 
+  iccid,
+  coverage,
 }: QRCodeDownloadModalProps) => {
   return (
     <ESIMActivationModal
@@ -35,7 +37,7 @@ const QRCodeDownloadModal = ({
       status={status}
       activationCode={activationCode}
       iccid={iccid}
-      coverage="Algeria"
+      coverage={coverage}
     />
   );
 };

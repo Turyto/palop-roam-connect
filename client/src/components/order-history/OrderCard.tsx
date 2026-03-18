@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar, ChevronDown, ChevronUp } from "lucide-react";
 import { format } from "date-fns";
 import OrderStatus from "./OrderStatus";
-import OrderActions from "./OrderActions";
+import OrderActivationStateBlock from "./OrderActivationStateBlock";
 import OrderDetails from "./OrderDetails";
 import { useLanguage } from "@/contexts/language";
 
@@ -74,7 +74,8 @@ const OrderCard = ({
           </Button>
         </div>
 
-        <OrderActions
+        {/* Compact activation state block */}
+        <OrderActivationStateBlock
           order={order}
           qrCode={qrCode}
           canDownload={canDownload}

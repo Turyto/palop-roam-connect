@@ -1,0 +1,300 @@
+Please implement the next stage of the public post-purchase experience: the “Ready to Activate / QR Code / Activation Instructions” order flow, while first auditing the existing codebase to see whether this logic already exists anywhere from the previous application and can be reused.
+
+Main objective:
+Define and implement a clear public eSIM activation-state experience inside the Orders / Order Details flow, so users can understand whether their eSIM is still being prepared, ready to activate, already active, expired, or needs support.
+
+Important: before building anything new, first inspect the codebase carefully to identify whether any existing QR code / activation / delivered eSIM / activation-instructions logic already exists from the previous version of the application.
+
+Strategy:
+- Reuse existing working logic if it already exists and is still valid
+- Do not rebuild QR/activation logic from scratch if the previous app already contains usable code, states, or data mappings
+- Preserve backend/order/admin/auth behavior
+
+Core UX goal:
+clear status → clear next action → easy activation → support if needed
+
+Critical constraints:
+
+1. Preserve order/backend behavior
+- Do not break order retrieval
+- Do not break provisioning logic
+- Do not break payment status logic
+- Do not break admin/order-management behavior
+- Do not change backend schemas unless strictly necessary, and if needed, keep changes backward-compatible
+
+2. Preserve auth/admin/session behavior
+- Do not break login/authentication
+- Preserve Admin access
+- Preserve user access/session behavior
+- Preserve protected routes and admin dashboards
+
+3. Preserve bilingual behavior
+- Reuse the same PT/EN localization system already used on the updated public site
+- Do not hardcode public-facing strings outside the translation/i18n structure
+- Ensure all new labels/messages/buttons in this feature work correctly in both PT and EN
+
+4. Keep the already-modernized public shell
+- Do not regress the current modernized Homepage / Plans / Compatibility / Purchase / Orders shell
+- This task is specifically about order activation states, QR visibility, activation guidance, and next actions
+
+PHASE 1 — Audit existing code before implementing
+
+Please first inspect the existing codebase for any previous logic related to:
+- QR code generation or QR code display
+- eSIM delivery status
+- `esim_delivered_at`
+- `qrCode`, `qr_code`, `qrCodeUrl`, or similar fields
+- manual activation code / activation code / SMDP+ / ICCID related UI
+- activation guide UI
+- eSIM download button / download modal
+- “ready to activate” / “active” / “delivered” / “provisioned” status handling
+- order detail states from older versions
+- any previous customer-facing activation instructions
+- any prior QR modal / download component / activation detail component
+- any hooks or helper functions that already derive activation readiness
+
+Please search for relevant terms like:
+- qr
+- qrcode
+- esim_delivered
+- activation
+- activate
+- smdp
+- iccid
+- manual install
+- download esim
+- ready to activate
+- provisioning
+- delivered
+- install guide
+
+At the beginning of your implementation summary, report:
+1. what existing code/components/logic were found
+2. what was reused
+3. what was outdated and intentionally not reused
+
+PHASE 2 — Implement a clear public activation-state model
+
+Define a clean public-facing activation UI state derived from existing backend fields if possible.
+
+Recommended public UI states:
+1. processing
+2. ready
+3. active
+4. expired
+5. error/support-needed
+
+Suggested PT labels:
+- "Ativação em preparação"
+- "Pronto para ativação"
+- "Ativo"
+- "Expirado"
+- "Precisa de apoio"
+
+Suggested EN labels:
+- "Activation in progress"
+- "Ready to activate"
+- "Active"
+- "Expired"
+- "Needs support"
+
+Important:
+Do not rely only on raw backend labels in the public UI if they are too technical or ambiguous.
+Instead, derive a clearer public-facing activation state from existing backend fields where possible.
+
+For example, use combinations of:
+- order.status
+- payment_status
+- esim_delivered_at
+- qr_code presence
+- expiry timestamps
+- activation timestamps
+- other existing fields if available
+
+PHASE 3 — Implement the “ready to activate” order experience
+
+When an order is in the “ready” state, the user should clearly see:
+
+A. Status block
+PT:
+- Title: "Pronto para ativação"
+- Message: "O teu eSIM está pronto. Podes instalar agora com o QR Code ou com os dados de ativação manual."
+
+EN:
+- Title: "Ready to activate"
+- Message: "Your eSIM is ready. You can install it now using the QR code or manual activation details."
+
+B. QR / activation section
+If QR exists or is available:
+- Show QR code
+- Show button: PT "Descarregar QR Code" / EN "Download QR code"
+- Show button: PT "Copiar dados de ativação" / EN "Copy activation details" (only if manual install data is real and available)
+- Show button/link: PT "Ver instruções de ativação" / EN "View activation guide"
+
+If QR is not yet available:
+- Do not show placeholder/fake QR
+- Show waiting state instead
+
+C. Email reassurance
+Show a clear line such as:
+PT:
+"Também enviámos o teu eSIM e as instruções de ativação por email."
+EN:
+"We also sent your eSIM and activation instructions by email."
+
+PHASE 4 — Improve the “processing” state
+
+When payment succeeded but eSIM is not ready yet:
+Show a clear waiting state.
+
+PT:
+Title: "Ativação em preparação"
+Message: "Recebemos o teu pagamento. Estamos a preparar o teu eSIM. O QR Code e as instruções de ativação ficarão disponíveis aqui e também serão enviados por email."
+
+EN:
+Title: "Activation in progress"
+Message: "We received your payment. We are preparing your eSIM. The QR code and activation instructions will appear here and will also be sent by email."
+
+Actions allowed:
+- View details
+- Talk to support
+Optional:
+- Refresh status, only if real and implemented
+
+Actions not allowed:
+- no fake QR
+- no premature download action
+- no top-up in this state
+
+PHASE 5 — Improve the “active” state
+
+When the eSIM is already active:
+Show:
+PT:
+Title: "Ativo"
+Message: "O teu eSIM está ativo. Podes consultar os detalhes da encomenda, voltar a ver o QR Code e, se necessário, adicionar dados."
+
+EN:
+Title: "Active"
+Message: "Your eSIM is active. You can review your order details, view the QR code again and, if needed, add more data."
+
+Actions may include:
+- View QR code again
+- View activation guide
+- Add data (only if truly supported)
+- Talk to support
+
+PHASE 6 — Improve the “expired” state
+
+When the plan expired:
+Show:
+PT:
+Title: "Expirado"
+Message: "A validade deste eSIM terminou. Podes comprar um novo plano ou, se disponível, renovar/adicionar dados."
+
+EN:
+Title: "Expired"
+Message: "This eSIM has expired. You can buy a new plan or, if supported, renew/add data."
+
+PHASE 7 — Improve the “error / support needed” state
+
+If provisioning failed or something is missing:
+Show:
+PT:
+Title: "Precisa de apoio"
+Message: "Houve um problema ao preparar o teu eSIM. A nossa equipa pode ajudar-te."
+
+EN:
+Title: "Needs support"
+Message: "There was a problem preparing your eSIM. Our team can help."
+
+Show:
+- Talk to support
+- Any retry action only if real
+
+PHASE 8 — Activation guide cleanup
+
+Create or refactor a reusable activation guide section/component for ready/active orders.
+
+PT:
+Title: "Como ativar o teu eSIM"
+Steps:
+1. "Descarrega e guarda o QR Code no teu dispositivo"
+2. "Vai a Definições > Rede móvel / Dados móveis"
+3. "Seleciona 'Adicionar eSIM'"
+4. "Lê o QR Code ou introduz os dados manualmente"
+5. "Segue as instruções do teu telemóvel"
+
+Helper line:
+"Também enviámos estas instruções por email."
+
+EN:
+Title: "How to activate your eSIM"
+Steps:
+1. "Download and save the QR code on your device"
+2. "Go to Settings > Mobile Network / Mobile Data"
+3. "Choose 'Add eSIM'"
+4. "Scan the QR code or enter the details manually"
+5. "Follow your phone's instructions"
+
+Helper line:
+"We also sent these instructions by email."
+
+Only show activation instructions when it makes sense:
+- ready
+- active
+Not while still processing unless it is a generic help section intentionally separated.
+
+PHASE 9 — Clarify coverage vs current network if shown
+
+If the UI shows both purchased coverage and active/current network, label them clearly.
+
+PT:
+- "Cobertura do plano"
+- "Rede ativa atual"
+
+EN:
+- "Plan coverage"
+- "Current active network"
+
+Do not let users think they bought the wrong plan because network/country labels are ambiguous.
+
+PHASE 10 — Keep top-up gated correctly
+
+Preserve the top-up gate rule already implemented:
+Top-up should only be shown when it is valid and the eSIM is actually delivered/ready/active.
+
+Do not reintroduce top-up for processing orders.
+
+Technical guidance:
+- Reuse existing order detail components where possible
+- Reuse any existing QR/delivery/activation logic found in the audit
+- Avoid backend rewrites
+- Prefer deriving a clean public UI state in the frontend from existing fields unless a small backend helper is clearly needed
+- Keep the already-modernized Orders page shell
+
+Suggested component approach (adapt as needed):
+- OrderActivationStateBlock
+- OrderQRCodeSection
+- OrderActivationGuide
+- OrderNextActions
+
+Acceptance criteria:
+- existing code is audited first for reusable QR/activation logic
+- a clear public activation-state model is implemented
+- processing orders show a clear waiting state
+- ready orders show QR/activation/download actions if real data exists
+- active orders show appropriate follow-up actions
+- expired/error states are presented clearly
+- no fake QR or fake usage data is shown
+- PT/EN localization works
+- top-up remains correctly gated
+- auth/admin/order/backend behavior remains unaffected
+
+After implementing, provide:
+1. what existing QR/activation logic/components were found in the old codebase
+2. what was reused vs newly implemented
+3. how the public activation UI state is derived
+4. what the user now sees in processing / ready / active / expired / error states
+5. confirmation that auth/admin/order-management logic was not altered
+6. any remaining backend/data dependencies still needed for full QR-ready experience

@@ -38,7 +38,7 @@ const UsageMetrics = ({ order }: UsageMetricsProps) => {
           <div className="font-medium text-gray-800">{format(deliveredDate, 'dd MMM yyyy')}</div>
         </div>
         <div>
-          <div className="text-xs text-gray-400 mb-0.5">Validade até / Active until</div>
+          <div className="text-xs text-gray-400 mb-0.5">{o.activeUntil}</div>
           <div className="font-medium text-gray-800">{format(expiryDate, 'dd MMM yyyy')}</div>
         </div>
       </div>

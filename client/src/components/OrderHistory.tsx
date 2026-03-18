@@ -22,6 +22,7 @@ const OrderHistory = () => {
     planName?: string;
     dataAmount?: string;
     status: 'pending' | 'active' | 'revoked';
+    coverage?: string;
   } | null>(null);
   const [selectedTopUpOrder, setSelectedTopUpOrder] = useState<any>(null);
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
@@ -69,7 +70,8 @@ const OrderHistory = () => {
         orderId: order.id,
         planName: order.plan_name,
         dataAmount: order.data_amount,
-        status: qrCode.status
+        status: qrCode.status,
+        coverage: order.coverage || undefined,
       });
     }
   };
@@ -126,6 +128,7 @@ const OrderHistory = () => {
         planName={selectedQRCode?.planName}
         dataAmount={selectedQRCode?.dataAmount}
         status={selectedQRCode?.status || 'pending'}
+        coverage={selectedQRCode?.coverage}
       />
 
       <TopUpCheckoutModal

@@ -1,7 +1,5 @@
-import OrderActions from "./OrderActions";
 import { useLanguage } from "@/contexts/language";
-import { Link } from "react-router-dom";
-import { Smartphone } from "lucide-react";
+import OrderActivationStateBlock from "./OrderActivationStateBlock";
 
 interface OrderDetailsProps {
   order: any;
@@ -90,8 +88,8 @@ const OrderDetails = ({
         </div>
       </div>
 
-      {/* B. eSIM actions (expanded variant) */}
-      <OrderActions
+      {/* B. Activation state block (expanded) */}
+      <OrderActivationStateBlock
         order={order}
         qrCode={qrCode}
         canDownload={canDownload}
@@ -100,51 +98,6 @@ const OrderDetails = ({
         onTopUp={onTopUp}
         variant="expanded"
       />
-
-      {/* C. Activation guide — only when eSIM is delivered */}
-      {order.esim_delivered_at && (
-        <div className="bg-gray-50 rounded-lg border border-gray-100 p-4">
-          <h5 className="font-semibold text-gray-700 text-sm mb-3 flex items-center gap-2">
-            <Smartphone className="h-4 w-4 text-palop-green" />
-            {o.activationTitle}
-          </h5>
-          <ol className="space-y-1.5 text-sm text-gray-600">
-            {[
-              o.activationStep1,
-              o.activationStep2,
-              o.activationStep3,
-              o.activationStep4,
-              o.activationStep5,
-            ].map((step, i) => (
-              <li key={i} className="flex gap-2.5">
-                <span className="w-5 h-5 rounded-full bg-palop-green/10 text-palop-green text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
-                  {i + 1}
-                </span>
-                <span>{step}</span>
-              </li>
-            ))}
-          </ol>
-          <p className="mt-3 text-xs text-gray-400">
-            {o.activationSupport}{' '}
-            <Link to="/support" className="text-palop-green hover:underline font-medium">
-              {o.talkToSupport}
-            </Link>
-          </p>
-        </div>
-      )}
-
-      {/* D. Waiting state — if eSIM not yet delivered */}
-      {!order.esim_delivered_at && order.status === 'completed' && order.payment_status === 'succeeded' && (
-        <div className="bg-yellow-50 border border-yellow-100 rounded-lg p-4 text-sm text-yellow-800">
-          <p className="font-medium mb-0.5">{o.statusActivationInProgress}</p>
-          <p className="text-yellow-700 text-xs">
-            {o.activationSupport}{' '}
-            <Link to="/support" className="text-palop-green hover:underline font-medium">
-              {o.talkToSupport}
-            </Link>
-          </p>
-        </div>
-      )}
     </div>
   );
 };
