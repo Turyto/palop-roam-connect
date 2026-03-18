@@ -30,7 +30,7 @@ const CompatibilitySection = () => {
               className="bg-palop-green hover:bg-palop-green/90 text-white"
               data-testid="compatibility-primary-cta"
             >
-              <Link to="/esim">{t.compatibility.primaryCta}</Link>
+              <Link to="/compatibility">{t.compatibility.primaryCta}</Link>
             </Button>
             <Button
               asChild

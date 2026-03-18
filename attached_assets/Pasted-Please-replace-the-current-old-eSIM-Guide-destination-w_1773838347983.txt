@@ -1,0 +1,241 @@
+Please replace the current old “eSIM Guide” destination with a focused Compatibility Page v2 that matches the updated Homepage and Plans page logic.
+
+Goal:
+Turn the current long-form eSIM Guide into a practical compatibility page that helps users check whether their device supports eSIM before purchase.
+
+Core UX logic:
+practical → clear → low-friction → purchase-supporting
+
+Important constraints:
+- This is for the existing Replit React codebase
+- Preserve PT/EN bilingual behavior using the same localization system as the Homepage and Plans page
+- Do not break auth, admin, order-management, or existing protected routes
+- Keep styling aligned with the updated Homepage and Plans page
+- Remove unrelated legacy marketing/education sections from this page
+- No blank CTA buttons
+- Mobile-first layout
+
+Primary routing decision:
+- The CTA “Verificar compatibilidade” on Homepage and Plans page should route to `/compatibility`
+- Do not continue routing this CTA to the current old long-form `/esim` guide experience
+
+Required page purpose:
+This page should answer one question clearly:
+“Is my phone compatible with eSIM, and how do I check before buying?”
+
+Required new page structure:
+1. CompatibilityHeroSection
+2. QuickCheckSection
+3. ImportantNotesSection
+4. CompatibleDevicesSection
+5. CompatibilityFAQSection
+6. FinalCompatibilityCTASection
+
+Remove or move out from the current old eSIM Guide logic:
+- “Understanding eSIM Technology” hero
+- long eSIM vs traditional SIM education sections
+- large journey timeline
+- “Why choose eSIM for PALOP travel?”
+- large comparison table
+- partner network section
+- broad brand proof / stats sections
+- extra duplicated CTA blocks
+- any blank/broken buttons
+
+Implementation details:
+
+1) CompatibilityHeroSection
+Eyebrow:
+"Compatibilidade eSIM"
+
+Title:
+"Verifica se o teu telemóvel é compatível com eSIM"
+
+Subtitle:
+"Antes de comprares, confirma se o teu dispositivo suporta eSIM e se está desbloqueado para rede móvel."
+
+Primary CTA:
+Label: "Ver lista de dispositivos"
+Href: "#device-list"
+
+Secondary CTA:
+Label: "Falar com suporte"
+Href: "/support"
+
+Trust bullets:
+- "Verificação rápida"
+- "Compatibilidade por marca"
+- "Apoio disponível se tiveres dúvidas"
+
+2) QuickCheckSection
+Title:
+"Como verificar rapidamente no teu telemóvel"
+
+Steps:
+1. "Abre as Definições"
+   Description: "Vai às definições do teu telemóvel."
+
+2. "Procura Dados móveis ou Rede móvel"
+   Description: "Abre a secção de rede móvel ou dados móveis."
+
+3. "Procura a opção “Adicionar eSIM”"
+   Description: "Também pode aparecer como “Adicionar plano celular”."
+
+4. "Confirma se o equipamento está desbloqueado"
+   Description: "Mesmo sendo compatível, o telemóvel deve estar desbloqueado para qualquer rede."
+
+Helper text:
+"Se vires a opção de adicionar eSIM, o teu equipamento poderá ser compatível."
+
+3) ImportantNotesSection
+Title:
+"Importante antes de comprares"
+
+Items:
+- "O teu dispositivo deve suportar eSIM"
+- "O teu dispositivo deve estar desbloqueado para rede móvel"
+- "A compatibilidade pode variar conforme o modelo e o país"
+- "Algumas funcionalidades podem depender da operadora"
+- "Em caso de dúvida, fala com o suporte antes de comprar"
+
+Render this as a compact warning/info box.
+
+4) CompatibleDevicesSection
+Section id:
+"device-list"
+
+Title:
+"Dispositivos geralmente compatíveis"
+
+Intro:
+"Consulta abaixo algumas das principais gamas de equipamentos com suporte eSIM."
+
+Use simple brand cards/lists:
+
+Apple:
+- iPhone XS, XS Max, XR e posteriores
+- iPhone SE (2.ª geração) e posteriores
+- iPad Pro (3.ª geração) e posteriores
+- iPad Air (3.ª geração) e posteriores
+- iPad mini (5.ª geração) e posteriores
+- Apple Watch com suporte eSIM, quando aplicável
+
+Samsung:
+- Galaxy S20 e posteriores
+- Galaxy Note20 e posteriores
+- Galaxy Z Fold / Z Flip compatíveis
+- Alguns Galaxy A e Watch compatíveis, consoante o modelo
+
+Google:
+- Pixel 3 e posteriores
+- Pixel Fold
+- Alguns Pixel Watch compatíveis
+
+Outras marcas:
+- Alguns modelos Huawei
+- Alguns modelos OnePlus
+- Alguns modelos Xiaomi
+- Alguns modelos Oppo e Motorola
+
+Note below lists:
+"A compatibilidade exata pode variar por modelo, país e operadora."
+
+5) CompatibilityFAQSection
+Title:
+"Perguntas frequentes sobre compatibilidade"
+
+Items:
+- Question: "O que é um eSIM?"
+  Answer: "Um eSIM é um SIM digital integrado no dispositivo, que permite ativar um plano sem usar chip físico."
+
+- Question: "O meu telemóvel precisa de estar desbloqueado?"
+  Answer: "Sim. Para usares a maioria dos planos eSIM, o dispositivo deve estar desbloqueado para rede móvel."
+
+- Question: "Posso usar eSIM e SIM físico ao mesmo tempo?"
+  Answer: "Em muitos equipamentos compatíveis, sim. Isso depende do modelo e das capacidades dual SIM do dispositivo."
+
+- Question: "Se o meu telemóvel tiver a opção “Adicionar eSIM”, já está tudo certo?"
+  Answer: "É um bom sinal, mas recomendamos confirmar também se o equipamento está desbloqueado e se o teu modelo específico suporta a funcionalidade."
+
+- Question: "Todos os iPhones mais recentes suportam eSIM?"
+  Answer: "Muitos suportam, mas a disponibilidade pode variar por mercado e modelo."
+
+- Question: "Posso comprar antes de confirmar?"
+  Answer: "O ideal é confirmar antes da compra. Se tiveres dúvidas, fala com o suporte."
+
+6) FinalCompatibilityCTASection
+Title:
+"Ainda tens dúvidas sobre o teu dispositivo?"
+
+Subtitle:
+"Podemos ajudar-te a confirmar a compatibilidade antes da compra."
+
+Primary CTA:
+Label: "Falar com suporte"
+Href: "/support"
+
+Secondary CTA:
+Label: "Ver planos"
+Href: "/plans"
+
+Localization requirements:
+- Add all new strings in PT and EN
+- Hook all text into the existing localization/i18n system used by the homepage and plans page
+- Do not hardcode strings directly in components outside the translation structure
+- Preserve the existing language switcher behavior
+
+Safety requirements:
+- Do not change login behavior
+- Do not change admin behavior
+- Do not change order-management logic
+- Do not remove protected routes
+- This is a page refactor/replacement only
+
+Technical implementation requirements:
+- Create modular React components under something like:
+  src/components/compatibility/
+- Keep content in a dedicated content/translation structure
+- Reuse shared header/footer if available
+- Keep visual styling aligned with homepage and plans page
+- Ensure `/compatibility` is the clean destination for compatibility CTAs
+
+Suggested file structure:
+src/
+  components/
+    compatibility/
+      CompatibilityHeroSection.tsx
+      QuickCheckSection.tsx
+      ImportantNotesSection.tsx
+      CompatibleDevicesSection.tsx
+      CompatibilityFAQSection.tsx
+      FinalCompatibilityCTASection.tsx
+  pages/
+      CompatibilityPage.tsx
+
+Also do a cleanup pass:
+- remove or retire old long-form eSIM Guide sections from the compatibility flow
+- remove unused imports/components if old sections are no longer used
+- ensure no blank CTA buttons remain
+- ensure anchor links like #device-list work
+
+Mobile QA requirements:
+- device brand cards/lists stack cleanly
+- quick-check steps remain readable
+- warning box is easy to scan
+- FAQ accordion works well on mobile
+- CTA buttons are easy to tap
+- language switching still works correctly on this page
+
+Definition of done:
+- “Verificar compatibilidade” now routes to a focused `/compatibility` page
+- the page is practical and short, not a long marketing guide
+- device compatibility is easy to understand
+- the page is bilingual PT/EN
+- support and plans CTAs are clear
+- no admin/auth/order behavior is affected
+
+After implementing, provide:
+1. a short summary of what changed
+2. any route/content assumptions made
+3. confirmation that bilingual behavior still works
+4. confirmation that auth/admin/order logic was not altered

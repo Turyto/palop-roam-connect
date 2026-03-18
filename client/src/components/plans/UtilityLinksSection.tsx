@@ -13,14 +13,14 @@ const UtilityLinksSection = () => {
       title: u.card1Title,
       desc: u.card1Desc,
       cta: u.card1Cta,
-      href: '/esim',
+      href: '/compatibility',
     },
     {
       icon: BookOpen,
       title: u.card2Title,
       desc: u.card2Desc,
       cta: u.card2Cta,
-      href: '/esim',
+      href: '/compatibility',
     },
     {
       icon: MessageCircle,
