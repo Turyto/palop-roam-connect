@@ -93,8 +93,8 @@ const OrderHistory = () => {
 
   const handleResendEmail = (orderId: string) => {
     toast({
-      title: "eSIM Details Sent!",
-      description: "Your eSIM activation details have been resent to your email address.",
+      title: o.resendEmailSuccessTitle,
+      description: o.resendEmailSuccessDesc,
     });
     console.log('Resend email for order:', orderId);
   };

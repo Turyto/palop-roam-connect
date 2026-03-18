@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import {
   Clock, CheckCircle, Zap, AlertCircle, QrCode,
-  Download, Copy, Mail, Smartphone, ExternalLink
+  Download, Mail, Smartphone, ExternalLink
 } from "lucide-react";
 import { useLanguage } from "@/contexts/language";
 
@@ -96,7 +96,7 @@ const OrderActivationStateBlock = ({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h4 className="font-semibold text-green-700 text-sm">{o.stateActiveTitle}</h4>
-              <p className="text-xs text-gray-500 mt-0.5">{o.esimReadyDesc}</p>
+              <p className="text-xs text-gray-500 mt-0.5">{o.stateActiveDescShort}</p>
             </div>
             <div className="flex gap-2 shrink-0">
               <Button
