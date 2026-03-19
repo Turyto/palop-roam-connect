@@ -1,4 +1,4 @@
-export type CoverageTab = 'europe' | 'portugal' | 'multiCountry';
+export type CoverageTab = 'europe' | 'portugal';
 
 export interface PlanCard {
   id: string;
@@ -92,45 +92,6 @@ export const planCards: PlanCard[] = [
     coverageLabel: { pt: 'Portugal + Europa', en: 'Portugal + Europe' },
     popular: false,
     href: '/purchase?plan=europe-plus',
-  },
-  {
-    id: 'palop-connect',
-    coverage: 'multiCountry',
-    name: { pt: 'PALOP Connect', en: 'PALOP Connect' },
-    subtitle: { pt: 'Ideal para viagens nas rotas PALOP', en: 'Best for travel across selected PALOP-linked routes' },
-    data: '5 GB',
-    validityDays: '7',
-    validity: { pt: '7 dias', en: '7 days' },
-    price: '€12.50',
-    coverageLabel: { pt: 'Países PALOP selecionados', en: 'Selected PALOP countries' },
-    popular: false,
-    href: '/purchase?plan=palop-connect',
-  },
-  {
-    id: 'diaspora-europe',
-    coverage: 'multiCountry',
-    name: { pt: 'Diaspora Europe', en: 'Diaspora Europe' },
-    subtitle: { pt: 'Ideal para visitas familiares e viagens pela Europa', en: 'Best for family visits and Europe-based travel' },
-    data: '10 GB',
-    validityDays: '30',
-    validity: { pt: '30 dias', en: '30 days' },
-    price: '€27.50',
-    coverageLabel: { pt: 'Europa + países PALOP selecionados', en: 'Europe + selected PALOP-linked countries' },
-    popular: true,
-    href: '/purchase?plan=diaspora-europe',
-  },
-  {
-    id: 'cplp-global',
-    coverage: 'multiCountry',
-    name: { pt: 'CPLP Global', en: 'CPLP Global' },
-    subtitle: { pt: 'Ideal para rotas de viagem de língua portuguesa', en: 'Best for broader Portuguese-speaking travel routes' },
-    data: '10 GB',
-    validityDays: '30',
-    validity: { pt: '30 dias', en: '30 days' },
-    price: '€22.00',
-    coverageLabel: { pt: 'Países CPLP', en: 'CPLP countries' },
-    popular: false,
-    href: '/purchase?plan=cplp-global',
   },
 ];
 

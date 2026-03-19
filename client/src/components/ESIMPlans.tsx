@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ESIMPlan } from "@/pages/Purchase";
-import { Smartphone, Users, Briefcase, Globe } from "lucide-react";
+import { Smartphone, Users } from "lucide-react";
 import CountryFlagChip from "./CountryFlagChip";
 import { coverageClusters } from "@/data/coverageClusters";
 
@@ -55,44 +55,6 @@ const ESIMPlans = ({ onSelectPlan }: ESIMPlansProps) => {
       countries: coverageClusters.find(c => c.id === 'palop-regional')?.countries || [],
       badgeColor: "bg-palop-blue"
     },
-    {
-      id: "diaspora-europe",
-      name: "Diaspora Europe 10GB",
-      clusterName: "Diaspora Europe",
-      tagline: "Perfect for PALOP nationals living or traveling in Europe.",
-      data: "10 GB",
-      days: 30,
-      price: 27.50,
-      currency: "EUR",
-      features: [
-        "10 GB of Internet",
-        "Valid for 30 days",
-        "Europe + Americas coverage",
-        "Diaspora gifting enabled",
-        "Extended validity options"
-      ],
-      countries: coverageClusters.find(c => c.id === 'palop-diaspora')?.countries || [],
-      badgeColor: "bg-palop-yellow"
-    },
-    {
-      id: "cplp-global",
-      name: "CPLP Essential 5GB",
-      clusterName: "CPLP Global",
-      tagline: "Connect across all Portuguese-speaking countries.",
-      data: "5 GB",
-      days: 30,  
-      price: 22.00,
-      currency: "EUR",
-      features: [
-        "5 GB of Internet",
-        "Valid for 30 days",
-        "All CPLP countries",
-        "Cultural connectivity",
-        "Global Portuguese network"
-      ],
-      countries: coverageClusters.find(c => c.id === 'cplp-global')?.countries || [],
-      badgeColor: "bg-red-500"
-    }
   ];
 
   const getIcon = (planId: string) => {
@@ -101,10 +63,6 @@ const ESIMPlans = ({ onSelectPlan }: ESIMPlansProps) => {
         return <Smartphone className="h-12 w-12" />;
       case "palop-regional":
         return <Users className="h-12 w-12" />;
-      case "diaspora-europe":
-        return <Briefcase className="h-12 w-12" />;
-      case "cplp-global":
-        return <Globe className="h-12 w-12" />;
       default:
         return <Smartphone className="h-12 w-12" />;
     }
@@ -116,10 +74,6 @@ const ESIMPlans = ({ onSelectPlan }: ESIMPlansProps) => {
         return "bg-palop-green";
       case "palop-regional":
         return "bg-palop-blue";
-      case "diaspora-europe":
-        return "bg-palop-yellow";
-      case "cplp-global":
-        return "bg-red-500";
       default:
         return "bg-palop-green";
     }

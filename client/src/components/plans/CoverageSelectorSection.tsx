@@ -13,7 +13,6 @@ const CoverageSelectorSection = ({ selectedTab, onTabChange }: CoverageSelectorS
   const tabs: { id: CoverageTab; label: string }[] = [
     { id: 'portugal', label: c.tabPortugal },
     { id: 'europe', label: c.tabEurope },
-    { id: 'multiCountry', label: c.tabMulti },
   ];
 
   return (

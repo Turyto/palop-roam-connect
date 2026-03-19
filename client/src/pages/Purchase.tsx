@@ -119,51 +119,6 @@ const Purchase = () => {
         "No contract required"
       ]
     },
-    {
-      id: "palop-connect",
-      name: "PALOP Connect",
-      data: "5 GB",
-      days: 7,
-      price: 12.50,
-      currency: "EUR",
-      features: [
-        "5 GB of Internet",
-        "Valid for 7 days",
-        "Selected PALOP-linked countries",
-        "Instant QR delivery",
-        "No contract required"
-      ]
-    },
-    {
-      id: "diaspora-europe",
-      name: "Diaspora Europe",
-      data: "10 GB",
-      days: 30,
-      price: 27.50,
-      currency: "EUR",
-      features: [
-        "10 GB of Internet",
-        "Valid for 30 days",
-        "Europe + selected PALOP-linked countries",
-        "Instant QR delivery",
-        "No contract required"
-      ]
-    },
-    {
-      id: "cplp-global",
-      name: "CPLP Global",
-      data: "10 GB",
-      days: 30,
-      price: 22.00,
-      currency: "EUR",
-      features: [
-        "10 GB of Internet",
-        "Valid for 30 days",
-        "CPLP countries coverage",
-        "Instant QR delivery",
-        "No contract required"
-      ]
-    },
     // Legacy eSIM Access plans (preserved for backward compatibility)
     {
       id: "lite",
