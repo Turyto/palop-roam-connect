@@ -121,6 +121,7 @@ async function getPackages(creds: ESIMAccessCredentials, locationCode?: string) 
 }
 
 async function createOrder(orderData: ESIMOrderRequest, creds: ESIMAccessCredentials) {
+  const outOrder = orderData.referenceId ?? `order-${Date.now()}`;
   const payload = {
     packageInfoList: [
       {
@@ -130,7 +131,8 @@ async function createOrder(orderData: ESIMOrderRequest, creds: ESIMAccessCredent
       }
     ],
     userEmail: orderData.customerEmail,
-    outOrder: orderData.referenceId ?? `order-${Date.now()}`,
+    outOrder,
+    transactionId: outOrder,
   };
 
   // Log request payload (no secrets — credentials are in signed headers only)
