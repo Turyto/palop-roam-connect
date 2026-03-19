@@ -1,0 +1,93 @@
+Approved direction: proceed with the active catalog alignment before enabling live provisioning.
+
+Please do this in two phases.
+
+PHASE 1 — update the public catalog to match the real supplier packages
+
+Approved public catalog:
+
+Portugal
+1. portugal-starter → rename to "Portugal Arrival"
+   - data: 1 GB
+   - validity: 7 days
+   - price: €4.99
+   - supplier package code: CKH1002
+
+2. portugal-weekly → rename to "Portugal 5GB"
+   - data: 5 GB
+   - validity: 30 days
+   - price: €8.99
+   - supplier package code: CKH986
+
+3. portugal-monthly → keep but simplify label to "Portugal 10GB"
+   - data: 10 GB
+   - validity: 30 days
+   - price: €16.99
+   - supplier package code: CKH1004
+
+Europe
+4. europe-weekly → rename to "Europe 5GB"
+   - data: 5 GB
+   - validity: 30 days
+   - price: €9.99
+   - supplier package code: P87F6RTKY
+
+5. europe-monthly → rename to "Europe 10GB"
+   - data: 10 GB
+   - validity: 30 days
+   - price: €19.99
+   - supplier package code: P50GVS8GN
+
+6. europe-plus → rename to "Europe 20GB"
+   - data: 20 GB
+   - validity: 30 days
+   - price: €29.99
+   - supplier package code: PHC4X21NC
+
+Tasks in Phase 1
+- Update all public-facing plan content to match the above
+- Update plan cards, comparison areas, purchase handoff labels, selected plan summary, and any checkout-facing display strings
+- Keep PT/EN bilingual behavior intact
+- Remove misleading “weekly” / “monthly” labels where no longer accurate
+- Do not break existing routing or order history
+- Insert or update the esim_packages mappings in Supabase for these 6 active public plans only
+- Return a short report confirming every updated source location and the final inserted mappings
+
+PHASE 2 — wire live provisioning into checkout
+
+After Phase 1 is complete, implement the live provisioning flow using the already working eSIM Access auth.
+
+Requirements
+1. Use payment_intent_id as the idempotent reference_id sent to eSIM Access
+2. Before calling createOrder, check whether the order already has esim_order_id
+   - if yes, do not create a duplicate supplier order
+3. After successful Stripe payment, do:
+   - get-esim-package(plan_id)
+   - esim-access createOrder
+   - write orders.esim_order_id
+   - write orders.esim_status
+   - insert esim_activations row
+   - insert qr_codes row
+4. Use real supplier fields from the response:
+   - esim_order_id
+   - activationCode
+   - qrCodeUrl if present
+   - shortUrl/downloadUrl if present
+   - iccid
+   - provider status
+5. If qrCodeUrl is not present, use the activationCode / LPA string to generate a QR for display
+6. Ensure ConfirmationView and Orders page light up automatically using the existing polling and RLS logic
+7. Do not change auth, admin permissions, Stripe logic, or support flows except where needed for real provisioning
+
+Safety requirements
+- No duplicate supplier orders
+- No fake QR regeneration URLs
+- No status theater
+- Preserve historical orders
+- Preserve admin dashboard and order management
+
+Output needed
+1. final mapping table inserted into esim_packages
+2. exact files changed for provisioning
+3. end-to-end test report for one Portugal order and one Europe order
+4. explicit note of any remaining manual admin step, if any

@@ -6,7 +6,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useESIMAccess } from '@/hooks/useESIMAccess';
 import type { CreateOrderData } from './types';
 
-// Define the order insert type with eSIM fields
 interface OrderInsertWithESIM {
   user_id: string;
   plan_id: string;
@@ -24,6 +23,22 @@ interface OrderInsertWithESIM {
   esim_order_id?: string;
 }
 
+// Extract the relevant eSIM fields from the nested eSIM Access API response.
+// Edge fn returns: { success, data: <raw_api_response> }
+// Raw API response: { success, obj: { esimTranNo, packageInfoList: [{ esimList: [{ iccid, activationCode, qrCodeUrl, shortUrl, downloadUrl }] }] } }
+function parseESIMResponse(esimOrderData: any) {
+  const obj = esimOrderData?.obj;
+  const esimTranNo: string | undefined = obj?.esimTranNo;
+  const esimEntry = obj?.packageInfoList?.[0]?.esimList?.[0];
+  return {
+    esimTranNo,
+    iccid: esimEntry?.iccid as string | undefined,
+    activationCode: esimEntry?.activationCode as string | undefined,
+    qrCodeUrl: esimEntry?.qrCodeUrl as string | undefined,
+    shortUrl: (esimEntry?.shortUrl || esimEntry?.downloadUrl || esimEntry?.url) as string | undefined,
+  };
+}
+
 export const useCreateOrderWithESIM = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -34,59 +49,77 @@ export const useCreateOrderWithESIM = () => {
     mutationFn: async (orderData: CreateOrderData) => {
       if (!user) throw new Error('No active session. Please try again.');
 
-      // Use the explicitly passed email, or fall back to the signed-in user's email
       const customerEmail = orderData.customerEmail || user.email || '';
+      const paymentIntentId = orderData.payment_intent_id;
 
       console.log('Creating order with eSIM integration:', orderData);
 
-      // Check if this plan has eSIM Access integration using edge function
-      const { data: packageResponse, error: packageError } = await supabase.functions.invoke('get-esim-package', {
+      // --- IDEMPOTENCY CHECK ---
+      // If an order with this payment_intent_id already exists, return it immediately
+      // to prevent duplicate supplier orders on network retries.
+      if (paymentIntentId) {
+        const { data: existingOrders } = await supabase
+          .from('orders')
+          .select('id, esim_order_id, esim_status')
+          .eq('payment_intent_id', paymentIntentId)
+          .limit(1);
+
+        if (existingOrders && existingOrders.length > 0) {
+          const existing = existingOrders[0];
+          console.log('Idempotency: order already exists for this payment intent:', existing);
+          // Return the existing order — do not create a duplicate supplier order
+          return {
+            order: existing,
+            esimError: null,
+            esimSuccess: !!existing.esim_order_id,
+          };
+        }
+      }
+
+      // --- FETCH eSIM PACKAGE MAPPING ---
+      const { data: packageResponse } = await supabase.functions.invoke('get-esim-package', {
         body: { plan_id: orderData.plan_id }
       });
 
       const packageData = packageResponse?.data;
-      let esimOrderData = null;
-      let esimError = null;
+      let esimOrderData: any = null;
+      let esimError: string | null = null;
+      let parsedESIM: ReturnType<typeof parseESIMResponse> | null = null;
 
-      if (packageData && !packageError) {
+      // --- PROVISION eSIM WITH SUPPLIER ---
+      if (packageData?.esim_access_package_id) {
         console.log('Found eSIM package mapping:', packageData);
-        
+
         try {
-          // Try to create eSIM order
           const esimResponse = await createESIMOrder({
             packageId: packageData.esim_access_package_id,
-            customerEmail: customerEmail,
+            customerEmail,
             customerName: user.user_metadata?.full_name || customerEmail,
-            referenceId: `temp-${Date.now()}` // Temporary reference
+            // Use payment_intent_id as the idempotent outOrder reference
+            referenceId: paymentIntentId ?? `order-${Date.now()}`,
           });
 
           if (esimResponse.success && esimResponse.data) {
             esimOrderData = esimResponse.data;
-            console.log('eSIM order created successfully:', esimOrderData);
-            console.log('Full eSIM response data:', JSON.stringify(esimOrderData, null, 2));
-            
-            // Log all URL fields to understand the structure
-            console.log('🔍 Available URL fields in eSIM response after order creation:');
-            console.log('- shortUrl:', esimOrderData.shortUrl);
-            console.log('- downloadUrl:', esimOrderData.downloadUrl);
-            console.log('- url:', esimOrderData.url);
-            console.log('- qrCodeUrl:', esimOrderData.qrCodeUrl);
-            console.log('- activationUrl:', esimOrderData.activationUrl);
-            console.log('- activationCode (LPA):', esimOrderData.activationCode);
-            console.log('- iccid:', esimOrderData.iccid);
+            parsedESIM = parseESIMResponse(esimOrderData);
+            console.log('eSIM order created. Supplier order ID:', parsedESIM.esimTranNo);
+            console.log('ICCID:', parsedESIM.iccid);
+            console.log('Activation code:', parsedESIM.activationCode);
+            console.log('QR URL:', parsedESIM.qrCodeUrl);
+            console.log('Short URL:', parsedESIM.shortUrl);
           } else {
-            console.error('eSIM order creation failed:', esimResponse);
             esimError = esimResponse.error || 'Failed to create eSIM order';
+            console.error('eSIM order creation failed:', esimResponse);
           }
-        } catch (error) {
-          console.error('eSIM order creation error:', error);
+        } catch (error: any) {
           esimError = error.message || 'eSIM provisioning failed';
+          console.error('eSIM order creation error:', error);
         }
       } else {
-        console.log('No eSIM package mapping found or error:', packageError);
+        console.log('No eSIM package mapping found for plan:', orderData.plan_id);
       }
 
-      // Create the local order regardless of eSIM status
+      // --- CREATE LOCAL ORDER ---
       const order: OrderInsertWithESIM = {
         user_id: user.id,
         plan_id: orderData.plan_id,
@@ -95,15 +128,15 @@ export const useCreateOrderWithESIM = () => {
         duration_days: orderData.duration_days,
         price: orderData.price,
         currency: orderData.currency || 'EUR',
-        status: orderData.payment_intent_id ? 'completed' : 'pending',
-        payment_status: orderData.payment_intent_id ? 'succeeded' : 'pending',
+        status: paymentIntentId ? 'completed' : 'pending',
+        payment_status: paymentIntentId ? 'succeeded' : 'pending',
         customer_email: customerEmail || undefined,
-        payment_intent_id: orderData.payment_intent_id,
+        payment_intent_id: paymentIntentId,
         ...(packageData && {
           esim_package_id: packageData.esim_access_package_id,
-          esim_status: esimOrderData ? 'provisioned' : 'failed',
-          esim_order_id: esimOrderData?.id || esimOrderData?.orderId
-        })
+          esim_status: parsedESIM?.esimTranNo ? 'provisioned' : 'failed',
+          esim_order_id: parsedESIM?.esimTranNo,
+        }),
       };
 
       console.log('Inserting order into database:', order);
@@ -121,7 +154,7 @@ export const useCreateOrderWithESIM = () => {
 
       console.log('Local order created:', orderResult);
 
-      // Create order item
+      // --- ORDER ITEM ---
       const { error: itemError } = await supabase
         .from('order_items')
         .insert({
@@ -132,7 +165,7 @@ export const useCreateOrderWithESIM = () => {
           duration_days: orderData.duration_days,
           unit_price: orderData.price,
           quantity: 1,
-          total_price: orderData.price
+          total_price: orderData.price,
         });
 
       if (itemError) {
@@ -140,25 +173,8 @@ export const useCreateOrderWithESIM = () => {
         throw new Error(`Order item creation failed: ${itemError.message}`);
       }
 
-      // If we have eSIM data, create the activation record with proper URL handling
-      if (esimOrderData && packageData) {
-        console.log('Creating eSIM activation with enhanced URL mapping:', esimOrderData);
-        
-        // Priority order: shortUrl > downloadUrl > url > qrCodeUrl > activationUrl
-        const webActivationUrl = esimOrderData.shortUrl || 
-                                 esimOrderData.downloadUrl || 
-                                 esimOrderData.url ||
-                                 esimOrderData.qrCodeUrl ||
-                                 esimOrderData.activationUrl;
-        
-        // The activationCode contains the LPA string for QR code scanning
-        const lpaActivationCode = esimOrderData.activationCode;
-        
-        console.log('🎯 Selected URLs and Codes:');
-        console.log('- Web URL (for browser):', webActivationUrl);
-        console.log('- LPA Code (for QR):', lpaActivationCode);
-        console.log('- ICCID:', esimOrderData.iccid);
-        
+      // --- eSIM ACTIVATION RECORD ---
+      if (parsedESIM && packageData) {
         const { error: activationError } = await supabase
           .from('esim_activations')
           .insert({
@@ -166,54 +182,48 @@ export const useCreateOrderWithESIM = () => {
             user_id: user.id,
             status: 'pending',
             provisioning_status: 'completed',
-            activation_url: webActivationUrl, // Web URL for browser access
-            iccid: esimOrderData.iccid,
-            activation_code: lpaActivationCode, // LPA string for QR code
-            qr_code_data: lpaActivationCode, // QR code should contain LPA string
+            activation_url: parsedESIM.shortUrl,
+            iccid: parsedESIM.iccid,
+            activation_code: parsedESIM.activationCode,
+            qr_code_data: parsedESIM.activationCode,
             provisioning_log: {
-              esim_order_id: esimOrderData.id || esimOrderData.orderId,
+              esim_order_id: parsedESIM.esimTranNo,
               created_at: new Date().toISOString(),
-              api_response: esimOrderData,
-              selected_web_url: webActivationUrl,
-              lpa_code: lpaActivationCode,
-              url_selection_priority: {
-                shortUrl: esimOrderData.shortUrl,
-                downloadUrl: esimOrderData.downloadUrl,
-                url: esimOrderData.url,
-                qrCodeUrl: esimOrderData.qrCodeUrl,
-                activationUrl: esimOrderData.activationUrl,
-                selected: webActivationUrl
-              }
-            }
+              package_code: packageData.esim_access_package_id,
+              iccid: parsedESIM.iccid,
+              qr_code_url: parsedESIM.qrCodeUrl,
+              short_url: parsedESIM.shortUrl,
+              lpa_code: parsedESIM.activationCode,
+            },
           });
 
         if (activationError) {
           console.error('Error creating eSIM activation:', activationError);
-          // Don't throw here - order was created successfully
         } else {
-          console.log('✅ eSIM activation record created successfully');
+          console.log('eSIM activation record created');
         }
 
-        // Create QR code with LPA activation code (for device scanning)
+        // --- QR CODE RECORD ---
         const { error: qrError } = await supabase
           .from('qr_codes')
           .insert({
             order_id: orderResult.id,
             user_id: user.id,
-            esim_id: null, // Will be linked later
-            activation_url: lpaActivationCode, // QR code contains LPA string
-            qr_image_url: esimOrderData.qrCodeUrl,
-            status: 'active'
+            esim_id: null,
+            // qr_image_url: use supplier QR URL when available; otherwise null (UI will show LPA code)
+            qr_image_url: parsedESIM.qrCodeUrl || null,
+            // activation_url stores the LPA string for manual entry / QR generation
+            activation_url: parsedESIM.activationCode || parsedESIM.shortUrl || null,
+            status: 'active',
           });
 
         if (qrError) {
-          console.error('Error creating QR code:', qrError);
-          // Don't throw here - order was created successfully
+          console.error('Error creating QR code record:', qrError);
         } else {
-          console.log('✅ QR code record created successfully');
+          console.log('QR code record created');
         }
       } else if (packageData && esimError) {
-        // Create a failed eSIM activation record for debugging
+        // Record the failure for debugging / retry
         const { error: activationError } = await supabase
           .from('esim_activations')
           .insert({
@@ -224,61 +234,62 @@ export const useCreateOrderWithESIM = () => {
             provisioning_log: {
               error: esimError,
               failed_at: new Date().toISOString(),
-              package_id: packageData.esim_access_package_id
-            }
+              package_code: packageData.esim_access_package_id,
+              payment_intent_id: paymentIntentId,
+            },
           });
 
         if (activationError) {
           console.error('Error creating failed eSIM activation record:', activationError);
-          // Don't throw here - order was created successfully
         }
       }
 
-      console.log('Order creation completed successfully');
-      
-      // Return both the order and any eSIM error for user feedback
-      return { 
-        order: orderResult, 
-        esimError: esimError,
-        esimSuccess: !!esimOrderData
+      console.log('Order creation completed');
+
+      return {
+        order: orderResult,
+        esimError,
+        esimSuccess: !!parsedESIM?.esimTranNo,
       };
     },
+
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
       queryClient.invalidateQueries({ queryKey: ['customer-qr-codes'] });
-      
+
       if (result.esimSuccess) {
         toast({
-          title: "Order Created Successfully!",
-          description: `Order ${result.order.id} has been created with real eSIM provisioning.`,
+          title: 'Order Created Successfully!',
+          description: `Your eSIM has been provisioned. Check your order confirmation for activation details.`,
         });
       } else if (result.esimError) {
         toast({
-          title: "Order Created with eSIM Warning",
-          description: `Order was created, but eSIM provisioning failed: ${result.esimError}`,
-          variant: "destructive",
+          title: 'Order Created — eSIM Pending',
+          description: `Your payment was successful. eSIM provisioning will complete shortly. Error: ${result.esimError}`,
+          variant: 'destructive',
         });
       } else {
         toast({
-          title: "Order Created",
-          description: `Order ${result.order.id} has been created successfully.`,
+          title: 'Order Created',
+          description: `Your order has been created successfully.`,
         });
       }
     },
-    onError: (error) => {
+
+    onError: (error: any) => {
       console.error('Order creation error:', error);
       toast({
-        title: "Order Creation Failed",
+        title: 'Order Creation Failed',
         description: error.message,
-        variant: "destructive",
+        variant: 'destructive',
       });
-    }
+    },
   });
 
   return {
     createOrder: createOrderMutation.mutate,
     createOrderAsync: createOrderMutation.mutateAsync,
-    isCreatingOrder: createOrderMutation.isPending
+    isCreatingOrder: createOrderMutation.isPending,
   };
 };

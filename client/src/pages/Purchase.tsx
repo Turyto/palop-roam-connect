@@ -28,31 +28,16 @@ const Purchase = () => {
 
   // Pre-defined plans — new public plans + legacy eSIM Access plans
   const availablePlans: ESIMPlan[] = [
-    // New public plans (from /plans page)
+    // Active public plans (from /plans page)
     {
       id: "portugal-starter",
-      name: "Portugal Starter",
-      data: "2 GB",
-      days: 3,
+      name: "Portugal Arrival",
+      data: "1 GB",
+      days: 7,
       price: 4.99,
       currency: "EUR",
       features: [
-        "2 GB of Internet",
-        "Valid for 3 days",
-        "Portugal coverage",
-        "Instant QR delivery",
-        "No contract required"
-      ]
-    },
-    {
-      id: "portugal-weekly",
-      name: "Portugal Weekly",
-      data: "5 GB",
-      days: 7,
-      price: 8.99,
-      currency: "EUR",
-      features: [
-        "5 GB of Internet",
+        "1 GB of Internet",
         "Valid for 7 days",
         "Portugal coverage",
         "Instant QR delivery",
@@ -60,8 +45,23 @@ const Purchase = () => {
       ]
     },
     {
+      id: "portugal-weekly",
+      name: "Portugal 5GB",
+      data: "5 GB",
+      days: 30,
+      price: 8.99,
+      currency: "EUR",
+      features: [
+        "5 GB of Internet",
+        "Valid for 30 days",
+        "Portugal coverage",
+        "Instant QR delivery",
+        "No contract required"
+      ]
+    },
+    {
       id: "portugal-monthly",
-      name: "Portugal Monthly",
+      name: "Portugal 10GB",
       data: "10 GB",
       days: 30,
       price: 16.99,
@@ -76,22 +76,22 @@ const Purchase = () => {
     },
     {
       id: "europe-weekly",
-      name: "Europe Weekly",
+      name: "Europe 5GB",
       data: "5 GB",
-      days: 7,
+      days: 30,
       price: 9.99,
       currency: "EUR",
       features: [
         "5 GB of Internet",
-        "Valid for 7 days",
-        "Portugal + Europe coverage",
+        "Valid for 30 days",
+        "Portugal + Europe (30+ areas)",
         "Instant QR delivery",
         "No contract required"
       ]
     },
     {
       id: "europe-monthly",
-      name: "Europe Monthly",
+      name: "Europe 10GB",
       data: "10 GB",
       days: 30,
       price: 19.99,
@@ -99,14 +99,14 @@ const Purchase = () => {
       features: [
         "10 GB of Internet",
         "Valid for 30 days",
-        "Portugal + Europe coverage",
+        "Portugal + Europe (30+ areas)",
         "Instant QR delivery",
         "No contract required"
       ]
     },
     {
       id: "europe-plus",
-      name: "Europe Plus",
+      name: "Europe 20GB",
       data: "20 GB",
       days: 30,
       price: 29.99,
@@ -114,7 +114,7 @@ const Purchase = () => {
       features: [
         "20 GB of Internet",
         "Valid for 30 days",
-        "Portugal + Europe coverage",
+        "Portugal + Europe (30+ areas)",
         "Instant QR delivery",
         "No contract required"
       ]

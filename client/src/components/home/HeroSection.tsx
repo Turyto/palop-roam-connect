@@ -91,8 +91,8 @@ const PhoneMockup = () => (
 
         <div className="w-full space-y-2">
           <div className="bg-palop-green/10 border border-palop-green/20 rounded-lg px-3 py-2 flex items-center justify-between">
-            <span className="text-xs font-semibold text-palop-green">Plano Ligação</span>
-            <span className="text-xs text-gray-600">5 GB · 7 dias</span>
+            <span className="text-xs font-semibold text-palop-green">Europa 5GB</span>
+            <span className="text-xs text-gray-600">5 GB · 30 dias</span>
           </div>
           <div className="bg-gray-50 rounded-lg px-3 py-2 text-center">
             <span className="text-[10px] text-gray-500">Entrega por email · Ativação imediata</span>
@@ -115,7 +115,7 @@ const PhoneMockup = () => (
 
     <div className="absolute -left-4 bottom-20 bg-white border border-gray-100 shadow-lg rounded-xl px-3 py-2 text-center">
       <div className="text-[10px] font-bold text-palop-green">€9.99</div>
-      <div className="text-[9px] text-gray-500">7 dias</div>
+      <div className="text-[9px] text-gray-500">30 dias</div>
     </div>
   </div>
 );
