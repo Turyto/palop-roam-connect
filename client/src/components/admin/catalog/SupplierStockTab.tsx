@@ -17,11 +17,19 @@ import {
 // ---------------------------------------------------------------------------
 // Status helpers
 // ---------------------------------------------------------------------------
-const STATUS_CONFIG: Record<SupplierItemStatus, { label: string; className: string; icon: React.ReactNode }> = {
-  available: { label: 'Available', className: 'bg-green-100 text-green-800', icon: <CheckCircle className="h-3 w-3" /> },
-  active:    { label: 'Active',    className: 'bg-blue-100 text-blue-800',  icon: <Wifi className="h-3 w-3" /> },
-  expired:   { label: 'Expired',   className: 'bg-red-100 text-red-800',   icon: <XCircle className="h-3 w-3" /> },
-  disabled:  { label: 'Disabled',  className: 'bg-gray-100 text-gray-600', icon: <Ban className="h-3 w-3" /> },
+const STATUS_CONFIG: Record<SupplierItemStatus, {
+  label: string; className: string; icon: React.ReactNode; tooltip?: string;
+}> = {
+  available:      { label: 'Available',       className: 'bg-green-100 text-green-800',  icon: <CheckCircle className="h-3 w-3" /> },
+  active:         { label: 'Active',           className: 'bg-blue-100 text-blue-800',   icon: <Wifi className="h-3 w-3" /> },
+  expired_used:   { label: 'Expired (Used)',   className: 'bg-orange-100 text-orange-800', icon: <Clock className="h-3 w-3" /> },
+  expired_unused: {
+    label: 'Expired (Unused)',
+    className: 'bg-red-100 text-red-800',
+    icon: <XCircle className="h-3 w-3" />,
+    tooltip: 'eSIM was never activated and is now no longer usable (lost stock)',
+  },
+  disabled: { label: 'Disabled', className: 'bg-gray-100 text-gray-600', icon: <Ban className="h-3 w-3" /> },
 };
 
 // ---------------------------------------------------------------------------
@@ -132,7 +140,7 @@ function DetailsDrawer({ item, onClose }: { item: SupplierInventoryItem; onClose
         {/* Status */}
         <div>
           <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Status</h3>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2 mb-1">
             <Badge className={`${cfg.className} flex items-center gap-1 text-xs`}>
               {cfg.icon} {cfg.label}
             </Badge>
@@ -142,8 +150,16 @@ function DetailsDrawer({ item, onClose }: { item: SupplierInventoryItem; onClose
             {d.smdpStatus && (
               <Badge variant="outline" className="text-xs text-gray-500">{d.smdpStatus}</Badge>
             )}
-            <span className="text-xs text-gray-400">activeType={item.raw_payload ? (item.raw_payload as any).activeType ?? '—' : '—'}</span>
           </div>
+          <p className="text-xs text-gray-400">
+            Raw activeType: <span className="font-mono">{(item.raw_payload as any)?.activeType ?? '—'}</span>
+          </p>
+          {cfg.tooltip && (
+            <p className="text-xs text-red-600 mt-1 flex items-start gap-1">
+              <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
+              {cfg.tooltip}
+            </p>
+          )}
         </div>
 
         {/* Identity */}
@@ -287,16 +303,24 @@ const SupplierStockTab = () => {
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {[
-          { label: 'Total',    value: summary.total,                     color: 'text-gray-900',   testId: 'stock-total' },
-          { label: 'Available',value: summary.available,                 color: 'text-green-700',  testId: 'stock-available' },
-          { label: 'Active',   value: summary.active,                    color: 'text-blue-700',   testId: 'stock-active' },
-          { label: 'Expired',  value: summary.expired,                   color: 'text-red-700',    testId: 'stock-expired' },
-          { label: 'Disabled', value: summary.disabled,                  color: 'text-gray-500',   testId: 'stock-disabled' },
-          { label: 'Unmatched',value: summary.unmatched,                 color: 'text-orange-600', testId: 'stock-unmatched' },
-        ].map(({ label, value, color, testId }) => (
+          { label: 'Total',            value: summary.total,           color: 'text-gray-900',   testId: 'stock-total' },
+          { label: 'Available',        value: summary.available,       color: 'text-green-700',  testId: 'stock-available' },
+          { label: 'Active',           value: summary.active,          color: 'text-blue-700',   testId: 'stock-active' },
+          { label: 'Expired (Used)',   value: summary.expired_used,    color: 'text-orange-600', testId: 'stock-expired-used' },
+          { label: 'Expired (Unused)', value: summary.expired_unused,  color: 'text-red-700',    testId: 'stock-expired-unused',
+            tooltip: 'Never activated — lost stock' },
+          { label: 'Unmatched',        value: summary.unmatched,       color: 'text-gray-500',   testId: 'stock-unmatched' },
+        ].map(({ label, value, color, testId, tooltip }) => (
           <Card key={label}>
             <CardHeader className="pb-1 pt-3 px-4">
-              <CardTitle className="text-xs font-medium text-gray-500">{label}</CardTitle>
+              <CardTitle className="text-xs font-medium text-gray-500 flex items-center gap-1">
+                {label}
+                {tooltip && (
+                  <span title={tooltip} className="cursor-help">
+                    <HelpCircle className="h-3 w-3 text-gray-400" />
+                  </span>
+                )}
+              </CardTitle>
             </CardHeader>
             <CardContent className="pb-3 px-4">
               <div className={`text-2xl font-bold ${color}`} data-testid={testId}>{value}</div>
@@ -317,12 +341,13 @@ const SupplierStockTab = () => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
           <Select value={filters.status ?? 'all'} onValueChange={(v) => setFilters(f => ({ ...f, status: v as any }))}>
-            <SelectTrigger className="w-36" data-testid="filter-status"><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectTrigger className="w-44" data-testid="filter-status"><SelectValue placeholder="Status" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All statuses</SelectItem>
               <SelectItem value="available">Available</SelectItem>
               <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="expired">Expired</SelectItem>
+              <SelectItem value="expired_used">Expired (Used)</SelectItem>
+              <SelectItem value="expired_unused">Expired (Unused)</SelectItem>
               <SelectItem value="disabled">Disabled</SelectItem>
             </SelectContent>
           </Select>
@@ -427,7 +452,10 @@ const SupplierStockTab = () => {
                     {/* Status */}
                     <TableCell>
                       <div className="flex flex-col gap-1">
-                        <Badge className={`${cfg.className} flex items-center gap-1 w-fit text-xs`}>
+                        <Badge
+                          className={`${cfg.className} flex items-center gap-1 w-fit text-xs`}
+                          title={cfg.tooltip}
+                        >
                           {cfg.icon} {cfg.label}
                         </Badge>
                         {d.esimStatus && (

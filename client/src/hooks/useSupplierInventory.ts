@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 // Types
 // ---------------------------------------------------------------------------
 
-export type SupplierItemStatus = 'available' | 'active' | 'expired' | 'disabled';
+export type SupplierItemStatus = 'available' | 'active' | 'expired_used' | 'expired_unused' | 'disabled';
 
 export interface SupplierInventoryItem {
   id: string;
@@ -178,12 +178,13 @@ export const useSupplierInventory = (filters: SupplierInventoryFilters = {}) => 
 
   // Derived summary counts from allItems
   const summary = {
-    total:     allItems.length,
-    available: allItems.filter(i => i.status === 'available').length,
-    active:    allItems.filter(i => i.status === 'active').length,
-    expired:   allItems.filter(i => i.status === 'expired').length,
-    disabled:  allItems.filter(i => i.status === 'disabled').length,
-    unmatched: allItems.filter(i => !i.matched_plan_id).length,
+    total:          allItems.length,
+    available:      allItems.filter(i => i.status === 'available').length,
+    active:         allItems.filter(i => i.status === 'active').length,
+    expired_used:   allItems.filter(i => i.status === 'expired_used').length,
+    expired_unused: allItems.filter(i => i.status === 'expired_unused').length,
+    disabled:       allItems.filter(i => i.status === 'disabled').length,
+    unmatched:      allItems.filter(i => !i.matched_plan_id).length,
   };
 
   const latestSync: SupplierInventorySync | null = syncRuns[0] ?? null;

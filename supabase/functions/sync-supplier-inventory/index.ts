@@ -5,11 +5,11 @@
 // supplier_inventory_items. Writes audit rows to supplier_inventory_syncs.
 //
 // STATUS MAPPING (canonical — mirrors esim-access/index.ts)
-//   activeType 1 → 'available'  unused, sellable
-//   activeType 2 → 'active'     in use by a customer
-//   activeType 3 → 'expired'    past validity period
-//   activeType 4 → 'disabled'   revoked / admin disabled
-//   any other  → 'disabled'     safe default
+//   activeType 1 → 'available'       UNUSED — ready to sell
+//   activeType 2 → 'active'          GOT_RESOURCE — assigned / in use
+//   activeType 3 → 'expired_used'    USED_EXPIRED — activated then expired (normal lifecycle)
+//   activeType 4 → 'expired_unused'  UNUSED_EXPIRED — never activated, now expired (lost stock)
+//   any other  → 'disabled'          revoked / admin disabled / unknown
 // ---------------------------------------------------------------------------
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -27,8 +27,8 @@ const PAGE_SIZE = 100;
 const ACTIVE_TYPE_STATUS: Record<number, string> = {
   1: 'available',
   2: 'active',
-  3: 'expired',
-  4: 'disabled',
+  3: 'expired_used',
+  4: 'expired_unused',
 };
 
 function mapActiveType(activeType: number): string {
