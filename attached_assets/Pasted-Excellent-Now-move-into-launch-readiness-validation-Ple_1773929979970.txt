@@ -1,0 +1,54 @@
+Excellent. Now move into launch-readiness validation.
+
+Please do not make broad structural changes. I want a controlled validation pass and a concise production-readiness report.
+
+PHASE 3 — live validation and hardening
+
+1. Verify end-to-end with the current live implementation for these two plans:
+   - portugal-starter / Portugal Arrival / CKH1002
+   - europe-weekly / Europe 5GB / P87F6RTKY
+
+2. For each, validate and report:
+   - Stripe payment succeeded
+   - orders.esim_order_id written
+   - orders.esim_status written
+   - esim_activations row created
+   - qr_codes row created
+   - iccid populated
+   - activation_code populated
+   - qrCodeUrl populated or not populated
+   - confirmation page behavior
+   - orders page behavior
+   - admin dashboard visibility
+
+3. Audit the exact status transitions now in live flow:
+   - what initial status is written immediately after payment
+   - what state the customer sees on confirmation
+   - what state the customer sees on /orders
+   - whether check-esim-status is needed to promote any later state
+
+4. Verify guest recovery path again:
+   - immediate session access to /orders
+   - magic-link re-entry after session loss
+   - confirm the redirect lands in the correct page in this Replit environment
+
+5. Review the QR display logic:
+   - if qrCodeUrl exists, confirm the UI shows the real QR image correctly
+   - if qrCodeUrl is null, confirm whether current UI presents the LPA/manual activation path clearly enough
+   - recommend any small UX fix only if needed
+
+6. Review remaining operational risks:
+   - plan_inventory not checked pre-purchase
+   - package price drift risk
+   - eSIM Access failure after payment
+   - partial write recovery
+   - guest order retrieval edge cases
+
+7. Return a production-readiness report with exactly 3 sections:
+   A. Confirmed working
+   B. Risks still open
+   C. Recommended final pre-publish fixes (only high-value, minimal items)
+
+Do not redesign pages unless a blocker is found.
+Do not remove any current working logic.
+Focus on validation, edge cases, and launch readiness.

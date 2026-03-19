@@ -21,6 +21,7 @@ interface OrderInsertWithESIM {
   esim_package_id?: string;
   esim_status?: string;
   esim_order_id?: string;
+  esim_delivered_at?: string;
 }
 
 // Extract the relevant eSIM fields from the nested eSIM Access API response.
@@ -136,6 +137,9 @@ export const useCreateOrderWithESIM = () => {
           esim_package_id: packageData.esim_access_package_id,
           esim_status: parsedESIM?.esimTranNo ? 'provisioned' : 'failed',
           esim_order_id: parsedESIM?.esimTranNo,
+          ...(parsedESIM?.esimTranNo && {
+            esim_delivered_at: new Date().toISOString(),
+          }),
         }),
       };
 
