@@ -6,8 +6,12 @@ interface PALOPConnectivityMapProps {
   mapboxToken?: string;
 }
 
-const PALOPConnectivityMap: React.FC<PALOPConnectivityMapProps> = ({ 
-  mapboxToken = "pk.eyJ1IjoidHVyeXRvIiwiYSI6ImNtYnh6bzNkMDFhNTQyd3MyNmIwbWRkZW4ifQ.TBkW_lOth0qLr8W8aXQd7A"
+const MAPBOX_TOKEN =
+  import.meta.env.VITE_MAPBOX_TOKEN ||
+  "pk.eyJ1IjoidHVyeXRvIiwiYSI6ImNtYnh6bzNkMDFhNTQyd3MyNmIwbWRkZW4ifQ.TBkW_lOth0qLr8W8aXQd7A";
+
+const PALOPConnectivityMap: React.FC<PALOPConnectivityMapProps> = ({
+  mapboxToken = MAPBOX_TOKEN,
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
