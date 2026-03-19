@@ -191,6 +191,92 @@ async function createOrder(orderData: ESIMOrderRequest, creds: ESIMAccessCredent
   }
 }
 
+// ---------------------------------------------------------------------------
+// STATUS MAPPING — eSIM Access activeType → internal status
+// ---------------------------------------------------------------------------
+// This is the single authoritative mapping. It is used by:
+//   - listESIMs() below (returned in each item for the sync function to consume)
+//   - sync-supplier-inventory edge function (applies the same constant)
+//
+// eSIM Access activeType values (from API docs):
+//   1 = Available  — unused, not yet assigned to a customer; sellable
+//   2 = Active     — assigned and currently in use by a customer
+//   3 = Expired    — past validity period; no longer usable
+//   4 = Disabled   — administratively revoked or disabled
+//   * = Unknown    — any unrecognized value; treated as 'disabled' for safety
+// ---------------------------------------------------------------------------
+const ESIM_ACCESS_ACTIVE_TYPE_MAP: Record<number, string> = {
+  1: 'available',
+  2: 'active',
+  3: 'expired',
+  4: 'disabled',
+};
+
+function mapActiveType(activeType: number): string {
+  return ESIM_ACCESS_ACTIVE_TYPE_MAP[activeType] ?? 'disabled';
+}
+
+async function listESIMs(
+  creds: ESIMAccessCredentials,
+  pageNum: number = 1,
+  pageSize: number = 100,
+  packageCode?: string,
+) {
+  const requestPayload: Record<string, any> = { pageNum, pageSize };
+  if (packageCode) requestPayload.packageCode = packageCode;
+
+  console.log(`[list-esims] page=${pageNum} pageSize=${pageSize} packageCode=${packageCode ?? '(all)'}`);
+  try {
+    const body = JSON.stringify(requestPayload);
+    const headers = await buildESIMHeaders(creds);
+    const res = await fetch(`${ESIM_ACCESS_BASE_URL}/esim/list`, {
+      method: 'POST',
+      headers,
+      body,
+    });
+    const text = await res.text();
+    console.log(`[list-esims] supplier status=${res.status} bodyLength=${text.length}`);
+    let data: any;
+    try { data = JSON.parse(text); } catch { data = { rawResponse: text }; }
+
+    if (data?.success !== true) {
+      console.error(
+        `[list-esims] supplier error — status=${res.status} ` +
+        `errorCode=${data?.errorCode} errorMsg=${data?.errorMsg} body=${text}`
+      );
+      return {
+        success: false,
+        error: data?.errorMsg ?? `HTTP ${res.status}`,
+        errorCode: data?.errorCode,
+        data,
+      };
+    }
+
+    // Normalize each item: map activeType → status string
+    const rawItems: any[] = data?.obj?.esimList ?? data?.obj ?? [];
+    const items = rawItems.map((item: any) => ({
+      ...item,
+      _normalizedStatus: mapActiveType(item.activeType),
+      _isSellable: item.activeType === 1,
+    }));
+
+    console.log(
+      `[list-esims] success — page=${pageNum} itemCount=${items.length} ` +
+      `totalCount=${data?.obj?.total ?? 'unknown'}`
+    );
+    return {
+      success: true,
+      items,
+      total: data?.obj?.total ?? items.length,
+      hasMore: items.length === pageSize,
+      data,
+    };
+  } catch (e: any) {
+    console.error(`[list-esims] exception — message=${e.message} stack=${e.stack}`);
+    return { success: false, error: e.message };
+  }
+}
+
 async function getOrder(esimTranNo: string, creds: ESIMAccessCredentials) {
   console.log(`[get-order] querying supplier — esimTranNo=${esimTranNo}`);
   try {
@@ -281,6 +367,14 @@ Deno.serve(async (req: Request): Promise<Response> => {
         break;
       case 'download-esim':
         response = await getOrder(body.orderId ?? body.esimTranNo, creds);
+        break;
+      case 'list-esims':
+        response = await listESIMs(
+          creds,
+          body.pageNum ?? 1,
+          body.pageSize ?? 100,
+          body.packageCode,
+        );
         break;
       default:
         console.error(`[esim-access] unknown action="${action}" from user=${user.email}`);
