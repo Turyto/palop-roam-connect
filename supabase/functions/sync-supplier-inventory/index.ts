@@ -195,17 +195,21 @@ Deno.serve(async (req: Request): Promise<Response> => {
     // Auth — raw HTTP to /auth/v1/user (same pattern as esim-access)
     // -----------------------------------------------------------------------
     const authHeader = req.headers.get('authorization') ?? '';
-    console.log(`[sync] auth header present=${authHeader.startsWith('Bearer ')}`);
-    if (!authHeader.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
+    const headerOk = authHeader.startsWith('Bearer ');
+    console.log(`[sync] auth header present=${headerOk} rawValue=${authHeader.slice(0, 30)}`);
+    if (!headerOk) {
+      console.error('[sync] BRANCH: missing_auth_header — returning 401');
+      return new Response(JSON.stringify({ success: false, error: 'missing_auth_header' }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
     const token = authHeader.replace('Bearer ', '');
+    console.log(`[sync] token prefix=${token.slice(0, 40)}`);
     const user = await verifyUser(supabaseUrl, serviceKey, token);
     console.log(`[sync] user verified=${!!user} id=${user?.id ?? 'null'} email=${user?.email ?? 'null'}`);
     if (!user) {
-      return new Response(JSON.stringify({ success: false, error: 'Invalid token' }), {
+      console.error('[sync] BRANCH: user_verification_failed — returning 401');
+      return new Response(JSON.stringify({ success: false, error: 'user_verification_failed' }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -220,9 +224,16 @@ Deno.serve(async (req: Request): Promise<Response> => {
       .eq('id', user.id)
       .single();
 
-    console.log(`[sync] profile role=${profile?.role ?? 'null'} profileError=${profileError?.message ?? 'none'}`);
-    if (profileError || profile?.role !== 'admin') {
-      return new Response(JSON.stringify({ success: false, error: 'Admin access required' }), {
+    console.log(`[sync] profile role=${profile?.role ?? 'null'} profileError=${profileError?.message ?? 'none'} code=${profileError?.code ?? 'none'}`);
+    if (profileError) {
+      console.error(`[sync] BRANCH: profile_not_found — code=${profileError.code} — returning 403`);
+      return new Response(JSON.stringify({ success: false, error: 'profile_not_found', detail: profileError.message }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (profile?.role !== 'admin') {
+      console.error(`[sync] BRANCH: admin_required — role=${profile?.role} — returning 403`);
+      return new Response(JSON.stringify({ success: false, error: 'admin_required', role: profile?.role }), {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

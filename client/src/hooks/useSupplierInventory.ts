@@ -121,10 +121,27 @@ export const useSupplierInventory = (filters: SupplierInventoryFilters = {}) => 
   // Trigger a manual sync
   const syncMutation = useMutation({
     mutationFn: async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      console.log('[sync-hook] session token present=', !!token, 'prefix=', token?.slice(0, 30));
+
       const { data, error } = await supabase.functions.invoke('sync-supplier-inventory', {
         body: {},
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
-      if (error) throw new Error(error.message ?? 'Sync failed');
+
+      if (error) {
+        // Extract the actual error reason from the response body
+        let reason = error.message ?? 'Sync failed';
+        try {
+          const body = await (error as any).context?.json?.();
+          if (body?.error) reason = `${body.error}${body.detail ? ` (${body.detail})` : ''}`;
+          console.error('[sync-hook] function error body=', JSON.stringify(body));
+        } catch (e) {
+          console.error('[sync-hook] could not parse error body', e);
+        }
+        throw new Error(reason);
+      }
       if (!data?.success) throw new Error(data?.error ?? 'Sync returned failure');
       return data;
     },
