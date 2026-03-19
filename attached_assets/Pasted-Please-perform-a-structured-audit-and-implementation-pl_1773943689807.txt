@@ -1,0 +1,117 @@
+Please perform a structured audit and implementation plan for bringing supplier-held available eSIM stock into our Admin Dashboard, starting with eSIM Access, but designed so we can support multiple resellers later (for example eSIMCard as well).
+
+Context:
+- We do NOT want to mix this up with the public customer-facing plan catalog.
+- This is for internal admin/operations use only.
+- The goal is to surface the available eSIMs I already hold in my supplier account(s), such as the ones visible in the eSIM Access “My eSIM” area.
+- This should sit under the Admin Dashboard, most likely in the Inventory area, as a new supplier-inventory read model.
+- Phase 1 should be read-only. Do not wire it into customer checkout or fulfillment yet.
+- We want to build this in a supplier-agnostic way so eSIM Access is first, but eSIMCard and others can be added later.
+
+Please do the following in order:
+
+1. Audit current codebase and architecture
+- Check whether any existing tables, hooks, edge functions, admin tabs, or legacy code already support:
+  - supplier inventory
+  - purchased eSIM listing
+  - available stock sync
+  - supplier package catalogs
+  - multi-supplier abstractions
+- Explicitly identify what is:
+  - reusable
+  - partially reusable
+  - dead/legacy
+  - risky to reuse
+
+2. Audit supplier capability for eSIM Access
+- Check the existing eSIM Access integration and docs/code to determine:
+  - whether there is an endpoint to list “My eSIM”, purchased eSIMs, available eSIMs, stock, or equivalent
+  - what fields are available from that endpoint
+  - whether the API can distinguish:
+    - available / unused eSIMs
+    - active eSIMs
+    - expired eSIMs
+    - disabled / revoked eSIMs
+- If the endpoint is not already integrated, identify the exact endpoint and payload shape needed.
+- Do not implement yet unless it is very low-risk and clearly useful for the audit.
+
+3. Design the target data model
+Propose the cleanest DB model for a supplier-agnostic inventory view. I expect something along the lines of one or two new tables such as:
+- supplier_inventory_items
+- supplier_inventory_sync_runs
+But choose the best model based on the existing schema.
+For the proposed model, include recommended fields for:
+- supplier name
+- supplier item / transaction ID
+- supplier package code
+- plan/package name
+- status
+- sellable / available flag
+- data left
+- time left / validity remaining
+- activated before / expiry deadline
+- ICCID if available
+- source raw payload
+- last synced at
+- created_at / updated_at
+
+4. Propose admin UI structure
+Design the best place in the Admin Dashboard to show this.
+My preference is:
+- Inventory tab
+- new sub-tab: Supplier Inventory
+But validate if that is the right place.
+Please propose:
+- section placement
+- table columns
+- filters
+- summary cards
+- any warning banners / labels needed
+Make sure the UI clearly distinguishes:
+- public plan catalog
+- supplier package mappings
+- supplier-held stock / available eSIMs
+
+5. Recommend sync strategy
+Compare these two approaches and recommend one:
+- live fetch from supplier API every time admin opens the page
+- periodic sync into Supabase, then render from DB
+I want your recommendation based on:
+- reliability
+- performance
+- API rate limits
+- future multi-supplier support
+- auditability
+If periodic sync is better, propose:
+- how it should run
+- how often
+- whether manual refresh should exist
+- what a safe first version looks like
+
+6. Multi-supplier extensibility
+Propose the architecture so this can later support:
+- eSIM Access
+- eSIMCard
+- other resellers
+without redesigning the admin dashboard later.
+I want a supplier-normalized internal model, not a one-off eSIM Access widget.
+
+7. Deliverable format
+At the end, provide a structured report with these sections:
+A. Existing reusable assets
+B. Supplier capability audit (eSIM Access)
+C. Proposed DB model
+D. Proposed admin UI
+E. Recommended sync strategy
+F. Multi-supplier architecture recommendation
+G. Minimal Phase 1 build plan
+H. Risks / unknowns / blockers
+
+Important constraints:
+- Phase 1 is read-only admin visibility only.
+- Do not touch customer checkout or provisioning logic.
+- Do not remove anything yet.
+- If you find an existing useful component/tab, say exactly whether it should be extended or left alone.
+- If you think implementation can safely start immediately after the audit, say so, but do not start building until I approve.
+
+Please begin with the audit only.
