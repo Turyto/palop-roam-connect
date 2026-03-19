@@ -12,10 +12,13 @@ export interface SupplierInventoryItem {
   id: string;
   supplier_name: string;
   supplier_item_id: string;
+  order_no: string | null;
   supplier_package_code: string | null;
   package_name: string | null;
   iccid: string | null;
   lpa_code: string | null;
+  esim_status: string | null;
+  smdp_status: string | null;
   status: SupplierItemStatus;
   is_sellable: boolean;
   matched_plan_id: string | null;

@@ -321,30 +321,49 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     // -----------------------------------------------------------------------
     // Map items to DB rows
+    // Field names confirmed from live /esim/query response (2026-03-19):
+    //   ac, iccid, orderNo, activeType, esimTranNo, esimStatus, smdpStatus,
+    //   orderUsage, expiredTime, activateTime, totalVolume,
+    //   packageList[0].{ packageCode, packageName, createTime, volume }
     // -----------------------------------------------------------------------
     const now = new Date().toISOString();
     const upsertRows = allItems.map((item: any) => {
       const status = mapActiveType(item.activeType ?? item.active_type ?? -1);
-      const packageCode = item.packageCode ?? item.package_code ?? '';
+
+      // Package info is nested inside packageList array in /esim/query response
+      const pkg0 = Array.isArray(item.packageList) ? item.packageList[0] : null;
+      const packageCode = pkg0?.packageCode ?? item.packageCode ?? item.package_code ?? '';
       const plan = planLookup.get(packageCode) ?? null;
+
+      // Data bytes — totalVolume in bytes, orderUsage in bytes
+      const totalVolume: number | null = item.totalVolume ?? pkg0?.volume ?? null;
+      const usageBytes: number | null  = item.orderUsage ?? null;
+      const remainingBytes: number | null =
+        totalVolume !== null && usageBytes !== null
+          ? Math.max(0, totalVolume - usageBytes)
+          : totalVolume; // if no usage data yet, all remaining
 
       return {
         supplier_name:         supplierName,
         supplier_item_id:      String(item.esimTranNo ?? item.esim_tran_no ?? item.id ?? crypto.randomUUID()),
+        order_no:              item.orderNo ?? null,
         supplier_package_code: packageCode || null,
-        package_name:          item.packageName ?? item.package_name ?? null,
+        package_name:          pkg0?.packageName ?? item.packageName ?? item.package_name ?? null,
         iccid:                 item.iccid ?? null,
-        lpa_code:              item.lpaCode ?? item.lpa_code ?? item.smdpAddress ?? null,
+        // LPA/AC string is in the "ac" field in /esim/query response
+        lpa_code:              item.ac ?? item.lpaCode ?? item.lpa_code ?? null,
+        esim_status:           item.esimStatus ?? item.esim_status ?? null,
+        smdp_status:           item.smdpStatus ?? item.smdp_status ?? null,
         status,
         is_sellable:           status === 'available',
         matched_plan_id:       plan?.plan_id ?? null,
         matched_plan_name:     plan?.plan_name ?? null,
-        total_bytes:           item.totalBytes ?? item.total_bytes ?? item.totalFlow ?? null,
-        remaining_bytes:       item.dataRemaining ?? item.data_remaining ?? item.remainFlow ?? null,
-        usage_bytes:           item.usageBytes ?? item.usage_bytes ?? item.useFlow ?? null,
-        activated_at:          item.activeDate ?? item.active_date ?? null,
-        expires_at:            item.expiredDate ?? item.expired_date ?? null,
-        created_at_supplier:   item.createTime ?? item.create_time ?? null,
+        total_bytes:           totalVolume,
+        remaining_bytes:       remainingBytes,
+        usage_bytes:           usageBytes,
+        activated_at:          item.activateTime ?? item.installationTime ?? null,
+        expires_at:            item.expiredTime ?? item.expiredDate ?? null,
+        created_at_supplier:   pkg0?.createTime ?? item.createTime ?? item.create_time ?? null,
         raw_payload:           item,
         sync_id:               syncId,
         last_synced_at:        now,

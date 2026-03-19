@@ -1,0 +1,72 @@
+The Supplier Stock sync now appears to be working, but the current UI is still too technical and not informative enough for operations.
+
+Please implement a Phase 2 improvement focused on data enrichment + clearer UI presentation.
+
+Goals:
+1. Make the Supplier Stock tab more similar in usefulness to the eSIM Access “My eSIM” screen.
+2. Surface more meaningful supplier fields from the synced payload.
+3. Keep this read-only for now — no provisioning or stock mutation actions.
+
+Tasks:
+
+A. Data enrichment
+1. Review the raw payload now stored in supplier_inventory_items.raw_payload.
+2. Extract and persist, if available:
+   - supplier_package_code
+   - package_name
+   - supplier_item_id / esimTranNo
+   - iccid
+   - activeType raw value
+   - mapped status
+   - total_bytes
+   - remaining_bytes
+   - usage_bytes
+   - activated_at
+   - expires_at
+   - created_at_supplier
+   - any useful device/status fields available in the supplier response
+3. Confirm which fields are truly present in the live eSIM Access response and which are null.
+
+B. UI improvement
+Update SupplierStockTab.tsx to show a more operationally useful table with these columns:
+- Package Name
+- ICCID
+- Supplier Ref
+- Supplier Status
+- Data Left
+- Valid Until / Time Left
+- Matched Plan
+- Last Synced
+- Details
+
+C. Row details
+Add a Details action that opens a drawer/modal showing:
+- package name
+- package code
+- supplier transaction number
+- ICCID
+- mapped status + raw activeType
+- remaining / total / used data
+- activated_at
+- expires_at
+- created_at_supplier
+- raw supplier payload JSON
+
+D. Summary cards
+Keep the current summary cards but improve the labels to:
+- Total
+- Available
+- Active
+- Expired
+- Disabled
+- Unmatched
+
+E. Explain unmatched items
+Add a small info note:
+“Unmatched means this supplier eSIM/package is not currently mapped to one of the active public PALOP Connect plans.”
+
+Please report back with:
+1. exact fields available from the live supplier payload
+2. exact fields added to the UI
+3. whether Data Left / Valid Until can now be displayed properly
+4. whether a per-row details modal was added
