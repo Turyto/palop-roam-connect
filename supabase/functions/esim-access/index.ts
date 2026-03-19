@@ -17,28 +17,13 @@ interface ESIMOrderRequest {
   referenceId?: string;
 }
 
-function hexToBytes(hex: string): Uint8Array {
-  const bytes = new Uint8Array(Math.floor(hex.length / 2));
-  for (let i = 0; i < bytes.length; i++) {
-    bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
-  }
-  return bytes;
-}
-
 async function buildESIMHeaders(creds: ESIMAccessCredentials): Promise<Record<string, string>> {
   const timestamp = Date.now().toString();
   const requestId = crypto.randomUUID().replace(/-/g, '');
 
-  // eSIM Access signing format: HMAC-SHA256 of (accessCode + timestamp + requestId)
-  // Key is the secret key used as UTF-8 bytes (if not valid hex) or hex-decoded bytes
+  // Sign: HMAC-SHA256(accessCode + timestamp + requestId, secretKey as UTF-8 bytes)
   const signString = creds.accessCode + timestamp + requestId;
-
-  let keyBytes: Uint8Array;
-  if (/^[0-9a-f]{32,}$/i.test(creds.secretKey)) {
-    keyBytes = hexToBytes(creds.secretKey);
-  } else {
-    keyBytes = new TextEncoder().encode(creds.secretKey);
-  }
+  const keyBytes = new TextEncoder().encode(creds.secretKey);
 
   const cryptoKey = await crypto.subtle.importKey(
     'raw', keyBytes,

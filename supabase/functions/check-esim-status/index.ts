@@ -5,25 +5,13 @@ const corsHeaders = {
 
 const ESIM_ACCESS_BASE_URL = 'https://api.esimaccess.com/api/v1/open';
 
-function hexToBytes(hex: string): Uint8Array {
-  const bytes = new Uint8Array(Math.floor(hex.length / 2));
-  for (let i = 0; i < bytes.length; i++) {
-    bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
-  }
-  return bytes;
-}
-
 async function buildESIMHeaders(accessCode: string, secretKey: string): Promise<Record<string, string>> {
   const timestamp = Date.now().toString();
   const requestId = crypto.randomUUID().replace(/-/g, '');
-  const signString = accessCode + timestamp + requestId;
 
-  let keyBytes: Uint8Array;
-  if (/^[0-9a-f]{32,}$/i.test(secretKey)) {
-    keyBytes = hexToBytes(secretKey);
-  } else {
-    keyBytes = new TextEncoder().encode(secretKey);
-  }
+  // Sign: HMAC-SHA256(accessCode + timestamp + requestId, secretKey as UTF-8 bytes)
+  const signString = accessCode + timestamp + requestId;
+  const keyBytes = new TextEncoder().encode(secretKey);
 
   const cryptoKey = await crypto.subtle.importKey(
     'raw', keyBytes,
