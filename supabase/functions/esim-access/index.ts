@@ -69,29 +69,34 @@ async function testConnection(creds: ESIMAccessCredentials) {
       body,
     });
     const text = await res.text();
+    console.log(`[test-connection] supplier status=${res.status} body=${text}`);
     let data: any;
     try { data = JSON.parse(text); } catch { data = { rawResponse: text }; }
     if (data?.success === true) {
       return { success: true, message: 'eSIM Access API authenticated successfully', data };
     }
+    console.error(`[test-connection] supplier auth failed — errorCode=${data?.errorCode} errorMsg=${data?.errorMsg}`);
     return {
       success: false,
       error: `Auth failed — errorCode: ${data?.errorCode}, errorMsg: ${data?.errorMsg}`,
       data,
     };
   } catch (e: any) {
+    console.error(`[test-connection] exception — message=${e.message} stack=${e.stack}`);
     return { success: false, error: e.message };
   }
 }
 
 async function getPackages(creds: ESIMAccessCredentials, locationCode?: string) {
+  const requestPayload = {
+    locationCode: locationCode ?? '',
+    type: 0,
+    pageSize: 100,
+    pageNum: 1,
+  };
   try {
-    const body = JSON.stringify({
-      locationCode: locationCode ?? '',
-      type: 0,
-      pageSize: 100,
-      pageNum: 1,
-    });
+    console.log(`[get-packages] requesting locationCode=${locationCode ?? '(all)'}`);
+    const body = JSON.stringify(requestPayload);
     const headers = await buildESIMHeaders(creds);
     const res = await fetch(`${ESIM_ACCESS_BASE_URL}/package/list`, {
       method: 'POST',
@@ -99,15 +104,18 @@ async function getPackages(creds: ESIMAccessCredentials, locationCode?: string) 
       body,
     });
     const text = await res.text();
+    console.log(`[get-packages] supplier status=${res.status} bodyLength=${text.length}`);
     let data: any;
     try { data = JSON.parse(text); } catch { data = { rawResponse: text }; }
     if (data?.success === true) return { success: true, data };
+    console.error(`[get-packages] supplier error — status=${res.status} errorCode=${data?.errorCode} errorMsg=${data?.errorMsg} body=${text}`);
     return {
       success: false,
       error: `errorCode: ${data?.errorCode}, errorMsg: ${data?.errorMsg}`,
       data,
     };
   } catch (e: any) {
+    console.error(`[get-packages] exception — message=${e.message} stack=${e.stack}`);
     return { success: false, error: e.message };
   }
 }
@@ -124,6 +132,14 @@ async function createOrder(orderData: ESIMOrderRequest, creds: ESIMAccessCredent
     userEmail: orderData.customerEmail,
     outOrder: orderData.referenceId ?? `order-${Date.now()}`,
   };
+
+  // Log request payload (no secrets — credentials are in signed headers only)
+  console.log(`[create-order] sending to supplier — payload=${JSON.stringify({
+    packageCode: orderData.packageId,
+    userEmail: orderData.customerEmail,
+    outOrder: payload.outOrder,
+  })}`);
+
   try {
     const body = JSON.stringify(payload);
     const headers = await buildESIMHeaders(creds);
@@ -133,9 +149,28 @@ async function createOrder(orderData: ESIMOrderRequest, creds: ESIMAccessCredent
       body,
     });
     const text = await res.text();
+
+    // Always log supplier response
+    console.log(`[create-order] supplier response — status=${res.status} body=${text}`);
+
     let data: any;
     try { data = JSON.parse(text); } catch { data = { rawResponse: text }; }
-    if (data?.success === true) return { success: true, data };
+
+    if (data?.success === true) {
+      console.log(`[create-order] success — esimTranNo=${data?.obj?.esimTranNo ?? data?.obj?.orderNo ?? '(not returned yet)'}`);
+      return { success: true, data };
+    }
+
+    // Non-2xx or supplier-level failure
+    console.error(
+      `[create-order] supplier rejected order — ` +
+      `httpStatus=${res.status} ` +
+      `errorCode=${data?.errorCode} ` +
+      `errorMsg=${data?.errorMsg} ` +
+      `packageCode=${orderData.packageId} ` +
+      `outOrder=${payload.outOrder} ` +
+      `fullBody=${text}`
+    );
     return {
       success: false,
       error: data?.errorMsg ?? `HTTP ${res.status}`,
@@ -143,11 +178,19 @@ async function createOrder(orderData: ESIMOrderRequest, creds: ESIMAccessCredent
       data,
     };
   } catch (e: any) {
+    console.error(
+      `[create-order] exception before/during supplier call — ` +
+      `message=${e.message} ` +
+      `stack=${e.stack} ` +
+      `packageCode=${orderData.packageId} ` +
+      `outOrder=${payload.outOrder}`
+    );
     return { success: false, error: e.message };
   }
 }
 
 async function getOrder(esimTranNo: string, creds: ESIMAccessCredentials) {
+  console.log(`[get-order] querying supplier — esimTranNo=${esimTranNo}`);
   try {
     const body = JSON.stringify({ esimTranNo });
     const headers = await buildESIMHeaders(creds);
@@ -157,9 +200,18 @@ async function getOrder(esimTranNo: string, creds: ESIMAccessCredentials) {
       body,
     });
     const text = await res.text();
+    console.log(`[get-order] supplier response — status=${res.status} body=${text}`);
     let data: any;
     try { data = JSON.parse(text); } catch { data = { rawResponse: text }; }
     if (data?.success === true) return { success: true, data };
+    console.error(
+      `[get-order] supplier error — ` +
+      `httpStatus=${res.status} ` +
+      `errorCode=${data?.errorCode} ` +
+      `errorMsg=${data?.errorMsg} ` +
+      `esimTranNo=${esimTranNo} ` +
+      `fullBody=${text}`
+    );
     return {
       success: false,
       error: data?.errorMsg ?? `HTTP ${res.status}`,
@@ -167,6 +219,7 @@ async function getOrder(esimTranNo: string, creds: ESIMAccessCredentials) {
       data,
     };
   } catch (e: any) {
+    console.error(`[get-order] exception — message=${e.message} stack=${e.stack} esimTranNo=${esimTranNo}`);
     return { success: false, error: e.message };
   }
 }
@@ -195,6 +248,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const accessCode = Deno.env.get('ESIM_ACCESS_ACCESS_CODE');
     const secretKey = Deno.env.get('ESIM_ACCESS_SECRET_KEY');
     if (!accessCode || !secretKey) {
+      console.error('[esim-access] missing credentials — ESIM_ACCESS_ACCESS_CODE or ESIM_ACCESS_SECRET_KEY not set');
       return new Response(JSON.stringify({
         success: false,
         error: 'eSIM Access credentials not configured',
@@ -207,7 +261,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     const creds: ESIMAccessCredentials = { accessCode, secretKey };
     const { action, ...body } = await req.json();
-    console.log(`Action: ${action}, User: ${user.email}`);
+    console.log(`[esim-access] action=${action} user=${user.email} userId=${user.id}`);
 
     let response: any;
     switch (action) {
@@ -227,7 +281,18 @@ Deno.serve(async (req: Request): Promise<Response> => {
         response = await getOrder(body.orderId ?? body.esimTranNo, creds);
         break;
       default:
+        console.error(`[esim-access] unknown action="${action}" from user=${user.email}`);
         response = { success: false, error: `Unknown action: ${action}` };
+    }
+
+    // Log any top-level failure before returning
+    if (!response.success) {
+      console.error(
+        `[esim-access] action=${action} failed — ` +
+        `error=${response.error} ` +
+        `errorCode=${response.errorCode ?? 'n/a'} ` +
+        `user=${user.email}`
+      );
     }
 
     return new Response(JSON.stringify(response), {
@@ -235,7 +300,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   } catch (error: any) {
-    console.error('eSIM Access error:', error);
+    console.error(
+      `[esim-access] unhandled exception — ` +
+      `message=${error?.message ?? '(no message)'} ` +
+      `stack=${error?.stack ?? '(no stack)'}`
+    );
     return new Response(JSON.stringify({ success: false, error: error.message ?? 'Internal error' }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
