@@ -1,0 +1,72 @@
+Please do the next step as a supplier-authentication and live-catalog validation task only. Do not implement checkout provisioning yet.
+
+Context
+The public catalog has now been simplified to these 6 active plans:
+- portugal-starter
+- portugal-weekly
+- portugal-monthly
+- europe-weekly
+- europe-monthly
+- europe-plus
+
+The audit confirmed that the remaining blocker is supplier connectivity:
+1. the eSIM Access edge function is using the wrong auth method
+2. the required RT-AccessCode is missing
+3. the live catalog cannot yet be retrieved
+4. without live catalog access, package mappings cannot be verified
+
+Objective
+Fix eSIM Access authentication and prove that live catalog access works.
+
+Tasks
+1. Update the esim-access edge function to use the correct eSIM Access authentication method
+   - use RT-AccessCode header instead of Authorization: Bearer
+   - if required by the account/docs, implement the correct HMAC signing method too
+
+2. Use the real supplier credentials once provided
+   - RT-AccessCode = [to be provided]
+   - secret key = [existing or updated secret]
+
+3. Validate the integration by successfully running:
+   - testConnection
+   - getPackages / live package catalog retrieval
+
+4. Return a structured report including:
+   - whether authentication now succeeds
+   - whether package retrieval now succeeds
+   - the real response format received
+   - total number of packages returned
+   - a summarized package list for:
+     - Portugal
+     - Europe / EU regional bundles
+   - package id
+   - package name
+   - data amount
+   - validity
+   - coverage
+   - wholesale cost if available
+
+5. Based on the live catalog, produce a verified mapping recommendation for these 6 plans only:
+   - portugal-starter
+   - portugal-weekly
+   - portugal-monthly
+   - europe-weekly
+   - europe-monthly
+   - europe-plus
+
+6. Explicitly flag:
+   - whether portugal-starter can truly remain 3 days
+   - or whether it must be changed to 7 days to match supplier reality
+
+Important
+- Do not implement provisioning into checkout yet
+- Do not insert mappings yet unless I explicitly approve them after seeing the verified catalog
+- Do not change Stripe/order/auth/admin flows
+- This step is only to establish working supplier access and a verified package mapping recommendation
+
+Output needed
+1. whether eSIM Access auth is now working
+2. whether live catalog retrieval is now working
+3. verified candidate package mappings for the 6 active plans
+4. recommendation on portugal-starter validity
+5. go / no-go for moving into live provisioning implementation

@@ -3,13 +3,59 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const ESIM_ACCESS_BASE_URL = 'https://api.esimaccess.com/v1';
+const ESIM_ACCESS_BASE_URL = 'https://api.esimaccess.com/api/v1/open';
 
-interface ESIMAccessOrder {
+interface ESIMAccessCredentials {
+  accessCode: string;
+  secretKey: string;
+}
+
+interface ESIMOrderRequest {
   packageId: string;
   customerEmail: string;
   customerName?: string;
   referenceId?: string;
+}
+
+function hexToBytes(hex: string): Uint8Array {
+  const bytes = new Uint8Array(Math.floor(hex.length / 2));
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  }
+  return bytes;
+}
+
+async function buildESIMHeaders(creds: ESIMAccessCredentials): Promise<Record<string, string>> {
+  const timestamp = Date.now().toString();
+  const requestId = crypto.randomUUID().replace(/-/g, '');
+
+  // eSIM Access signing format: HMAC-SHA256 of (accessCode + timestamp + requestId)
+  // Key is the secret key used as UTF-8 bytes (if not valid hex) or hex-decoded bytes
+  const signString = creds.accessCode + timestamp + requestId;
+
+  let keyBytes: Uint8Array;
+  if (/^[0-9a-f]{32,}$/i.test(creds.secretKey)) {
+    keyBytes = hexToBytes(creds.secretKey);
+  } else {
+    keyBytes = new TextEncoder().encode(creds.secretKey);
+  }
+
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw', keyBytes,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false, ['sign']
+  );
+  const sigBytes = await crypto.subtle.sign('HMAC', cryptoKey, new TextEncoder().encode(signString));
+  const signature = Array.from(new Uint8Array(sigBytes))
+    .map(b => b.toString(16).padStart(2, '0')).join('');
+
+  return {
+    'Content-Type': 'application/json',
+    'RT-AccessCode': creds.accessCode,
+    'RT-Timestamp': timestamp,
+    'RT-RequestID': requestId,
+    'RT-Signature': signature,
+  };
 }
 
 async function verifyUser(supabaseUrl: string, serviceKey: string, token: string): Promise<{ id: string; email: string } | null> {
@@ -28,65 +74,113 @@ async function verifyUser(supabaseUrl: string, serviceKey: string, token: string
   }
 }
 
-async function testConnection(secretKey: string) {
+async function testConnection(creds: ESIMAccessCredentials) {
   try {
-    const res = await fetch(`${ESIM_ACCESS_BASE_URL}/packages?limit=1`, {
-      headers: { 'Authorization': `Bearer ${secretKey}`, 'Content-Type': 'application/json' },
-    });
-    if (res.ok) {
-      const data = await res.json();
-      return { success: true, data };
-    }
-    return { success: false, error: `HTTP ${res.status}` };
-  } catch (e: any) {
-    return { success: false, error: e.message };
-  }
-}
-
-async function getPackages(secretKey: string) {
-  try {
-    const res = await fetch(`${ESIM_ACCESS_BASE_URL}/packages`, {
-      headers: { 'Authorization': `Bearer ${secretKey}`, 'Content-Type': 'application/json' },
-    });
-    if (!res.ok) return { success: false, error: `HTTP ${res.status}` };
-    const data = await res.json();
-    return { success: true, data };
-  } catch (e: any) {
-    return { success: false, error: e.message };
-  }
-}
-
-async function createOrder(orderData: ESIMAccessOrder, secretKey: string) {
-  const payload = {
-    package_id: orderData.packageId,
-    customer_email: orderData.customerEmail,
-    customer_name: orderData.customerName ?? orderData.customerEmail,
-    reference_id: orderData.referenceId ?? `order-${Date.now()}`,
-  };
-  try {
-    const res = await fetch(`${ESIM_ACCESS_BASE_URL}/orders`, {
+    const body = JSON.stringify({ locationCode: 'PT', type: 0, pageSize: 1, pageNum: 1 });
+    const headers = await buildESIMHeaders(creds);
+    const res = await fetch(`${ESIM_ACCESS_BASE_URL}/package/list`, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${secretKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      headers,
+      body,
     });
     const text = await res.text();
     let data: any;
     try { data = JSON.parse(text); } catch { data = { rawResponse: text }; }
-    if (res.ok) return { success: true, data };
-    return { success: false, error: data?.message ?? `HTTP ${res.status}`, data };
+    if (data?.success === true) {
+      return { success: true, message: 'eSIM Access API authenticated successfully', data };
+    }
+    return {
+      success: false,
+      error: `Auth failed — errorCode: ${data?.errorCode}, errorMsg: ${data?.errorMsg}`,
+      data,
+    };
   } catch (e: any) {
     return { success: false, error: e.message };
   }
 }
 
-async function getOrder(orderId: string, secretKey: string) {
+async function getPackages(creds: ESIMAccessCredentials, locationCode?: string) {
   try {
-    const res = await fetch(`${ESIM_ACCESS_BASE_URL}/orders/${orderId}`, {
-      headers: { 'Authorization': `Bearer ${secretKey}`, 'Content-Type': 'application/json' },
+    const body = JSON.stringify({
+      locationCode: locationCode ?? '',
+      type: 0,
+      pageSize: 100,
+      pageNum: 1,
     });
-    if (!res.ok) return { success: false, error: `HTTP ${res.status}` };
-    const data = await res.json();
-    return { success: true, data };
+    const headers = await buildESIMHeaders(creds);
+    const res = await fetch(`${ESIM_ACCESS_BASE_URL}/package/list`, {
+      method: 'POST',
+      headers,
+      body,
+    });
+    const text = await res.text();
+    let data: any;
+    try { data = JSON.parse(text); } catch { data = { rawResponse: text }; }
+    if (data?.success === true) return { success: true, data };
+    return {
+      success: false,
+      error: `errorCode: ${data?.errorCode}, errorMsg: ${data?.errorMsg}`,
+      data,
+    };
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
+}
+
+async function createOrder(orderData: ESIMOrderRequest, creds: ESIMAccessCredentials) {
+  const payload = {
+    packageInfoList: [
+      {
+        packageCode: orderData.packageId,
+        count: 1,
+        price: null,
+      }
+    ],
+    userEmail: orderData.customerEmail,
+    outOrder: orderData.referenceId ?? `order-${Date.now()}`,
+  };
+  try {
+    const body = JSON.stringify(payload);
+    const headers = await buildESIMHeaders(creds);
+    const res = await fetch(`${ESIM_ACCESS_BASE_URL}/esim/order`, {
+      method: 'POST',
+      headers,
+      body,
+    });
+    const text = await res.text();
+    let data: any;
+    try { data = JSON.parse(text); } catch { data = { rawResponse: text }; }
+    if (data?.success === true) return { success: true, data };
+    return {
+      success: false,
+      error: data?.errorMsg ?? `HTTP ${res.status}`,
+      errorCode: data?.errorCode,
+      data,
+    };
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
+}
+
+async function getOrder(esimTranNo: string, creds: ESIMAccessCredentials) {
+  try {
+    const body = JSON.stringify({ esimTranNo });
+    const headers = await buildESIMHeaders(creds);
+    const res = await fetch(`${ESIM_ACCESS_BASE_URL}/esim/query`, {
+      method: 'POST',
+      headers,
+      body,
+    });
+    const text = await res.text();
+    let data: any;
+    try { data = JSON.parse(text); } catch { data = { rawResponse: text }; }
+    if (data?.success === true) return { success: true, data };
+    return {
+      success: false,
+      error: data?.errorMsg ?? `HTTP ${res.status}`,
+      errorCode: data?.errorCode,
+      data,
+    };
   } catch (e: any) {
     return { success: false, error: e.message };
   }
@@ -112,23 +206,45 @@ Deno.serve(async (req: Request): Promise<Response> => {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
+
+    const accessCode = Deno.env.get('ESIM_ACCESS_ACCESS_CODE');
     const secretKey = Deno.env.get('ESIM_ACCESS_SECRET_KEY');
-    if (!secretKey) {
-      return new Response(JSON.stringify({ success: false, error: 'eSIM Access API key not configured' }), {
-        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+    if (!accessCode || !secretKey) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'eSIM Access credentials not configured',
+        missing: {
+          ESIM_ACCESS_ACCESS_CODE: !accessCode,
+          ESIM_ACCESS_SECRET_KEY: !secretKey,
+        }
+      }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
+
+    const creds: ESIMAccessCredentials = { accessCode, secretKey };
     const { action, ...body } = await req.json();
     console.log(`Action: ${action}, User: ${user.email}`);
-    let response;
+
+    let response: any;
     switch (action) {
-      case 'test-connection': response = await testConnection(secretKey); break;
-      case 'get-packages': response = await getPackages(secretKey); break;
-      case 'create-order': response = await createOrder(body as ESIMAccessOrder, secretKey); break;
-      case 'get-order': response = await getOrder(body.orderId, secretKey); break;
-      case 'download-esim': response = await getOrder(body.orderId, secretKey); break;
-      default: response = { success: false, error: `Unknown action: ${action}` };
+      case 'test-connection':
+        response = await testConnection(creds);
+        break;
+      case 'get-packages':
+        response = await getPackages(creds, body.locationCode);
+        break;
+      case 'create-order':
+        response = await createOrder(body as ESIMOrderRequest, creds);
+        break;
+      case 'get-order':
+        response = await getOrder(body.orderId ?? body.esimTranNo, creds);
+        break;
+      case 'download-esim':
+        response = await getOrder(body.orderId ?? body.esimTranNo, creds);
+        break;
+      default:
+        response = { success: false, error: `Unknown action: ${action}` };
     }
+
     return new Response(JSON.stringify(response), {
       status: response.success ? 200 : 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
