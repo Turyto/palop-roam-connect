@@ -11,7 +11,6 @@ const HomeFooter = () => {
     { label: t.footer.plans, href: '#plans' },
     { label: t.footer.compatibility, href: '#compatibility' },
     { label: t.footer.howItWorks, href: '#how-it-works' },
-    { label: t.footer.faq, href: '#faq' },
   ];
 
   const legalLinks = [
@@ -51,6 +50,12 @@ const HomeFooter = () => {
                 {link.label}
               </a>
             ))}
+            <Link
+              to="/support#faq"
+              className="block text-sm hover:text-white transition-colors"
+            >
+              {t.footer.faq}
+            </Link>
             <Link
               to="/support"
               className="block text-sm hover:text-white transition-colors"
