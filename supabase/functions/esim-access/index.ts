@@ -222,14 +222,16 @@ async function listESIMs(
   pageSize: number = 100,
   packageCode?: string,
 ) {
-  const requestPayload: Record<string, any> = { pageNum, pageSize };
+  // /esim/list was removed in API v1.1 (Jun 2023). Replacement: /esim/query
+  // Pagination goes inside a "pager" nested object.
+  const requestPayload: Record<string, any> = { pager: { pageNum, pageSize } };
   if (packageCode) requestPayload.packageCode = packageCode;
 
   console.log(`[list-esims] page=${pageNum} pageSize=${pageSize} packageCode=${packageCode ?? '(all)'}`);
   try {
     const body = JSON.stringify(requestPayload);
     const headers = await buildESIMHeaders(creds);
-    const res = await fetch(`${ESIM_ACCESS_BASE_URL}/esim/list`, {
+    const res = await fetch(`${ESIM_ACCESS_BASE_URL}/esim/query`, {
       method: 'POST',
       headers,
       body,

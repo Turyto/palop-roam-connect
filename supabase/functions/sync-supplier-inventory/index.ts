@@ -102,10 +102,12 @@ async function fetchESIMPage(
   pageNum: number,
 ): Promise<{ items: any[]; hasMore: boolean; total: number; error?: string }> {
   console.log(`[sync] fetching supplier page=${pageNum} pageSize=${PAGE_SIZE}`);
-  const payload = JSON.stringify({ pageNum, pageSize: PAGE_SIZE });
+  // /esim/list was removed in API v1.1 (Jun 2023). Replacement: /esim/query
+  // Pagination is nested under "pager" object, not top-level fields.
+  const payload = JSON.stringify({ pager: { pageNum, pageSize: PAGE_SIZE } });
   const headers = await buildESIMHeaders(accessCode, secretKey);
 
-  const res = await fetch(`${ESIM_ACCESS_BASE_URL}/esim/list`, {
+  const res = await fetch(`${ESIM_ACCESS_BASE_URL}/esim/query`, {
     method: 'POST',
     headers,
     body: payload,
