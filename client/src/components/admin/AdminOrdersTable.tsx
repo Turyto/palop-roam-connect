@@ -18,7 +18,6 @@ import { Search, RefreshCw, Eye, CheckCircle, RotateCw, Download } from "lucide-
 import { useToast } from "@/hooks/use-toast";
 import { useOrderManagement } from "@/hooks/useOrderManagement";
 import OrderDetailsModal from "./orders/OrderDetailsModal";
-import ProcessOrderModal from "./orders/ProcessOrderModal";
 
 interface Order {
   id: string;
@@ -41,25 +40,18 @@ const AdminOrdersTable = () => {
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [showProcessModal, setShowProcessModal] = useState(false);
-  const [inventoryAvailable, setInventoryAvailable] = useState(true);
-  
+
   const { toast } = useToast();
-  const { 
-    processOrder, 
-    retryProvisioning, 
-    markComplete, 
-    checkInventoryAvailability,
-    isProcessing, 
-    isRetrying, 
-    isMarkingComplete 
+  const {
+    retryProvisioning,
+    markComplete,
+    isRetrying,
+    isMarkingComplete
   } = useOrderManagement();
 
   const { data: orders = [], isLoading, error, refetch } = useQuery({
     queryKey: ['admin-orders'],
     queryFn: async () => {
-      console.log('Fetching admin orders...');
-      
       const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select('*')
@@ -74,7 +66,6 @@ const AdminOrdersTable = () => {
     },
   });
 
-  // Filter orders based on search term and status filters
   useEffect(() => {
     if (!orders) {
       setFilteredOrders([]);
@@ -85,7 +76,7 @@ const AdminOrdersTable = () => {
       const email = order.customer_email || '';
       const planName = order.plan_name || '';
       const searchLower = searchTerm.toLowerCase();
-      
+
       const matchesSearch = (
         email.toLowerCase().includes(searchLower) ||
         planName.toLowerCase().includes(searchLower) ||
@@ -94,30 +85,16 @@ const AdminOrdersTable = () => {
 
       const matchesStatus = statusFilter === "all" || order.status === statusFilter;
       const matchesPayment = paymentFilter === "all" || order.payment_status === paymentFilter;
-      
+
       return matchesSearch && matchesStatus && matchesPayment;
     });
-    
+
     setFilteredOrders(filtered);
   }, [orders, searchTerm, statusFilter, paymentFilter]);
 
   const handleViewDetails = (order: Order) => {
     setSelectedOrder(order);
     setShowDetailsModal(true);
-  };
-
-  const handleProcessOrder = async (order: Order) => {
-    const available = await checkInventoryAvailability();
-    setInventoryAvailable(available);
-    setSelectedOrder(order);
-    setShowProcessModal(true);
-  };
-
-  const handleConfirmProcess = () => {
-    if (selectedOrder) {
-      processOrder(selectedOrder.id);
-      setShowProcessModal(false);
-    }
   };
 
   const handleRetryProvisioning = (orderId: string) => {
@@ -198,16 +175,12 @@ const AdminOrdersTable = () => {
     return <Badge className="bg-yellow-100 text-yellow-800">Not Started</Badge>;
   };
 
-  const canProcessOrder = (order: Order) => {
-    return order.payment_status === 'pending' && order.status === 'pending' && !order.esim_delivered_at;
-  };
-
   const canRetryProvisioning = (order: Order) => {
     return order.status === 'failed' || (order.esim_delivered_at && order.status !== 'completed');
   };
 
   const canMarkComplete = (order: Order) => {
-    return order.esim_delivered_at && order.status !== 'completed';
+    return !!order.esim_delivered_at && order.status !== 'completed';
   };
 
   if (error) {
@@ -246,7 +219,7 @@ const AdminOrdersTable = () => {
               </Button>
             </div>
           </div>
-          
+
           {/* Filters */}
           <div className="flex items-center space-x-4 mt-4">
             <div className="flex items-center space-x-2">
@@ -258,7 +231,7 @@ const AdminOrdersTable = () => {
                 className="max-w-sm"
               />
             </div>
-            
+
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="Order Status" />
@@ -270,7 +243,7 @@ const AdminOrdersTable = () => {
                 <SelectItem value="failed">Failed</SelectItem>
               </SelectContent>
             </Select>
-            
+
             <Select value={paymentFilter} onValueChange={setPaymentFilter}>
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="Payment Status" />
@@ -284,7 +257,7 @@ const AdminOrdersTable = () => {
             </Select>
           </div>
         </CardHeader>
-        
+
         <CardContent>
           {isLoading ? (
             <div className="text-center py-8">
@@ -310,9 +283,9 @@ const AdminOrdersTable = () => {
                 <TableBody>
                   {filteredOrders.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={11} className="text-center py-8 text-gray-500">
-                        {searchTerm || statusFilter !== "all" || paymentFilter !== "all" ? 
-                          'No orders found matching your filters.' : 
+                      <TableCell colSpan={10} className="text-center py-8 text-gray-500">
+                        {searchTerm || statusFilter !== "all" || paymentFilter !== "all" ?
+                          'No orders found matching your filters.' :
                           'No orders found.'
                         }
                       </TableCell>
@@ -347,26 +320,14 @@ const AdminOrdersTable = () => {
                             >
                               <Eye className="h-3 w-3" />
                             </Button>
-                            
-                            {canProcessOrder(order) && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleProcessOrder(order)}
-                                disabled={isProcessing}
-                                title="Process Order"
-                              >
-                                <CheckCircle className="h-3 w-3" />
-                              </Button>
-                            )}
-                            
+
                             {canRetryProvisioning(order) && (
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleRetryProvisioning(order.id)}
                                 disabled={isRetrying}
-                                title="Retry Provisioning"
+                                title="Reset provisioning status to pending"
                               >
                                 <RotateCw className="h-3 w-3" />
                               </Button>
@@ -396,7 +357,6 @@ const AdminOrdersTable = () => {
         </CardContent>
       </Card>
 
-      {/* Modals */}
       <OrderDetailsModal
         order={selectedOrder}
         isOpen={showDetailsModal}
@@ -404,18 +364,6 @@ const AdminOrdersTable = () => {
           setShowDetailsModal(false);
           setSelectedOrder(null);
         }}
-      />
-
-      <ProcessOrderModal
-        order={selectedOrder}
-        isOpen={showProcessModal}
-        onClose={() => {
-          setShowProcessModal(false);
-          setSelectedOrder(null);
-        }}
-        onConfirm={handleConfirmProcess}
-        inventoryAvailable={inventoryAvailable}
-        isProcessing={isProcessing}
       />
     </>
   );

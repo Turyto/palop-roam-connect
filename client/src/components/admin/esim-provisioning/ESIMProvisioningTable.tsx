@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -17,10 +16,6 @@ interface ESIMProvisioningTableProps {
 const ESIMProvisioningTable = ({
   activations,
   onViewDetails,
-  onRetryProvisioning,
-  onMarkAsComplete,
-  isRetrying,
-  isMarkingComplete
 }: ESIMProvisioningTableProps) => {
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -95,8 +90,8 @@ const ESIMProvisioningTable = ({
                 </Badge>
               </TableCell>
               <TableCell>
-                <Badge 
-                  variant="outline" 
+                <Badge
+                  variant="outline"
                   className={`flex items-center gap-1 w-fit ${getStatusColor(activation.provisioning_status)}`}
                 >
                   {getStatusIcon(activation.provisioning_status)}
@@ -107,37 +102,13 @@ const ESIMProvisioningTable = ({
                 {new Date(activation.created_at).toLocaleDateString()}
               </TableCell>
               <TableCell>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onViewDetails(activation)}
-                  >
-                    Details
-                  </Button>
-                  {activation.provisioning_status === 'failed' && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onRetryProvisioning(activation.id)}
-                      disabled={isRetrying}
-                    >
-                      <RefreshCw className="h-3 w-3 mr-1" />
-                      Retry
-                    </Button>
-                  )}
-                  {activation.provisioning_status === 'in_progress' && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onMarkAsComplete(activation.id)}
-                      disabled={isMarkingComplete}
-                    >
-                      <CheckCircle className="h-3 w-3 mr-1" />
-                      Complete
-                    </Button>
-                  )}
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onViewDetails(activation)}
+                >
+                  Details
+                </Button>
               </TableCell>
             </TableRow>
           ))}

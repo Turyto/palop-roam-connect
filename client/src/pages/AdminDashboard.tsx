@@ -146,8 +146,8 @@ const AdminDashboard = () => {
               <TabsTrigger value="users">Users</TabsTrigger>
               <TabsTrigger value="support">Support</TabsTrigger>
               <TabsTrigger value="inventory">Inventory</TabsTrigger>
-              <TabsTrigger value="qrcodes">QR Codes</TabsTrigger>
               <TabsTrigger value="esim">eSIM Management</TabsTrigger>
+              <TabsTrigger value="qrcodes">QR Codes (Legacy)</TabsTrigger>
             </TabsList>
 
             <TabsContent value="orders">
@@ -166,12 +166,12 @@ const AdminDashboard = () => {
               <AdminInventory />
             </TabsContent>
 
-            <TabsContent value="qrcodes">
-              <AdminQRCodesTable />
-            </TabsContent>
-
             <TabsContent value="esim">
               <AdminESIMProvisioning />
+            </TabsContent>
+
+            <TabsContent value="qrcodes">
+              <AdminQRCodesTable />
             </TabsContent>
           </Tabs>
         </div>

@@ -93,16 +93,12 @@ const PlansCatalogTab = () => {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <Button 
+          <Button
             onClick={() => setIsCreateModalOpen(true)}
             className="flex items-center gap-2"
           >
             <Plus className="h-4 w-4" />
             Create New Plan
-          </Button>
-          <Button variant="outline" onClick={() => window.location.reload()}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Sync Rates
           </Button>
         </div>
       </div>

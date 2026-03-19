@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Zap } from "lucide-react";
+import { AlertTriangle, Zap } from "lucide-react";
 import { useESIMActivations } from "@/hooks/useESIMActivations";
 import ProvisioningModal from "./ProvisioningModal";
 import ESIMProvisioningSummaryCards from "./esim-provisioning/ESIMProvisioningSummaryCards";
@@ -12,10 +12,10 @@ import ESIMProvisioningErrorState from "./esim-provisioning/ESIMProvisioningErro
 import type { ESIMActivation } from "@/types/esimActivations";
 
 const AdminESIMProvisioning = () => {
-  const { 
-    activations, 
-    isLoading, 
-    error, 
+  const {
+    activations,
+    isLoading,
+    error,
     refetch,
     retryProvisioning,
     markAsComplete,
@@ -50,6 +50,14 @@ const AdminESIMProvisioning = () => {
 
   return (
     <div className="space-y-6">
+      {/* Safety notice */}
+      <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
+        <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+        <p className="text-sm text-amber-800">
+          <span className="font-semibold">Read-only view.</span> Provisioning is fully automated after payment — eSIMs are delivered via the eSIM Access API immediately upon Stripe confirmation. The records below reflect legacy manually-processed orders. No action buttons are available here.
+        </p>
+      </div>
+
       <ESIMProvisioningSummaryCards activations={activations} />
 
       <Card>

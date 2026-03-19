@@ -140,6 +140,14 @@ const AdminQRCodesTable = () => {
 
   return (
     <div className="space-y-6">
+      {/* Legacy notice */}
+      <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4">
+        <span className="text-blue-600 text-lg leading-none shrink-0">ℹ</span>
+        <p className="text-sm text-blue-800">
+          <span className="font-semibold">Legacy records only.</span> This table reflects manually-provisioned eSIM records from a previous flow. Live eSIM credentials are now stored directly on each order (via the eSIM Access API) and are accessible from the Orders tab.
+        </p>
+      </div>
+
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
