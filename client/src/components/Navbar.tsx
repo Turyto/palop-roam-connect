@@ -11,8 +11,6 @@ const Navbar = () => {
   const location = useLocation();
   const { user, loading } = useAuth();
 
-  console.log('Navbar: Rendering with auth state:', { hasUser: !!user, loading });
-
   const navigation = [
     { name: "Home", href: "/" },
     { name: "Plans", href: "/plans" },

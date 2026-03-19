@@ -6,22 +6,27 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/auth";
 import { LanguageProvider } from "@/contexts/language";
-import { Suspense } from "react";
+import { lazy, Suspense } from "react";
+
+// Eagerly loaded — active customer funnel pages
 import Index from "./pages/Index";
 import Plans from "./pages/Plans";
-import ESim from "./pages/ESim";
 import Purchase from "./pages/Purchase";
-import Community from "./pages/Community";
-import Countries from "./pages/Countries";
 import Support from "./pages/Support";
 import Auth from "./pages/Auth";
 import Orders from "./pages/Orders";
-import AdminDashboard from "./pages/AdminDashboard";
 import CompatibilityPage from "./pages/CompatibilityPage";
 import HowItWorksPage from "./pages/HowItWorksPage";
 import NotFound from "./pages/NotFound";
 
-// Create QueryClient with proper configuration
+// Lazy loaded — admin: keeps recharts + all admin components out of customer bundle
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+
+// Lazy loaded — legacy/orphaned pages: keeps mapbox-gl + old content out of initial bundle
+const ESim = lazy(() => import("./pages/ESim"));
+const Community = lazy(() => import("./pages/Community"));
+const Countries = lazy(() => import("./pages/Countries"));
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -31,7 +36,6 @@ const queryClient = new QueryClient({
   },
 });
 
-// Error Boundary Component
 const ErrorBoundary = ({ children }: { children: React.ReactNode }) => {
   try {
     return <>{children}</>;
@@ -48,14 +52,12 @@ const ErrorBoundary = ({ children }: { children: React.ReactNode }) => {
   }
 };
 
-// Loading Component
 const LoadingFallback = () => (
   <div className="min-h-screen flex items-center justify-center">
     <div className="text-lg">Loading...</div>
   </div>
 );
 
-// App Routes Component
 const AppRoutes = () => (
   <Routes>
     <Route path="/" element={<Index />} />

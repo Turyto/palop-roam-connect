@@ -18,7 +18,6 @@ const UserMenu = () => {
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
-    console.log('UserMenu: Starting sign out process');
     const { error } = await signOut();
     
     if (error) {
@@ -29,7 +28,6 @@ const UserMenu = () => {
         variant: "destructive",
       });
     } else {
-      console.log('UserMenu: Sign out successful, redirecting to home');
       toast({
         title: "Signed out",
         description: "You have been signed out successfully.",
@@ -40,11 +38,8 @@ const UserMenu = () => {
   };
 
   if (!user) {
-    console.log('UserMenu: No user, not rendering');
     return null;
   }
-
-  console.log('UserMenu: Rendering for user:', user.email);
 
   return (
     <DropdownMenu>

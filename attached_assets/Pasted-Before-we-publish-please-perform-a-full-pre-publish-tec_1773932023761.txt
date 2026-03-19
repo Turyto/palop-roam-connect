@@ -1,0 +1,126 @@
+Before we publish, please perform a full pre-publish technical audit of the project focused on performance, code quality, security, and legacy cleanup.
+
+Goal:
+Determine whether the app feels heavy/sluggish only because of Replit preview mode, or whether there are real codebase issues causing unnecessary load, slow rendering, oversized bundles, redundant API/database calls, or legacy drag from the previous application.
+
+Please do not redesign the product or add new features.
+This is an audit / hardening / optimization review only.
+
+AUDIT SCOPE
+
+1. PERFORMANCE / FRONTEND LOAD
+- Audit page load behavior for the active public pages:
+  - /
+  - /plans
+  - /compatibility
+  - /how-it-works
+  - /support
+  - /purchase
+  - /orders
+- Check for:
+  - oversized bundles
+  - large dependencies
+  - duplicated dependencies
+  - unnecessary re-renders
+  - expensive components
+  - polling loops that are too frequent
+  - unnecessary hydration/runtime work
+  - blocking assets/images/fonts/scripts
+  - any dev-only code leaking into production builds
+- Identify if code splitting / lazy loading is missing where it would help
+- Check whether admin code is being included in public bundles unnecessarily
+
+2. LEGACY / DEAD CODE / PREVIOUS-APP DRAG
+- Audit for old files, components, hooks, routes, utilities, and tables references that are no longer used by the active app
+- Specifically identify:
+  - orphaned components
+  - dead routes
+  - unused pages
+  - unused hooks
+  - unused admin/public components
+  - fake/demo code still present
+  - legacy assets or mock data still loaded anywhere
+- Separate:
+  A. safe to delete now
+  B. keep for later
+  C. currently unused but still indirectly referenced
+
+3. DATA / API / SUPABASE EFFICIENCY
+- Audit all active pages/hooks for:
+  - duplicate Supabase queries
+  - unnecessary polling
+  - repeated reads of the same data
+  - over-fetching
+  - missing indexes assumptions if visible from code
+  - functions invoked too often
+  - expensive joins on customer-facing pages
+- Pay special attention to:
+  - purchase flow
+  - confirmation polling
+  - orders page
+  - support page
+  - admin dashboard tabs
+- Flag anything that could make the UI feel sluggish or increase costs
+
+4. SECURITY / HARDENING
+- Review the code for obvious security and production hardening issues:
+  - secrets exposed client-side
+  - unsafe logging
+  - excessive error detail shown to users
+  - weak handling of auth/session state
+  - unsafe query assumptions
+  - risky edge function patterns
+  - any place where guest/customer/admin boundaries could be mishandled
+- Do not change auth architecture unless a real issue is found
+- Just report findings and fix only small safe issues if obvious
+
+5. BUILD / DEPLOYMENT READINESS
+- Check if the current project is production-ready for publish:
+  - build cleanliness
+  - unused imports/warnings
+  - environment assumptions
+  - localhost/dev URL remnants
+  - preview-only behavior
+  - dynamic window.location usage that may behave differently on production
+  - broken links or routes
+  - missing fallbacks
+- Confirm whether Replit preview slowness is likely environment-related or code-related
+
+6. UX-PERFORMANCE ALIGNMENT
+- Identify any current UX pattern that is technically functional but causes unnecessary heaviness, such as:
+  - too many cards rendered at once
+  - always-mounted modals
+  - heavy FAQ/search/filter logic
+  - oversized admin tabs loaded eagerly
+  - polling where manual refresh would be better
+- Recommend only minimal, high-value improvements
+
+DELIVERABLE FORMAT
+
+Please return the audit in exactly these sections:
+
+A. Executive summary
+- Is the sluggishness likely preview-related, code-related, or both?
+
+B. Highest-priority issues
+- Only the most important items affecting performance, security, or stability
+
+C. Safe fixes applied now
+- Only small low-risk fixes you can confidently make immediately
+
+D. Recommended cleanup list
+- Safe deletions
+- Legacy/orphaned code
+- Deferred cleanup
+
+E. Publish readiness verdict
+- GO
+- GO with cautions
+- NO-GO
+
+CONSTRAINTS
+- Do not redesign pages
+- Do not change working business logic unless needed for a small safe hardening fix
+- Do not break current provisioning/order/auth/support flows
+- Prefer audit first, minimal safe fixes second
+- If bundle analysis or build profiling is possible, include it
