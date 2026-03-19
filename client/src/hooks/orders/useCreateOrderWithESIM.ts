@@ -246,6 +246,21 @@ export const useCreateOrderWithESIM = () => {
         if (activationError) {
           console.error('Error creating failed eSIM activation record:', activationError);
         }
+
+        // Fire-and-forget admin alert — failure here must not surface to the customer
+        supabase.functions.invoke('notify-provisioning-failure', {
+          body: {
+            order_id: orderResult.id,
+            customer_email: customerEmail,
+            plan_id: orderData.plan_id,
+            plan_name: orderData.plan_name,
+            payment_intent_id: paymentIntentId,
+            esim_package_id: packageData.esim_access_package_id,
+            error_message: esimError,
+          },
+        }).catch((alertErr: any) => {
+          console.error('Failed to send provisioning failure alert:', alertErr);
+        });
       }
 
       console.log('Order creation completed');
