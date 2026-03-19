@@ -38,7 +38,7 @@ const CompatibilitySection = () => {
               className="border-palop-green text-palop-green hover:bg-palop-green/5"
               data-testid="compatibility-secondary-cta"
             >
-              <Link to="/support">{t.compatibility.secondaryCta}</Link>
+              <Link to="/support?topic=compatibility">{t.compatibility.secondaryCta}</Link>
             </Button>
           </div>
 

@@ -1,0 +1,241 @@
+Please rebuild the public Support page for PALOP Connect so it matches the new product structure and current public UX.
+
+Main objective:
+Replace the old legacy/demo-style Support page with a new, simpler, credible, bilingual PALOP Connect Support page that is aligned with the updated flow:
+Homepage → Plans → Compatibility → How It Works → Purchase → Orders
+
+Important context:
+The current public Support page is still from the old application. It includes generic/demo-style content such as:
+- fake/helpfulness vote counts
+- support metrics like response time / satisfaction / active agents / tickets resolved
+- live chat / emergency / phone support cards
+- emergency partner network contacts
+- old layout and old brand logic
+
+At the same time, the admin dashboard already contains a Support tab and appears to have some support/ticket infrastructure from the previous application. We want to keep and reuse any real backend/admin support functionality if it exists, but the public Support page itself should be rebuilt fresh and aligned with PALOP Connect.
+
+Critical constraints:
+
+1. Preserve any real existing support backend logic
+- If the current public contact flow already writes to a real support table, reuse it
+- If the admin Support tab already reads real tickets, preserve compatibility
+- If support forms already integrate with existing backend logic, do not break them
+- If current admin Support is still demo-only, do not fake production readiness — make that explicit internally in your summary
+
+2. Do not break any working areas
+- Do not break auth
+- Do not break admin dashboard
+- Do not break Orders
+- Do not break Purchase / Stripe flow
+- Do not break public nav/header/footer consistency
+
+3. Preserve bilingual support
+- Must work in PT and EN like the rest of the updated site
+- Reuse the existing translation/i18n structure
+- Do not leave hardcoded public copy outside the translation pattern
+
+4. Keep the new public Support page credible
+- Remove or avoid fake operational claims unless they are truly backed by real data
+- Do not show fake “2.3 hours average response”, “98% satisfaction”, “12 active agents”, “1847 resolved tickets”, fake live-chat availability, fake emergency numbers, or similar placeholder/demo content
+
+PHASE 1 — Audit existing support flow before changing UI
+
+Before rebuilding, inspect and summarize:
+
+1. Does the current public Support page submit to any real backend support/ticket logic?
+2. Is there a support table already in Supabase or similar backend storage?
+3. Does the Admin Dashboard Support tab read real tickets or only mock/demo content?
+4. Is there an existing support form component or submission action worth reusing?
+5. Are any old “contact support” buttons elsewhere in the site already wired to a support route/form?
+
+Please preserve anything real/useful and remove only what is legacy/demo/fictional on the public side.
+
+PHASE 2 — Rebuild the public Support page structure
+
+Please replace the old public Support page with a new PALOP Connect version using the same visual language as the updated public pages.
+
+Recommended route:
+- `/support`
+
+Use the same shell as the updated public site:
+- HomeHeader
+- consistent PALOP Connect styling
+- HomeFooter
+
+New page structure should be:
+
+SECTION A — Hero
+Clear, simple, consistent.
+
+PT suggestion:
+Title: "Precisas de ajuda com o teu eSIM?"
+Subtitle: "Apoio para compatibilidade, ativação, encomendas e acesso ao teu eSIM."
+
+EN suggestion:
+Title: "Need help with your eSIM?"
+Subtitle: "Support for compatibility, activation, orders, and access to your eSIM."
+
+Primary CTA:
+- "Ver perguntas frequentes" / "View FAQs"
+Secondary CTA:
+- "Contactar suporte" / "Contact Support"
+
+SECTION B — Quick help by issue type
+This is the most important section.
+Create a grid of issue-based cards, not channel-based cards.
+
+Recommended cards:
+1. Compatibilidade do dispositivo / Device compatibility
+2. Ativação e QR Code / Activation and QR code
+3. Problemas com a encomenda / Order issues
+4. Recuperar acesso às encomendas / Access my orders again
+5. Pagamento e faturação / Payment issues
+6. Top-up ou prolongar plano / Top-up or extend plan
+
+Each card should:
+- have a short helpful description
+- link to the relevant FAQ anchor or section on the same page
+- or prefill/select the corresponding category in the support form below
+
+This section should reflect the actual eSIM customer journey.
+
+SECTION C — FAQ
+Keep a streamlined FAQ section, but make it specific to the real product.
+Remove fake vote counts/helpfulness stats unless those are real and supported by data.
+
+Suggested FAQ groups/content:
+- Compatibility
+- Purchase & payment
+- Activation
+- Orders & access recovery
+- Usage & validity
+- Top-up / extension
+
+Suggested FAQ examples:
+- How do I know if my phone supports eSIM?
+- What should I do if my QR code does not work?
+- I paid but have not received my eSIM yet
+- How do I access my orders again after leaving the session?
+- Can I use my eSIM in multiple countries?
+- Can I top up or extend my plan?
+- What happens when my plan expires?
+- How long does activation take?
+
+Keep the FAQ clean, readable, and aligned with the current site tone.
+
+SECTION D — Contact support form
+This should become the operational core of the page.
+
+Build a guided support form with fields like:
+- Name
+- Email
+- Order ID (optional but recommended)
+- Device model (optional)
+- Country / destination (optional)
+- Support topic / category (required)
+- Message (required)
+
+Recommended support topic dropdown:
+PT:
+- Compatibilidade do dispositivo
+- Não recebi o eSIM
+- QR Code não funciona
+- Não consigo ativar
+- Não consigo aceder às minhas encomendas
+- Problema de pagamento
+- Ajuda a escolher um plano
+- Outro
+
+EN:
+- Device compatibility
+- I did not receive my eSIM
+- QR code does not work
+- I cannot activate my eSIM
+- I cannot access my orders
+- Payment issue
+- Help choosing a plan
+- Other
+
+Behavior:
+- If a real support/ticket backend already exists, wire this form into it
+- If a real admin-readable ticket flow already exists, preserve/use it
+- If not, implement the safest minimal real capture path available in the existing architecture and explain clearly in your summary what is real vs placeholder
+
+Important:
+Do not build a fake support form that only looks functional.
+Either connect it to something real already in the project or explain exactly what is missing.
+
+SECTION E — Minimal expectations/help note
+Instead of fake stats or fake channels, add a simple real note such as:
+
+PT:
+“Respondemos por email assim que possível. Se já tens uma encomenda, inclui o número da encomenda para acelerar o apoio.”
+
+EN:
+“We reply by email as soon as possible. If you already have an order, include your order number to help us support you faster.”
+
+Optional only if truly real:
+- email support address
+- response expectations
+Only include them if they are actually used.
+
+PHASE 3 — Remove old/legacy public support content
+
+Please remove from the public Support page:
+- fake helpfulness/vote counts
+- fake response metrics
+- fake active agent counts
+- fake tickets resolved counters
+- fake live chat cards
+- fake phone support cards
+- fake emergency support cards
+- fake partner emergency contact lists
+
+If any of these are powered by real business data, say so in your summary before keeping them.
+Otherwise remove them from the public page.
+
+PHASE 4 — Align support entry points across the site
+
+Inspect the existing public CTAs that point to support, such as:
+- compatibility page support CTA
+- processing state support CTA in Orders
+- error-state support CTA
+- purchase confirmation or activation help CTAs
+- any support links in navbar/footer
+
+Please make sure they route consistently to the new `/support` page and, where practical, pass helpful context.
+Example:
+- support link from Compatibility page could preselect “Compatibilidade do dispositivo”
+- support link from Orders processing state could preselect “Não recebi o eSIM”
+- support link from QR/activation issue could preselect “QR Code não funciona” or “Não consigo ativar”
+
+Do this only if it is clean and safe within the existing structure.
+
+PHASE 5 — Preserve / assess admin support functionality
+
+Do not redesign the Admin Support tab yet unless necessary.
+But please inspect whether:
+- it uses real ticket data
+- it is connected to any support table
+- it can receive submissions from the public support form
+
+If yes, preserve that compatibility.
+If not, explain clearly in your summary what is real and what remains mock/demo.
+
+Acceptance criteria:
+1. Public Support page is visually aligned with the updated PALOP Connect public site
+2. Public Support page is issue-driven, not fake telecom-portal style
+3. FAQ is cleaned up and relevant
+4. Support form is present and tied to real or clearly explained backend behavior
+5. Fake metrics / fake support cards / fake emergency lists are removed from the public page
+6. Support-related CTAs across the site point consistently to the new support experience
+7. PT/EN works correctly
+8. Auth/admin/orders/purchase flow are not broken
+
+After implementing, provide:
+1. a summary of what from the old public Support page was removed
+2. a summary of what, if anything, was reused from the previous support backend/admin logic
+3. whether the public support form now creates real tickets or not
+4. whether the Admin Support tab is reading real support data or mock data
+5. confirmation that support CTAs across the site now route consistently
+6. any remaining follow-up items needed for full operational readiness

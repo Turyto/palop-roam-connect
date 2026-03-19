@@ -139,6 +139,22 @@ The following Supabase secrets are already configured:
 4. All sensitive API keys should be managed through Supabase secrets
 5. The Tailwind config removes the deprecated `@tailwindcss/line-clamp` plugin warning
 
+## Support Page (Rebuilt — Mar 2026)
+- `/support` fully rebuilt: HomeHeader + HomeFooter, bilingual (PT/EN), issue-driven
+- **Sections:** Hero → Quick Help (6 issue cards) → FAQ Accordion (6 groups) → Contact Form → Help Note
+- **Form:** writes real tickets to Supabase `support_tickets` table; works for guests (user_id nullable) and logged-in users; fields: name, email, order_id, device, category, message
+- **DB changes:** `support_tickets.user_id` made nullable; `email`, `name`, `category` columns added; INSERT RLS updated to allow anonymous submissions (`user_id IS NULL OR auth.uid() = user_id`)
+- **AdminSupportTickets.tsx:** reads real Supabase tickets; admin can mark status as open → in_progress → resolved → closed; filter by status
+- **Support CTAs with context:** Compatibility pages → `?topic=compatibility`; Orders processing → `?topic=no_esim`; Orders error → `?topic=activation`; expired → `?topic=plan_help`
+- **HomeFooter.tsx:** "Suporte" now routes to `/support` via `<Link>` (previously dead `#support` anchor scroll)
+- **Removed:** fake metrics (2.3h response, 98% satisfaction, 12 agents, 1847 tickets), fake phone numbers, fake live chat, fake emergency partner contact list
+- **Old components** (SupportHero, SupportFAQ, EnhancedSupportContact, SupportContact) are now dead code — safe to delete as follow-up
+
+## Supabase Auth (Fixed — Mar 2026)
+- `site_url` updated from `http://localhost:3000` to Replit dev domain
+- `uri_allow_list` now includes `https://*.replit.app/**` for production deployments
+- Magic link emails now redirect correctly to the app instead of localhost
+
 ## Next Steps
 The project is ready for development. You can:
 1. Continue building new features

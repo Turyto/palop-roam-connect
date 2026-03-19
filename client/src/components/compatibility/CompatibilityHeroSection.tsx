@@ -40,7 +40,7 @@ const CompatibilityHeroSection = () => {
               className="border-palop-green text-palop-green hover:bg-palop-green/5 px-8"
               data-testid="compat-hero-secondary-cta"
             >
-              <Link to="/support">{h.secondaryCta}</Link>
+              <Link to="/support?topic=compatibility">{h.secondaryCta}</Link>
             </Button>
           </div>
 

@@ -499,37 +499,46 @@ export type Database = {
       }
       support_tickets: {
         Row: {
+          category: string | null
           created_at: string
+          email: string | null
           id: string
           message: string
+          name: string | null
           priority: string
           resolved_at: string | null
           status: string
           subject: string
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
+          category?: string | null
           created_at?: string
+          email?: string | null
           id?: string
           message: string
+          name?: string | null
           priority?: string
           resolved_at?: string | null
           status?: string
           subject: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
+          category?: string | null
           created_at?: string
+          email?: string | null
           id?: string
           message?: string
+          name?: string | null
           priority?: string
           resolved_at?: string | null
           status?: string
           subject?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {

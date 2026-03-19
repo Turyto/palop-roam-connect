@@ -158,7 +158,7 @@ const OrderActivationStateBlock = ({
               <h4 className="font-semibold text-red-700 text-sm">{o.stateErrorTitle}</h4>
               <p className="text-xs text-red-600 mt-0.5">{o.stateErrorDesc}</p>
             </div>
-            <Link to="/support">
+            <Link to="/support?topic=activation">
               <Button
                 variant="outline"
                 size="sm"
@@ -191,7 +191,7 @@ const OrderActivationStateBlock = ({
           </div>
         </div>
         <div className="flex gap-2 pt-1 flex-wrap">
-          <Link to="/support">
+          <Link to="/support?topic=no_esim">
             <Button
               variant="outline"
               size="sm"
@@ -360,7 +360,7 @@ const OrderActivationStateBlock = ({
               {o.topUp}
             </Button>
           )}
-          <Link to="/support">
+          <Link to="/support?topic=plan_help">
             <Button
               variant="outline"
               className="border-gray-300 text-gray-600 hover:bg-gray-50 h-8 text-xs"
@@ -387,7 +387,7 @@ const OrderActivationStateBlock = ({
           </div>
         </div>
         <div className="flex gap-2 pt-1 flex-wrap">
-          <Link to="/support">
+          <Link to="/support?topic=activation">
             <Button
               className="bg-red-600 hover:bg-red-700 text-white h-8 text-xs"
               data-testid={`button-support-error-${order.id}`}
@@ -429,7 +429,7 @@ const ActivationGuide = ({ o, orderId }: { o: any; orderId: string }) => (
     <p className="mt-3 text-xs text-gray-400">{o.activationEmailHelper}</p>
     <p className="mt-1 text-xs text-gray-400">
       {o.activationSupport}{' '}
-      <Link to="/support" className="text-palop-green hover:underline font-medium">
+      <Link to="/support?topic=activation" className="text-palop-green hover:underline font-medium">
         {o.talkToSupport}
       </Link>
     </p>

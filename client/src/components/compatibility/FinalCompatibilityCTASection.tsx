@@ -18,7 +18,7 @@ const FinalCompatibilityCTASection = () => {
             className="bg-white text-palop-green hover:bg-gray-50 font-semibold px-8"
             data-testid="compat-final-cta-primary"
           >
-            <Link to="/support">{f.primaryCta}</Link>
+            <Link to="/support?topic=compatibility">{f.primaryCta}</Link>
           </Button>
           <Button
             asChild

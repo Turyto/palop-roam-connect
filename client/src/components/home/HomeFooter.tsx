@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/language';
 
 const HomeFooter = () => {
@@ -6,12 +7,11 @@ const HomeFooter = () => {
   const year = new Date().getFullYear();
   const copyright = t.footer.copyright.replace('{year}', String(year));
 
-  const navLinks = [
+  const anchorLinks = [
     { label: t.footer.plans, href: '#plans' },
     { label: t.footer.compatibility, href: '#compatibility' },
     { label: t.footer.howItWorks, href: '#how-it-works' },
     { label: t.footer.faq, href: '#faq' },
-    { label: t.footer.support, href: '#support' },
   ];
 
   const legalLinks = [
@@ -20,10 +20,8 @@ const HomeFooter = () => {
   ];
 
   const handleScroll = (href: string) => {
-    if (href.startsWith('#')) {
-      const el = document.querySelector(href);
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
-    }
+    const el = document.querySelector(href);
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
@@ -40,7 +38,7 @@ const HomeFooter = () => {
           </div>
 
           <div className="space-y-3">
-            {navLinks.map((link) => (
+            {anchorLinks.map((link) => (
               <a
                 key={link.label}
                 href={link.href}
@@ -53,6 +51,12 @@ const HomeFooter = () => {
                 {link.label}
               </a>
             ))}
+            <Link
+              to="/support"
+              className="block text-sm hover:text-white transition-colors"
+            >
+              {t.footer.support}
+            </Link>
           </div>
 
           <div className="space-y-3">
