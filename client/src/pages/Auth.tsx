@@ -25,8 +25,8 @@ const Auth = () => {
           console.log('Redirecting admin to dashboard');
           navigate('/admin/dashboard', { replace: true });
         } else {
-          console.log('Redirecting user to homepage');
-          navigate('/', { replace: true });
+          console.log('Redirecting user to dashboard');
+          navigate('/orders', { replace: true });
         }
       }, 100);
     }

@@ -1,0 +1,34 @@
+Update the authenticated navigation flow so that after a successful user login, the user is redirected directly to the customer dashboard instead of returning to the public homepage.
+
+Requirements:
+- Redirect authenticated users to the existing customer dashboard route currently used for “A minha conta” (the implemented dashboard page, likely /orders unless the actual route differs).
+- Do NOT change or break any existing auth logic, session handling, logout flow, Stripe flow, checkout flow, provisioning flow, public homepage, plans page, admin area, or pricing logic.
+- Keep the homepage publicly accessible as it is today.
+- Keep the header/menu/dropdown structure intact unless a minimal change is required for the redirect to work.
+- Do NOT create a new dashboard page or duplicate routes.
+- Use the smallest possible code change surface.
+
+Behavior required:
+1. After successful login, redirect the user directly to the customer dashboard route.
+2. If the user is already authenticated and intentionally navigates to the homepage, allow that behavior unless the app already has a guarded redirect pattern.
+3. Keep “A minha conta” in the account menu working as it currently does.
+4. Preserve all existing functionality and route guards.
+
+Implementation guidance:
+- Locate the current login success redirect logic in the auth flow.
+- Replace the post-login destination from homepage/default public route to the existing customer dashboard route.
+- If there is a reusable redirect constant/helper for post-auth routing, update that instead of adding duplicate logic.
+- If the app supports “return to intended page” behavior, preserve it; only change the default fallback destination for successful login to the dashboard route.
+- Verify that logout still returns users to the correct public route if that is the current behavior.
+
+Validation:
+- Login from a logged-out state and confirm the user lands on the dashboard immediately.
+- Confirm the dashboard still loads normally.
+- Confirm logout still works.
+- Confirm the homepage remains accessible manually.
+- Confirm no other flows were changed.
+
+At the end, provide:
+- the file(s) changed
+- the exact redirect logic updated
+- confirmation that only the post-login default destination was changed
