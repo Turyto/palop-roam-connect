@@ -2,11 +2,17 @@ import { User } from 'lucide-react';
 
 interface DashboardHeaderProps {
   email: string | null;
-  title: string;
-  welcomeText: string | null;
+  strings: {
+    title: string;
+    welcomeTemplate: string;
+  };
 }
 
-const DashboardHeader = ({ email, title, welcomeText }: DashboardHeaderProps) => {
+const DashboardHeader = ({ email, strings }: DashboardHeaderProps) => {
+  const welcomeText = email
+    ? strings.welcomeTemplate.replace('{email}', email)
+    : null;
+
   return (
     <div className="mb-6">
       <div className="flex items-center gap-3 mb-1">
@@ -14,7 +20,7 @@ const DashboardHeader = ({ email, title, welcomeText }: DashboardHeaderProps) =>
           <User className="h-5 w-5 text-palop-green" />
         </div>
         <h1 className="text-2xl md:text-3xl font-display font-bold text-gray-900">
-          {title}
+          {strings.title}
         </h1>
       </div>
       {welcomeText && (

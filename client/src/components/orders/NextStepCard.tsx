@@ -5,6 +5,8 @@ import { type Order } from '@/hooks/orders/types';
 import { type CustomerQRCode } from '@/hooks/useCustomerQRCodes';
 import { QrCode, Smartphone } from 'lucide-react';
 
+type OrderWithCoverage = Order & { coverage?: string };
+
 interface NextStepLabels {
   nextStepTitle: string;
   emptyDesc: string;
@@ -24,10 +26,10 @@ interface NextStepLabels {
 }
 
 interface NextStepCardProps {
-  order: Order | null;
+  order: OrderWithCoverage | null;
   qrCode: CustomerQRCode | null;
   dashboardState: ActivationState | null;
-  onDownloadESIM: (order: Order) => void;
+  onDownloadESIM: (order: OrderWithCoverage) => void;
   labels: NextStepLabels;
 }
 

@@ -9,6 +9,7 @@ import { useCustomerQRCodes } from "@/hooks/useCustomerQRCodes";
 import { deriveActivationState } from "@/components/order-history/OrderActivationStateBlock";
 import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
+import type { Order } from "@/hooks/orders/types";
 
 import DashboardHeader from "@/components/orders/DashboardHeader";
 import EsimSummaryCard from "@/components/orders/EsimSummaryCard";
@@ -16,7 +17,8 @@ import NextStepCard from "@/components/orders/NextStepCard";
 import OrderDetailsCard from "@/components/orders/OrderDetailsCard";
 import SupportCard from "@/components/orders/SupportCard";
 import QRCodeDownloadModal from "@/components/QRCodeDownloadModal";
-import type { Order } from "@/hooks/orders/types";
+
+type OrderWithCoverage = Order & { coverage?: string };
 
 const Orders = () => {
   const { user, loading: authLoading } = useAuth();
@@ -28,7 +30,9 @@ const Orders = () => {
 
   const o = t.orders;
   const email = user?.email ?? null;
-  const latestOrder: Order | null = orders.length > 0 ? orders[0] : null;
+  const latestOrder: OrderWithCoverage | null = orders.length > 0
+    ? (orders[0] as OrderWithCoverage)
+    : null;
   const latestQRCode = latestOrder
     ? (qrCodes.find((qr) => qr.order_id === latestOrder.id) ?? null)
     : null;
@@ -45,15 +49,15 @@ const Orders = () => {
     coverage?: string;
   } | null>(null);
 
-  const handleDashboardDownloadESIM = (order: Order) => {
+  const handleDashboardDownloadESIM = (order: OrderWithCoverage) => {
     if (latestQRCode) {
       setDashboardQR({
         activationUrl: latestQRCode.activation_url,
         orderId: order.id,
-        planName: (order as any).plan_name,
-        dataAmount: (order as any).data_amount,
+        planName: order.plan_name,
+        dataAmount: order.data_amount,
         status: latestQRCode.status,
-        coverage: (order as any).coverage ?? undefined,
+        coverage: order.coverage,
       });
     }
   };
@@ -73,8 +77,6 @@ const Orders = () => {
   }
 
   if (!user) return null;
-
-  const welcomeText = email ? o.dashboardWelcome.replace('{email}', email) : null;
 
   const esimSummaryLabels = {
     noActivePlan: o.noActivePlan,
@@ -140,8 +142,7 @@ const Orders = () => {
 
           <DashboardHeader
             email={email}
-            title={o.dashboardTitle}
-            welcomeText={welcomeText}
+            strings={{ title: o.dashboardTitle, welcomeTemplate: o.dashboardWelcome }}
           />
 
           {ordersLoading ? (
@@ -167,7 +168,6 @@ const Orders = () => {
                   labels={nextStepLabels}
                 />
               </div>
-
               <div className="flex flex-col gap-4">
                 <OrderDetailsCard
                   order={latestOrder}

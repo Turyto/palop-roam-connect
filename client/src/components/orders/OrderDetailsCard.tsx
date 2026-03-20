@@ -36,8 +36,8 @@ const OrderDetailsCard = ({ order, email, labels: l }: OrderDetailsCardProps) =>
         {order?.id && (
           <Row label={l.orderId} value={order.id.slice(0, 8) + '…'} />
         )}
-        {(order as any)?.plan_name && (
-          <Row label={l.detailsPlanTitle} value={(order as any).plan_name} />
+        {order?.plan_name && (
+          <Row label={l.detailsPlanTitle} value={order.plan_name} />
         )}
         {order?.created_at && (
           <Row
@@ -45,10 +45,10 @@ const OrderDetailsCard = ({ order, email, labels: l }: OrderDetailsCardProps) =>
             value={format(new Date(order.created_at), 'dd MMM yyyy')}
           />
         )}
-        {(order as any)?.duration_days && (
+        {order?.duration_days && (
           <Row
             label={l.detailsValidity}
-            value={l.detailsDays.replace('{days}', String((order as any).duration_days))}
+            value={l.detailsDays.replace('{days}', String(order.duration_days))}
           />
         )}
       </dl>
