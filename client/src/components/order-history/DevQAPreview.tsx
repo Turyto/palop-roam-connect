@@ -14,6 +14,7 @@ import OrderCard from "./OrderCard";
 import QRCodeDownloadModal from "../QRCodeDownloadModal";
 import { useLanguage } from "@/contexts/language";
 import { AlertTriangle, ChevronDown, ChevronRight, FlaskConical } from "lucide-react";
+import { PLAN_PRICES } from "@/content/plansPageContent";
 
 /* ── Mock data — drives every state in deriveActivationState() ─────── */
 
@@ -30,7 +31,7 @@ const MOCK_ORDERS = [
       plan_name: '[QA] Europe Weekly — Processing',
       data_amount: '5 GB',
       duration_days: 7,
-      price: 9.99,
+      price: PLAN_PRICES['europe-weekly'],
       created_at: daysAgo(0),
       status: 'completed',
       payment_status: 'succeeded',
@@ -49,7 +50,7 @@ const MOCK_ORDERS = [
       plan_name: '[QA] Europe Weekly — Ready',
       data_amount: '5 GB',
       duration_days: 30,
-      price: 9.99,
+      price: PLAN_PRICES['europe-weekly'],
       created_at: daysAgo(2),
       status: 'completed',
       payment_status: 'succeeded',
@@ -73,7 +74,7 @@ const MOCK_ORDERS = [
       plan_name: '[QA] Europe Weekly — Active',
       data_amount: '5 GB',
       duration_days: 30,
-      price: 9.99,
+      price: PLAN_PRICES['europe-weekly'],
       created_at: daysAgo(5),
       status: 'completed',
       payment_status: 'succeeded',
@@ -97,7 +98,7 @@ const MOCK_ORDERS = [
       plan_name: '[QA] Europe Weekly — Expired',
       data_amount: '5 GB',
       duration_days: 7,
-      price: 9.99,
+      price: PLAN_PRICES['europe-weekly'],
       created_at: daysAgo(20),
       status: 'completed',
       payment_status: 'succeeded',
@@ -121,7 +122,7 @@ const MOCK_ORDERS = [
       plan_name: '[QA] Europe Weekly — Error',
       data_amount: '5 GB',
       duration_days: 7,
-      price: 9.99,
+      price: PLAN_PRICES['europe-weekly'],
       created_at: daysAgo(1),
       status: 'failed',
       payment_status: 'failed',
