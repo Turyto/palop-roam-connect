@@ -14,6 +14,30 @@ export interface PlanCard {
   href: string;
 }
 
+// ---------------------------------------------------------------------------
+// Single source of truth for PALOP Connect plan prices.
+// String prices (display) use European comma format: €3,99
+// Numeric prices (Stripe / calculations) use dot: 3.99
+// ---------------------------------------------------------------------------
+
+export const PLAN_PRICES: Record<string, number> = {
+  'portugal-starter':  3.99,
+  'portugal-weekly':   9.99,
+  'portugal-monthly': 14.99,
+  'europe-weekly':     9.99,
+  'europe-monthly':   14.99,
+  'europe-plus':      14.99,
+};
+
+export const PLAN_PRICES_DISPLAY: Record<string, string> = {
+  'portugal-starter':  '€3,99',
+  'portugal-weekly':   '€9,99',
+  'portugal-monthly': '€14,99',
+  'europe-weekly':     '€9,99',
+  'europe-monthly':   '€14,99',
+  'europe-plus':      '€14,99',
+};
+
 export const planCards: PlanCard[] = [
   {
     id: 'portugal-starter',
@@ -23,7 +47,7 @@ export const planCards: PlanCard[] = [
     data: '1 GB',
     validityDays: '7',
     validity: { pt: '7 dias', en: '7 days' },
-    price: '€4.99',
+    price: PLAN_PRICES_DISPLAY['portugal-starter'],
     coverageLabel: { pt: 'Portugal', en: 'Portugal' },
     popular: false,
     href: '/purchase?plan=portugal-starter',
@@ -36,7 +60,7 @@ export const planCards: PlanCard[] = [
     data: '5 GB',
     validityDays: '30',
     validity: { pt: '30 dias', en: '30 days' },
-    price: '€8.99',
+    price: PLAN_PRICES_DISPLAY['portugal-weekly'],
     coverageLabel: { pt: 'Portugal', en: 'Portugal' },
     popular: true,
     href: '/purchase?plan=portugal-weekly',
@@ -49,7 +73,7 @@ export const planCards: PlanCard[] = [
     data: '10 GB',
     validityDays: '30',
     validity: { pt: '30 dias', en: '30 days' },
-    price: '€16.99',
+    price: PLAN_PRICES_DISPLAY['portugal-monthly'],
     coverageLabel: { pt: 'Portugal', en: 'Portugal' },
     popular: false,
     href: '/purchase?plan=portugal-monthly',
@@ -62,7 +86,7 @@ export const planCards: PlanCard[] = [
     data: '5 GB',
     validityDays: '30',
     validity: { pt: '30 dias', en: '30 days' },
-    price: '€9.99',
+    price: PLAN_PRICES_DISPLAY['europe-weekly'],
     coverageLabel: { pt: 'Portugal + Europa', en: 'Portugal + Europe' },
     popular: true,
     href: '/purchase?plan=europe-weekly',
@@ -75,7 +99,7 @@ export const planCards: PlanCard[] = [
     data: '10 GB',
     validityDays: '30',
     validity: { pt: '30 dias', en: '30 days' },
-    price: '€19.99',
+    price: PLAN_PRICES_DISPLAY['europe-monthly'],
     coverageLabel: { pt: 'Portugal + Europa', en: 'Portugal + Europe' },
     popular: false,
     href: '/purchase?plan=europe-monthly',
@@ -88,7 +112,7 @@ export const planCards: PlanCard[] = [
     data: '20 GB',
     validityDays: '30',
     validity: { pt: '30 dias', en: '30 days' },
-    price: '€29.99',
+    price: PLAN_PRICES_DISPLAY['europe-plus'],
     coverageLabel: { pt: 'Portugal + Europa', en: 'Portugal + Europe' },
     popular: false,
     href: '/purchase?plan=europe-plus',
@@ -102,7 +126,7 @@ export const comparisonRows = [
     data: '1 GB',
     duration: { pt: '7 dias', en: '7 days' },
     coverage: { pt: 'Portugal', en: 'Portugal' },
-    price: '€4.99',
+    price: PLAN_PRICES_DISPLAY['portugal-starter'],
   },
   {
     id: 'europe-weekly',
@@ -110,7 +134,7 @@ export const comparisonRows = [
     data: '5 GB',
     duration: { pt: '30 dias', en: '30 days' },
     coverage: { pt: 'Portugal + Europa', en: 'Portugal + Europe' },
-    price: '€9.99',
+    price: PLAN_PRICES_DISPLAY['europe-weekly'],
   },
   {
     id: 'europe-monthly',
@@ -118,6 +142,6 @@ export const comparisonRows = [
     data: '10 GB',
     duration: { pt: '30 dias', en: '30 days' },
     coverage: { pt: 'Portugal + Europa', en: 'Portugal + Europe' },
-    price: '€19.99',
+    price: PLAN_PRICES_DISPLAY['europe-monthly'],
   },
 ];

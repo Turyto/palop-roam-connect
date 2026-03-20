@@ -7,6 +7,7 @@ import PurchaseFormWithOrders from "@/components/PurchaseFormWithOrders";
 import PurchaseSteps from "@/components/PurchaseSteps";
 import SelectedPlanSummary from "@/components/SelectedPlanSummary";
 import ESIMPlans from "@/components/ESIMPlans";
+import { PLAN_PRICES } from "@/content/plansPageContent";
 
 type PurchaseStep = "plans" | "checkout" | "payment" | "confirmation";
 
@@ -34,7 +35,7 @@ const Purchase = () => {
       name: "Portugal Arrival",
       data: "1 GB",
       days: 7,
-      price: 4.99,
+      price: PLAN_PRICES['portugal-starter'],
       currency: "EUR",
       features: [
         "1 GB of Internet",
@@ -49,7 +50,7 @@ const Purchase = () => {
       name: "Portugal 5GB",
       data: "5 GB",
       days: 30,
-      price: 8.99,
+      price: PLAN_PRICES['portugal-weekly'],
       currency: "EUR",
       features: [
         "5 GB of Internet",
@@ -64,7 +65,7 @@ const Purchase = () => {
       name: "Portugal 10GB",
       data: "10 GB",
       days: 30,
-      price: 16.99,
+      price: PLAN_PRICES['portugal-monthly'],
       currency: "EUR",
       features: [
         "10 GB of Internet",
@@ -79,7 +80,7 @@ const Purchase = () => {
       name: "Europe 5GB",
       data: "5 GB",
       days: 30,
-      price: 9.99,
+      price: PLAN_PRICES['europe-weekly'],
       currency: "EUR",
       features: [
         "5 GB of Internet",
@@ -94,7 +95,7 @@ const Purchase = () => {
       name: "Europe 10GB",
       data: "10 GB",
       days: 30,
-      price: 19.99,
+      price: PLAN_PRICES['europe-monthly'],
       currency: "EUR",
       features: [
         "10 GB of Internet",
@@ -109,7 +110,7 @@ const Purchase = () => {
       name: "Europe 20GB",
       data: "20 GB",
       days: 30,
-      price: 29.99,
+      price: PLAN_PRICES['europe-plus'],
       currency: "EUR",
       features: [
         "20 GB of Internet",

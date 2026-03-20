@@ -114,7 +114,7 @@ const PhoneMockup = () => (
     </div>
 
     <div className="absolute -left-4 bottom-20 bg-white border border-gray-100 shadow-lg rounded-xl px-3 py-2 text-center">
-      <div className="text-[10px] font-bold text-palop-green">€9.99</div>
+      <div className="text-[10px] font-bold text-palop-green">€9,99</div>
       <div className="text-[9px] text-gray-500">30 dias</div>
     </div>
   </div>
