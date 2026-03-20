@@ -9,8 +9,10 @@ const Auth = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Only handle redirects when we're not loading and have a user
-    if (!loading && user) {
+    // Only redirect once we have the user AND the role has been resolved.
+    // userRole starts as null and is set asynchronously; waiting for it avoids
+    // redirecting admin users to the customer dashboard.
+    if (!loading && user && userRole !== null) {
       // Use setTimeout to ensure state has fully settled
       setTimeout(() => {
         if (userRole === 'admin') {

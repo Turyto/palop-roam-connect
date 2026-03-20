@@ -1,0 +1,66 @@
+URGENT FIX: The recent post-login redirect change introduced a regression. Admin users are now being redirected to the customer dashboard instead of the admin dashboard after login.
+
+TASK:
+Identify exactly where the post-login redirect logic was changed, determine how admin users are distinguished from customer users in the current app, and fix the redirect so each user type lands on the correct dashboard.
+
+REQUIRED OUTCOME:
+- Admin users must be redirected to the existing admin dashboard after successful login.
+- Customer/users must continue to be redirected to the existing customer dashboard.
+- Do NOT break any current auth/session logic.
+- Do NOT change logout flow, pricing, checkout, provisioning, customer dashboard functionality, admin functionality, or route structure beyond what is necessary to fix this regression.
+
+STRICT SCOPE:
+- Change only the logic required to restore role-aware post-login redirect behavior.
+- Use the smallest possible code change surface.
+- Do NOT create new dashboards or duplicate routes.
+- Do NOT hardcode a specific email unless the existing system already uses that as the actual admin-identification method. Prefer the real existing role/source-of-truth already in the app.
+
+INVESTIGATION STEPS:
+1. Locate the recent login success redirect logic that was changed to always send users to the customer dashboard.
+2. Identify the existing source of truth for user type:
+   - auth user role
+   - profile role
+   - admin flag
+   - route guard logic
+   - existing admin access helper
+   - any other current app mechanism already used to distinguish admin vs customer
+3. Reuse the existing admin detection logic already present in the app. Do not invent a parallel role system.
+4. Restore role-based redirect behavior:
+   - admin -> existing admin dashboard route
+   - non-admin authenticated user -> existing customer dashboard route
+5. If the app supports “return to intended page” behavior, preserve it. Only correct the default fallback destination logic by role.
+
+IMPLEMENTATION RULES:
+- Prefer updating a single shared redirect helper or auth-success handler if one exists.
+- If admin route detection/helper already exists elsewhere in the app, import/reuse it rather than duplicating logic.
+- Do not broaden the refactor.
+- Keep homepage manual access unchanged.
+- Keep “A minha conta” and customer dashboard behavior unchanged for non-admin users.
+
+VALIDATION REQUIRED:
+1. Login with admin credentials:
+   - confirm redirect goes to the existing admin dashboard
+2. Login with customer credentials:
+   - confirm redirect still goes to the customer dashboard
+3. Confirm logout still works
+4. Confirm direct navigation to admin/customer routes still respects existing route protection
+5. Confirm no regressions in dashboard loading for either user type
+6. Confirm no hardcoded temporary workaround remains unless it is already the app’s established admin detection method
+
+ADDITIONAL REPORTING REQUIRED:
+Also provide a user access summary based on the current source of truth used by the app:
+- list of users/customers identified as non-admin
+- list of users identified as admin
+- for each, include only the fields safely available and relevant for debugging access/redirect behavior, such as email, role, admin flag, or profile type
+- clearly state the source used to derive this list
+- if a full list cannot be safely or reliably produced from the current app/code/data access available in Replit, explain exactly why and provide the maximum reliable partial list instead
+- do NOT change data just to produce this report
+
+DELIVERABLE:
+At the end, report:
+- root cause found
+- file(s) changed
+- exact logic used to distinguish admin vs customer
+- exact redirect behavior now in place
+- user/customer/admin list summary as requested
+- confirmation that only the login redirect regression was fixed
