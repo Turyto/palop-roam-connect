@@ -11,6 +11,7 @@ const translations = {
       support: 'Suporte',
       buyNow: 'Comprar agora',
       signIn: 'Entrar',
+      signOut: 'Terminar sessão',
     },
     checkout: {
       emailHelper: 'Receberás o teu eSIM e as instruções de ativação por email.',
@@ -536,6 +537,7 @@ const translations = {
       support: 'Support',
       buyNow: 'Buy now',
       signIn: 'Sign In',
+      signOut: 'Sign out',
     },
     checkout: {
       emailHelper: 'You will receive your eSIM and activation instructions by email.',

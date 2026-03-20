@@ -1,5 +1,5 @@
 
-import { LogOut, User } from 'lucide-react';
+import { LogOut, User, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -11,11 +11,13 @@ import {
 import { useAuth } from '@/contexts/auth';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '@/contexts/language';
 
 const UserMenu = () => {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const handleSignOut = async () => {
     const { error } = await signOut();
@@ -44,7 +46,7 @@ const UserMenu = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="flex items-center space-x-2">
+        <Button variant="ghost" className="flex items-center space-x-2" data-testid="button-user-menu">
           <User className="h-4 w-4" />
           <span>{user.email}</span>
         </Button>
@@ -52,12 +54,17 @@ const UserMenu = () => {
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuItem disabled>
           <User className="mr-2 h-4 w-4" />
-          <span>{user.email}</span>
+          <span className="truncate">{user.email}</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleSignOut}>
+        <DropdownMenuItem onClick={() => navigate('/orders')} data-testid="link-my-account">
+          <LayoutDashboard className="mr-2 h-4 w-4" />
+          <span>{t.orders.dashboardTitle}</span>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={handleSignOut} data-testid="button-sign-out">
           <LogOut className="mr-2 h-4 w-4" />
-          <span>Sign out</span>
+          <span>{t.nav.signOut}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
