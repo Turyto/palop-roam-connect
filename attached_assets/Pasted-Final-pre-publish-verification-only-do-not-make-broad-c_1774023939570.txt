@@ -1,0 +1,63 @@
+Final pre-publish verification only — do not make broad changes.
+
+Please run the final checks below and only fix something if you find a real blocker introduced by the recent auth hardening. Otherwise, report results only.
+
+OBJECTIVE:
+Confirm that the recent role-resolution hardening is correct, typed safely, and does not break normal login behavior for either admin or customer users.
+
+STRICT SCOPE:
+- Prefer verification/reporting only.
+- Do NOT refactor.
+- Do NOT change pricing, checkout, provisioning, dashboard content, admin content, route structure, or unrelated auth behavior.
+- Only apply a code change if you discover a genuine blocker/regression during these checks.
+
+FINAL CHECKS REQUIRED:
+
+1. Confirm the exact return type of fetchUserRole
+- Inspect client/src/contexts/auth/utils.ts
+- Report the exact TypeScript return type now used by fetchUserRole
+- Confirm it is explicitly compatible with the current auth flow, ideally something equivalent to:
+  'admin' | 'customer' | null
+- Confirm invalid/unexpected values are not silently treated as 'customer'
+
+2. Confirm auth context typing is internally consistent
+- Inspect:
+  - client/src/contexts/auth/types.ts
+  - client/src/contexts/auth/AuthContext.tsx
+  - client/src/pages/Auth.tsx
+- Verify that userRole, roleError, loading, and redirect conditions are all type-consistent
+- Verify there are no TypeScript errors or unsafe assumptions caused by the new null/error handling
+
+3. Re-test happy-path admin login
+- Confirm a valid admin login still redirects to the existing admin dashboard
+- Confirm no intermediate error state appears on successful admin login
+
+4. Re-test happy-path customer login
+- Confirm a valid customer login still redirects to the existing customer dashboard
+- Confirm no intermediate error state appears on successful customer login
+
+5. Re-test guarded failure behavior
+- If feasible, validate the role-resolution failure path still behaves safely:
+  - no silent redirect to customer
+  - no redirect loop
+  - safe user-facing error message appears
+- If direct simulation is not feasible in the current environment, explain that clearly and confirm by code-path inspection instead
+
+6. Build and sanity check
+- Confirm there are no TypeScript/build errors after the recent changes
+- Confirm no obvious console/runtime blockers related to auth were introduced
+
+DELIVERABLE FORMAT:
+Provide a short final verification report with:
+1. fetchUserRole exact return type
+2. whether typing is consistent across utils/types/context/Auth page
+3. admin login result
+4. customer login result
+5. failure-path result or code-inspection conclusion
+6. build/typecheck result
+7. whether any blocker was found
+8. exact files changed, if any
+9. final publish recommendation for trial testing: go / no-go
+
+IMPORTANT:
+If no blocker is found, do not change code unnecessarily. Report only.
