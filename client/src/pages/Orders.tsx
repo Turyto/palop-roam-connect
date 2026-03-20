@@ -30,6 +30,8 @@ const Orders = () => {
 
   const o = t.orders;
   const email = user?.email ?? null;
+  const greetingName =
+    (user?.user_metadata?.full_name as string | undefined)?.trim() || email;
   const latestOrder: OrderWithCoverage | null = orders.length > 0
     ? (orders[0] as OrderWithCoverage)
     : null;
@@ -141,7 +143,7 @@ const Orders = () => {
         <div className="container mx-auto px-4 py-8 max-w-6xl">
 
           <DashboardHeader
-            email={email}
+            email={greetingName}
             strings={{ title: o.dashboardTitle, welcomeTemplate: o.dashboardWelcome }}
           />
 
