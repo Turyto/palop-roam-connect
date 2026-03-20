@@ -1,0 +1,217 @@
+TASK: Refactor and improve the logged-in customer/user/guest customer dashboard UX for PALOP Connect.
+
+IMPORTANT CONSTRAINTS:
+- Do NOT change or break any current business logic.
+- Do NOT change Stripe pricing logic.
+- Do NOT change checkout, purchase, provisioning, auth, supplier sync, inventory, or admin functionality.
+- Do NOT modify the public homepage, plans page, pricing source of truth, or ESIMPlans.tsx SKU family logic.
+- Do NOT remove existing integrations unless they are clearly unused inside the dashboard page itself.
+- Keep all existing routes, API calls, hooks, and data sources working as they currently do.
+- This task is UX/UI/dashboard-focused only.
+- Reuse existing data structures where possible.
+- If real data is unavailable for some fields, show safe fallback empty states rather than inventing data.
+
+OBJECTIVE:
+Replace the current dashboard experience that looks like a copy of the homepage with a simple, practical, status-driven customer dashboard.
+
+TARGET USERS:
+- Logged-in customer
+- Customer with no active eSIM
+- Customer with purchased but not yet installed eSIM
+- Customer with active eSIM
+- Customer with expired eSIM
+- Guest customer if applicable in current implementation
+
+DESIGN GOAL:
+The dashboard should immediately answer:
+1. What is my current eSIM/plan status?
+2. What should I do next?
+3. Where do I find my order/eSIM details?
+4. How do I get help?
+
+DO NOT add marketing hero sections, homepage messaging, or generic landing-page content.
+
+IMPLEMENTATION APPROACH:
+1. Find the current customer dashboard page/component and identify:
+   - main route
+   - child components used
+   - data sources/hooks/providers used
+   - auth state handling
+   - existing order/eSIM status logic
+2. Refactor only the dashboard presentation layer to a compact card-based layout.
+3. Preserve all existing functional actions and wire them into the new UI.
+4. Keep existing translations/i18n patterns if already present.
+5. Keep responsive behavior mobile-first and clean.
+
+NEW DASHBOARD STRUCTURE:
+Create a simple dashboard with these sections in this order:
+
+A. Dashboard header
+- Title: "A minha conta" (or existing i18n equivalent)
+- Subtitle with welcome text using customer email/name if available
+- No homepage hero copy
+
+B. Current eSIM / plan summary card
+This is the top priority card.
+Display, when available:
+- Plan name
+- Status
+- Coverage
+- Validity / duration
+- Purchase date or activation-related date if available
+- Main primary CTA depending on status
+
+Supported status labels:
+- "Sem plano ativo"
+- "Pronto para instalar"
+- "Ativo"
+- "Expirado"
+
+Map existing backend/provider status into these UX labels without changing backend logic.
+
+CTA behavior by status:
+- No active plan -> button: "Comprar eSIM"
+- Ready to install -> button: "Ver QR Code" and/or "Instalar eSIM"
+- Active -> button: "Ver detalhes"
+- Expired -> button: "Comprar novo plano"
+
+Do not invent unsupported actions. If top-up does not exist yet, do not add top-up as a real action.
+
+C. Next step card
+Title: "Próximo passo"
+Show a contextual instruction block based on state:
+
+State: no plan
+- Message: "Ainda não tens um eSIM ativo."
+- CTA: "Ver planos" or "Comprar eSIM"
+
+State: ready to install
+- Show short step list:
+  1. Abre o QR Code
+  2. Instala o eSIM no telemóvel
+  3. Ativa os dados móveis no destino
+  4. Liga o roaming de dados
+- CTA: "Ver instruções de instalação"
+
+State: active
+- Message: "O teu eSIM está ativo e pronto a usar."
+- CTA: "Ver detalhes do eSIM"
+
+State: expired
+- Message: "O teu plano expirou."
+- CTA: "Comprar novo plano"
+
+D. Order / eSIM details card
+Title: "Detalhes do pedido"
+Display only meaningful essentials if available:
+- Email
+- Order number
+- Plan name
+- Purchase date
+- Validity
+- Maybe ICCID only in secondary/smaller text if already available
+- Keep technical/provider fields hidden unless clearly useful
+
+Add a CTA only if an existing destination/action already exists:
+- "Ver detalhes do pedido"
+- or "Ver recibo"
+Use existing routes/actions if present.
+
+E. Help and support card
+Title: "Ajuda"
+Include short support-oriented text:
+- Problemas com instalação
+- Sem ligação à internet
+- Questões de compatibilidade
+
+Buttons/links:
+- "Contactar suporte"
+- "Ver compatibilidade"
+- "Ver ajuda" or "Perguntas frequentes"
+Only link to routes/pages/actions that already exist.
+
+LAYOUT REQUIREMENTS:
+- Desktop: clean 2-column grid
+  Left: summary + next step
+  Right: order details + help
+- Mobile: single-column stacked cards
+- Use existing design system/components if available (cards, badges, buttons, separators)
+- No oversized hero sections
+- No phone mockup illustration
+- No marketing banners
+- No repeated homepage CTA blocks
+
+COMPONENT GUIDELINES:
+Create or refactor into small reusable components if appropriate, such as:
+- CustomerDashboardHeader
+- EsimSummaryCard
+- NextStepCard
+- OrderDetailsCard
+- SupportCard
+But only if this fits the current codebase conventions.
+
+SAFE DATA HANDLING:
+Use existing data/hooks only.
+If data is missing:
+- show sensible empty state text
+- do not crash
+- do not assume fields exist
+Examples:
+- Missing active plan -> show "Sem plano ativo"
+- Missing order number -> hide that row
+- Missing QR/action -> hide that CTA
+- Missing usage data -> do not show usage section
+
+DO NOT IMPLEMENT NEW BACKEND LOGIC.
+This is a frontend/dashboard UX refactor only.
+If current logic already determines customer/order/eSIM state, reuse it.
+If state mapping is messy, create a small presentation-layer helper function that converts raw existing states into dashboard UX states, without altering backend behavior.
+
+VISUAL DIRECTION:
+- Minimal, professional, practical
+- Status chip/badge visible near plan status
+- Clear primary action
+- Good whitespace
+- Avoid clutter
+- Strong readability on mobile
+- Use PALOP Connect existing styling tokens/colors/components
+- No unnecessary animations
+
+EMPTY STATE REQUIREMENTS:
+If the user has no plan/orders:
+- show a clean empty state in the summary card:
+  "Ainda não tens um eSIM ativo."
+- primary CTA: "Comprar eSIM"
+- secondary CTA if available: "Ver compatibilidade"
+
+TESTING REQUIREMENTS:
+After implementing:
+1. Verify existing auth/login still works
+2. Verify dashboard route still renders for logged-in users
+3. Verify no console errors
+4. Verify no broken imports
+5. Verify no homepage sections remain inside dashboard
+6. Verify responsive layout on mobile and desktop
+7. Verify CTA buttons point only to existing routes/actions
+8. Verify no pricing or checkout code was changed
+9. Verify no admin dashboard code was altered
+10. Verify ESIMPlans.tsx and public pricing source remain untouched
+
+DELIVERABLES:
+- Updated customer dashboard UI
+- Clean, minimal card-based layout
+- Existing functionality preserved
+- Short summary of files changed
+- Short explanation of how raw statuses were mapped to UX statuses
+- Confirmation of what was intentionally NOT changed
+
+IF YOU FIND AMBIGUITY:
+Prefer preserving existing behavior.
+Do not refactor unrelated code.
+Do not make speculative platform-wide changes.
+
+START NOW by:
+1. Locating the current dashboard route/component
+2. Auditing its existing data dependencies
+3. Implementing the new presentation structure
+4. Returning a concise summary of files changed and any follow-up recommendations
