@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import HomeHeader from "@/components/home/HomeHeader";
 import HomeFooter from "@/components/home/HomeFooter";
 import OrderHistory from "@/components/OrderHistory";
@@ -8,7 +8,6 @@ import { useOrders } from "@/hooks/useOrders";
 import { useCustomerQRCodes } from "@/hooks/useCustomerQRCodes";
 import { deriveActivationState } from "@/components/order-history/OrderActivationStateBlock";
 import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
 import DashboardHeader from "@/components/orders/DashboardHeader";
@@ -19,15 +18,16 @@ import SupportCard from "@/components/orders/SupportCard";
 import QRCodeDownloadModal from "@/components/QRCodeDownloadModal";
 
 const Orders = () => {
+  /* ── Auth (called once) ──────────────────────────────── */
   const { user, loading: authLoading } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
 
-  /* ── Data (fetched once here, passed as props to all cards) ── */
-  const { orders, ordersLoading } = useOrders();
+  /* ── Data (called once each — results shared via props) ─ */
+  const { orders, ordersLoading, ordersError } = useOrders();
   const { qrCodes } = useCustomerQRCodes();
 
-  /* ── Derived dashboard state (computed once) ─────────────── */
+  /* ── Derived state (computed once, passed as props) ───── */
   const email = user?.email ?? null;
   const latestOrder = orders.length > 0 ? orders[0] : null;
   const latestQRCode = latestOrder
@@ -37,7 +37,23 @@ const Orders = () => {
     ? deriveActivationState(latestOrder, latestQRCode)
     : null;
 
-  /* ── QR modal state for dashboard card CTAs ──────────────── */
+  /* ── Strings for hook-free cards ────────────────────────
+     DashboardHeader and OrderDetailsCard must be hook-free;
+     all translated labels are resolved here and passed as props. */
+  const o = t.orders;
+  const dashboardTitle = o.dashboardTitle;
+  const welcomeText = email ? o.dashboardWelcome.replace('{email}', email) : null;
+  const orderDetailsLabels = {
+    detailsOrderTitle: o.detailsOrderTitle,
+    orderId: o.orderId,
+    detailsPlanTitle: o.detailsPlanTitle,
+    purchaseDate: o.purchaseDate,
+    detailsValidity: o.detailsValidity,
+    detailsDays: o.detailsDays,
+    emptyDesc: o.emptyDesc,
+  };
+
+  /* ── QR modal state for dashboard card CTAs ──────────── */
   const [dashboardQR, setDashboardQR] = useState<{
     activationUrl: string;
     orderId: string;
@@ -60,7 +76,7 @@ const Orders = () => {
     }
   };
 
-  /* ── Auth guard ──────────────────────────────────────────── */
+  /* ── Auth guard ──────────────────────────────────────── */
   useEffect(() => {
     if (!authLoading && !user) {
       navigate("/auth");
@@ -70,7 +86,7 @@ const Orders = () => {
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-gray-500 text-sm">{t.orders.loading}</div>
+        <div className="text-gray-500 text-sm">{o.loading}</div>
       </div>
     );
   }
@@ -84,18 +100,18 @@ const Orders = () => {
       <main className="flex-grow">
         <div className="container mx-auto px-4 py-8 max-w-6xl">
 
-          {/* Dashboard header */}
-          <DashboardHeader email={email} />
+          {/* Dashboard header — no hooks; receives pre-resolved strings */}
+          <DashboardHeader title={dashboardTitle} welcomeText={welcomeText} />
 
           {/* 2-column grid (stacked on mobile) */}
           {ordersLoading ? (
             <div className="flex items-center justify-center min-h-[220px]">
               <Loader2 className="h-6 w-6 text-palop-green animate-spin mr-2" />
-              <span className="text-gray-500 text-sm">{t.orders.loading}</span>
+              <span className="text-gray-500 text-sm">{o.loading}</span>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
-              {/* Left: eSIM status + next step */}
+              {/* Left column: eSIM status card + next step */}
               <div className="flex flex-col gap-4">
                 <EsimSummaryCard
                   order={latestOrder}
@@ -111,20 +127,30 @@ const Orders = () => {
                 />
               </div>
 
-              {/* Right: order details + help */}
+              {/* Right column: order details + help */}
               <div className="flex flex-col gap-4">
-                <OrderDetailsCard order={latestOrder} email={email} />
+                {/* No hooks inside; labels passed from here */}
+                <OrderDetailsCard
+                  order={latestOrder}
+                  email={email}
+                  labels={orderDetailsLabels}
+                />
                 <SupportCard />
               </div>
             </div>
           )}
 
-          {/* Full order history */}
+          {/* Full order history — prop-driven; no internal data fetching */}
           <div>
             <h2 className="text-lg font-semibold text-gray-800 mb-4">
-              {t.orders.historyTitle}
+              {o.historyTitle}
             </h2>
-            <OrderHistory />
+            <OrderHistory
+              orders={orders}
+              qrCodes={qrCodes}
+              ordersLoading={ordersLoading}
+              ordersError={ordersError}
+            />
           </div>
 
         </div>

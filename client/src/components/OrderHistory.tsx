@@ -1,5 +1,3 @@
-import { useOrders } from "@/hooks/useOrders";
-import { useCustomerQRCodes } from "@/hooks/useCustomerQRCodes";
 import { useState, lazy, Suspense } from "react";
 import QRCodeDownloadModal from "./QRCodeDownloadModal";
 import TopUpCheckoutModal from "./order-history/TopUpCheckoutModal";
@@ -8,14 +6,20 @@ import OrderCard from "./order-history/OrderCard";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/language";
 import { AlertCircle, Loader2 } from "lucide-react";
+import { type CustomerQRCode } from "@/hooks/useCustomerQRCodes";
 
 const DevQAPreview = import.meta.env.DEV
   ? lazy(() => import("./order-history/DevQAPreview"))
   : null;
 
-const OrderHistory = () => {
-  const { orders, ordersLoading, ordersError } = useOrders();
-  const { qrCodes } = useCustomerQRCodes();
+interface OrderHistoryProps {
+  orders: any[];
+  qrCodes: CustomerQRCode[];
+  ordersLoading: boolean;
+  ordersError: any;
+}
+
+const OrderHistory = ({ orders, qrCodes, ordersLoading, ordersError }: OrderHistoryProps) => {
   const { toast } = useToast();
   const { t } = useLanguage();
   const o = t.orders;
