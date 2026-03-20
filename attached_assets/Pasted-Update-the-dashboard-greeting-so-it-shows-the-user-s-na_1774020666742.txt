@@ -1,0 +1,39 @@
+Update the dashboard greeting so it shows the user's name when a name exists in the user/account/profile details, and only falls back to the email address if no name is available.
+
+Strict scope:
+- Change only the greeting/display logic for the dashboard header welcome text.
+- Do NOT change auth logic, redirects, session handling, logout, purchase flow, dashboard routing, order data, pricing, checkout, provisioning, support links, or any other UI/content.
+- Do NOT rename routes or components unless absolutely necessary.
+- Use the smallest possible code change surface.
+
+Required behavior:
+1. In the dashboard header, replace the current greeting value that shows the email address.
+2. Prefer a real user name if available in the existing authenticated user/profile/account data already available in the app.
+3. If a full name is available, use it.
+4. If only first name / given name is available, use that.
+5. If no usable name exists, fall back to the current email address behavior.
+6. Do not invent or hardcode any name.
+7. Preserve the existing Portuguese greeting text and only swap the displayed identity value.
+
+Implementation guidance:
+- Locate the component currently rendering the greeting in the dashboard header (likely DashboardHeader.tsx or equivalent).
+- Reuse existing auth/profile/user context data already available in the component tree.
+- If the name is already available in Orders.tsx or auth context, pass it as a prop rather than introducing broader refactors.
+- Add a small helper/selection logic only if needed, such as:
+  - fullName
+  - name
+  - firstName / givenName
+  - fallback to email
+- Trim whitespace and avoid rendering empty strings.
+
+Validation:
+- If user profile contains a valid name, greeting shows the name.
+- If user profile has no name, greeting still shows the email as before.
+- No other dashboard content changes.
+- No navigation/auth behavior changes.
+- No other files changed beyond the minimum required.
+
+At the end, report:
+- file(s) changed
+- exact field priority used for the greeting
+- confirmation that only the dashboard greeting logic was changed
