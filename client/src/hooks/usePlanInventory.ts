@@ -23,7 +23,6 @@ export const usePlanInventory = () => {
   const { data: planInventory = [], isLoading, error, refetch } = useQuery({
     queryKey: ['plan-inventory'],
     queryFn: async () => {
-      console.log('Legacy plan inventory hook called - returning plan-based data');
       
       // Return plans data adapted to look like inventory
       const { data, error } = await supabase
@@ -49,14 +48,12 @@ export const usePlanInventory = () => {
         updated_at: plan.updated_at || new Date().toISOString()
       }));
 
-      console.log('Adapted plan data:', adaptedData);
       return adaptedData as PlanInventoryItem[];
     },
   });
 
   const restockPlanMutation = useMutation({
     mutationFn: async ({ planId, amount }: { planId: string; amount: number }) => {
-      console.log('Legacy restock called for plan:', planId, 'amount:', amount);
       
       // In dynamic catalog, we don't restock - we just ensure plan is active
       const { data, error } = await supabase
@@ -96,7 +93,6 @@ export const usePlanInventory = () => {
 
   const adjustPlanInventoryMutation = useMutation({
     mutationFn: async ({ planId, newAmount }: { planId: string; newAmount: number }) => {
-      console.log('Legacy inventory adjustment called for plan:', planId, 'amount:', newAmount);
       
       // In dynamic catalog, we toggle plan status based on "amount"
       const status = newAmount > 0 ? 'active' : 'inactive';

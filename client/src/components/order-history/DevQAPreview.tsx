@@ -229,11 +229,9 @@ const DevQAPreview = () => {
   };
 
   const handleResendEmail = (orderId: string) => {
-    console.log('[QA DEV] Resend email mock for order:', orderId);
   };
 
   const handleTopUp = (order: any) => {
-    console.log('[QA DEV] Top-up mock for order:', order.id);
   };
 
   const canDownload = (mock: typeof MOCK_ORDERS[0]) =>

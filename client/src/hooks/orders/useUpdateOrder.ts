@@ -17,7 +17,6 @@ export const useUpdateOrder = () => {
       paymentStatus, 
       paymentIntentId 
     }: UpdateOrderData) => {
-      console.log('Updating order:', orderId, { status, paymentStatus, paymentIntentId });
       
       const updateData: any = {};
       
@@ -41,7 +40,6 @@ export const useUpdateOrder = () => {
         throw error;
       }
       
-      console.log('Order updated:', data);
       
       // Manually trigger plan inventory decrease for completed orders
       if (status === 'completed' && data.plan_id) {

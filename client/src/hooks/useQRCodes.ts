@@ -29,7 +29,6 @@ export const useQRCodes = () => {
   const { data: qrCodes = [], isLoading, error, refetch } = useQuery({
     queryKey: ['admin-qr-codes'],
     queryFn: async () => {
-      console.log('Fetching QR codes...');
       
       // First, get all QR codes
       const { data: qrCodesData, error: qrError } = await supabase
@@ -42,7 +41,6 @@ export const useQRCodes = () => {
         throw qrError;
       }
 
-      console.log('QR codes data:', qrCodesData);
 
       if (!qrCodesData || qrCodesData.length === 0) {
         return [];
@@ -114,7 +112,6 @@ export const useQRCodes = () => {
 
   const regenerateQRMutation = useMutation({
     mutationFn: async (qrCodeId: string) => {
-      console.log('Regenerating QR code:', qrCodeId);
       
       // First mark the old QR code as revoked
       const { error: revokeError } = await supabase
@@ -180,7 +177,6 @@ export const useQRCodes = () => {
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ qrCodeId, status }: { qrCodeId: string; status: 'pending' | 'active' | 'revoked' }) => {
-      console.log('Updating QR code status:', qrCodeId, status);
       
       const { data, error } = await supabase
         .from('qr_codes')

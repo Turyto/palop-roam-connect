@@ -3,7 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import type { ESIMActivation } from '@/types/esimActivations';
 
 export const fetchESIMActivations = async (): Promise<ESIMActivation[]> => {
-  console.log('Fetching eSIM activations...');
   
   // First, get all eSIM activations
   const { data: activationsData, error: activationsError } = await supabase
@@ -16,7 +15,6 @@ export const fetchESIMActivations = async (): Promise<ESIMActivation[]> => {
     throw activationsError;
   }
 
-  console.log('eSIM activations data:', activationsData);
 
   if (!activationsData || activationsData.length === 0) {
     return [];
@@ -89,7 +87,6 @@ export const fetchESIMActivations = async (): Promise<ESIMActivation[]> => {
 };
 
 export const retryProvisioningAPI = async (activationId: string) => {
-  console.log('Retrying provisioning for activation:', activationId);
   
   const { data, error } = await supabase
     .from('esim_activations')
@@ -114,7 +111,6 @@ export const retryProvisioningAPI = async (activationId: string) => {
 };
 
 export const markAsCompleteAPI = async (activationId: string) => {
-  console.log('Marking activation as complete:', activationId);
   
   const { data, error } = await supabase
     .from('esim_activations')
@@ -140,7 +136,6 @@ export const markAsCompleteAPI = async (activationId: string) => {
 };
 
 export const bulkProvisionAPI = async () => {
-  console.log('Starting bulk provisioning...');
   
   // Get all pending activations
   const { data: pendingActivations, error: fetchError } = await supabase

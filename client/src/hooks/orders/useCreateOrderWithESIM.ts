@@ -53,7 +53,6 @@ export const useCreateOrderWithESIM = () => {
       const customerEmail = orderData.customerEmail || user.email || '';
       const paymentIntentId = orderData.payment_intent_id;
 
-      console.log('Creating order with eSIM integration:', orderData);
 
       // --- IDEMPOTENCY CHECK ---
       // If an order with this payment_intent_id already exists, return it immediately
@@ -67,7 +66,6 @@ export const useCreateOrderWithESIM = () => {
 
         if (existingOrders && existingOrders.length > 0) {
           const existing = existingOrders[0];
-          console.log('Idempotency: order already exists for this payment intent:', existing);
           // Return the existing order — do not create a duplicate supplier order
           return {
             order: existing,
@@ -89,7 +87,6 @@ export const useCreateOrderWithESIM = () => {
 
       // --- PROVISION eSIM WITH SUPPLIER ---
       if (packageData?.esim_access_package_id) {
-        console.log('Found eSIM package mapping:', packageData);
 
         try {
           const esimResponse = await createESIMOrder({
@@ -103,11 +100,6 @@ export const useCreateOrderWithESIM = () => {
           if (esimResponse.success && esimResponse.data) {
             esimOrderData = esimResponse.data;
             parsedESIM = parseESIMResponse(esimOrderData);
-            console.log('eSIM order created. Supplier order ID:', parsedESIM.esimTranNo);
-            console.log('ICCID:', parsedESIM.iccid);
-            console.log('Activation code:', parsedESIM.activationCode);
-            console.log('QR URL:', parsedESIM.qrCodeUrl);
-            console.log('Short URL:', parsedESIM.shortUrl);
           } else {
             esimError = esimResponse.error || 'Failed to create eSIM order';
             console.error('eSIM order creation failed:', esimResponse);
@@ -117,7 +109,6 @@ export const useCreateOrderWithESIM = () => {
           console.error('eSIM order creation error:', error);
         }
       } else {
-        console.log('No eSIM package mapping found for plan:', orderData.plan_id);
       }
 
       // --- CREATE LOCAL ORDER ---
@@ -143,7 +134,6 @@ export const useCreateOrderWithESIM = () => {
         }),
       };
 
-      console.log('Inserting order into database:', order);
 
       const { data: orderResult, error: orderError } = await supabase
         .from('orders')
@@ -156,7 +146,6 @@ export const useCreateOrderWithESIM = () => {
         throw new Error(`Database error: ${orderError.message}`);
       }
 
-      console.log('Local order created:', orderResult);
 
       // --- ORDER ITEM ---
       const { error: itemError } = await supabase
@@ -204,7 +193,6 @@ export const useCreateOrderWithESIM = () => {
         if (activationError) {
           console.error('Error creating eSIM activation:', activationError);
         } else {
-          console.log('eSIM activation record created');
         }
 
         // --- QR CODE RECORD ---
@@ -224,7 +212,6 @@ export const useCreateOrderWithESIM = () => {
         if (qrError) {
           console.error('Error creating QR code record:', qrError);
         } else {
-          console.log('QR code record created');
         }
       } else if (packageData && esimError) {
         // Record the failure for debugging / retry
@@ -263,7 +250,6 @@ export const useCreateOrderWithESIM = () => {
         });
       }
 
-      console.log('Order creation completed');
 
       return {
         order: orderResult,

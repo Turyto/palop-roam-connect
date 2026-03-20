@@ -100,7 +100,6 @@ const OrderHistory = ({ orders, qrCodes, ordersLoading, ordersError }: OrderHist
       title: o.resendEmailSuccessTitle,
       description: o.resendEmailSuccessDesc,
     });
-    console.log('Resend email for order:', orderId);
   };
 
   const hasOrders = orders && orders.length > 0;

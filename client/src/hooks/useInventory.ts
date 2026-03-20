@@ -24,15 +24,12 @@ export const useInventory = () => {
   const { data: inventory = [], isLoading, error, refetch } = useQuery({
     queryKey: ['admin-inventory'],
     queryFn: async () => {
-      console.log('Legacy inventory hook called - returning empty data');
-      console.log('Use usePlans hook for dynamic catalog management');
       return [] as InventoryItem[];
     },
   });
 
   const restockMutation = useMutation({
     mutationFn: async ({ inventoryId, amount }: { inventoryId: string; amount: number }) => {
-      console.log('Legacy restock called - no action needed for dynamic catalog');
       return null;
     },
     onSuccess: () => {

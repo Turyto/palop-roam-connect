@@ -14,7 +14,6 @@ export const useCreateOrder = () => {
     mutationFn: async (orderData: CreateOrderData) => {
       if (!user) throw new Error('User not authenticated');
 
-      console.log('Creating order with data:', orderData);
 
       const order: OrderInsert = {
         user_id: user.id,
@@ -40,7 +39,6 @@ export const useCreateOrder = () => {
         throw orderError;
       }
 
-      console.log('Order created:', orderResult);
 
       // Create order item
       const { error: itemError } = await supabase
@@ -61,7 +59,6 @@ export const useCreateOrder = () => {
         throw itemError;
       }
 
-      console.log('Order item created successfully');
       return orderResult;
     },
     onSuccess: (order) => {
