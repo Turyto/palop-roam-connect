@@ -16,20 +16,19 @@ import NextStepCard from "@/components/orders/NextStepCard";
 import OrderDetailsCard from "@/components/orders/OrderDetailsCard";
 import SupportCard from "@/components/orders/SupportCard";
 import QRCodeDownloadModal from "@/components/QRCodeDownloadModal";
+import type { Order } from "@/hooks/orders/types";
 
 const Orders = () => {
-  /* ── Auth (called once) ──────────────────────────────── */
   const { user, loading: authLoading } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
 
-  /* ── Data (called once each — results shared via props) ─ */
   const { orders, ordersLoading, ordersError } = useOrders();
   const { qrCodes } = useCustomerQRCodes();
 
-  /* ── Derived state (computed once, passed as props) ───── */
+  const o = t.orders;
   const email = user?.email ?? null;
-  const latestOrder = orders.length > 0 ? orders[0] : null;
+  const latestOrder: Order | null = orders.length > 0 ? orders[0] : null;
   const latestQRCode = latestOrder
     ? (qrCodes.find((qr) => qr.order_id === latestOrder.id) ?? null)
     : null;
@@ -37,7 +36,6 @@ const Orders = () => {
     ? deriveActivationState(latestOrder, latestQRCode)
     : null;
 
-  /* ── QR modal state for dashboard card CTAs ──────────── */
   const [dashboardQR, setDashboardQR] = useState<{
     activationUrl: string;
     orderId: string;
@@ -47,20 +45,19 @@ const Orders = () => {
     coverage?: string;
   } | null>(null);
 
-  const handleDashboardDownloadESIM = (order: any) => {
+  const handleDashboardDownloadESIM = (order: Order) => {
     if (latestQRCode) {
       setDashboardQR({
         activationUrl: latestQRCode.activation_url,
         orderId: order.id,
-        planName: order.plan_name,
-        dataAmount: order.data_amount,
+        planName: (order as any).plan_name,
+        dataAmount: (order as any).data_amount,
         status: latestQRCode.status,
-        coverage: order.coverage ?? undefined,
+        coverage: (order as any).coverage ?? undefined,
       });
     }
   };
 
-  /* ── Auth guard ──────────────────────────────────────── */
   useEffect(() => {
     if (!authLoading && !user) {
       navigate("/auth");
@@ -70,12 +67,69 @@ const Orders = () => {
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-gray-500 text-sm">{t.orders.loading}</div>
+        <div className="text-gray-500 text-sm">{o.loading}</div>
       </div>
     );
   }
 
   if (!user) return null;
+
+  const welcomeText = email ? o.dashboardWelcome.replace('{email}', email) : null;
+
+  const esimSummaryLabels = {
+    noActivePlan: o.noActivePlan,
+    emptyDesc: o.emptyDesc,
+    buyEsim: o.buyEsim,
+    stateProcessingTitle: o.stateProcessingTitle,
+    stateReadyTitle: o.stateReadyTitle,
+    stateActiveTitle: o.stateActiveTitle,
+    stateExpiredTitle: o.stateExpiredTitle,
+    stateErrorTitle: o.stateErrorTitle,
+    detailsCoverage: o.detailsCoverage,
+    detailsValidity: o.detailsValidity,
+    validFor: o.validFor,
+    purchaseDate: o.purchaseDate,
+    viewQR: o.viewQR,
+    buyNewPlan: o.buyNewPlan,
+    talkToSupport: o.talkToSupport,
+  };
+
+  const nextStepLabels = {
+    nextStepTitle: o.nextStepTitle,
+    emptyDesc: o.emptyDesc,
+    browsePlans: o.browsePlans,
+    stateProcessingDesc: o.stateProcessingDesc,
+    talkToSupport: o.talkToSupport,
+    activationStep1: o.activationStep1,
+    activationStep2: o.activationStep2,
+    activationStep3: o.activationStep3,
+    activationStep4: o.activationStep4,
+    activationStep5: o.activationStep5,
+    viewQR: o.viewQR,
+    stateActiveDescShort: o.stateActiveDescShort,
+    stateExpiredDesc: o.stateExpiredDesc,
+    buyNewPlan: o.buyNewPlan,
+    stateErrorDesc: o.stateErrorDesc,
+  };
+
+  const orderDetailsLabels = {
+    detailsOrderTitle: o.detailsOrderTitle,
+    orderId: o.orderId,
+    detailsPlanTitle: o.detailsPlanTitle,
+    purchaseDate: o.purchaseDate,
+    detailsValidity: o.detailsValidity,
+    detailsDays: o.detailsDays,
+    emptyDesc: o.emptyDesc,
+  };
+
+  const supportLabels = {
+    title: o.supportTitle,
+    topicInstall: o.supportTopicInstall,
+    topicConnection: o.supportTopicConnection,
+    topicCompat: o.supportTopicCompat,
+    contact: o.talkToSupport,
+    viewCompatibility: o.supportViewCompatibility,
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -84,45 +138,50 @@ const Orders = () => {
       <main className="flex-grow">
         <div className="container mx-auto px-4 py-8 max-w-6xl">
 
-          {/* Dashboard header — receives email; resolves own display text internally */}
-          <DashboardHeader email={email} />
+          <DashboardHeader
+            email={email}
+            title={o.dashboardTitle}
+            welcomeText={welcomeText}
+          />
 
-          {/* 2-column grid (stacked on mobile) */}
           {ordersLoading ? (
             <div className="flex items-center justify-center min-h-[220px]">
               <Loader2 className="h-6 w-6 text-palop-green animate-spin mr-2" />
-              <span className="text-gray-500 text-sm">{t.orders.loading}</span>
+              <span className="text-gray-500 text-sm">{o.loading}</span>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
-              {/* Left column: eSIM status + next step */}
               <div className="flex flex-col gap-4">
                 <EsimSummaryCard
                   order={latestOrder}
                   qrCode={latestQRCode}
                   dashboardState={dashboardState}
                   onDownloadESIM={handleDashboardDownloadESIM}
+                  labels={esimSummaryLabels}
                 />
                 <NextStepCard
                   order={latestOrder}
                   qrCode={latestQRCode}
                   dashboardState={dashboardState}
                   onDownloadESIM={handleDashboardDownloadESIM}
+                  labels={nextStepLabels}
                 />
               </div>
 
-              {/* Right column: order details + help */}
               <div className="flex flex-col gap-4">
-                <OrderDetailsCard order={latestOrder} email={email} />
-                <SupportCard />
+                <OrderDetailsCard
+                  order={latestOrder}
+                  email={email}
+                  labels={orderDetailsLabels}
+                />
+                <SupportCard labels={supportLabels} />
               </div>
             </div>
           )}
 
-          {/* Full order history — prop-driven; no internal data fetching */}
           <div>
             <h2 className="text-lg font-semibold text-gray-800 mb-4">
-              {t.orders.historyTitle}
+              {o.historyTitle}
             </h2>
             <OrderHistory
               orders={orders}
@@ -137,7 +196,6 @@ const Orders = () => {
 
       <HomeFooter />
 
-      {/* QR modal driven by dashboard card CTAs */}
       <QRCodeDownloadModal
         isOpen={!!dashboardQR}
         onClose={() => setDashboardQR(null)}

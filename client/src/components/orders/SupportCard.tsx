@@ -1,21 +1,30 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { useLanguage } from '@/contexts/language';
 import { LifeBuoy, Wifi, Smartphone, ExternalLink } from 'lucide-react';
 
-const SupportCard = () => {
-  const { t } = useLanguage();
-  const o = t.orders;
+interface SupportCardLabels {
+  title: string;
+  topicInstall: string;
+  topicConnection: string;
+  topicCompat: string;
+  contact: string;
+  viewCompatibility: string;
+}
 
+interface SupportCardProps {
+  labels: SupportCardLabels;
+}
+
+const SupportCard = ({ labels: l }: SupportCardProps) => {
   const topics = [
-    { icon: Smartphone, label: o.supportTopicInstall },
-    { icon: Wifi,       label: o.supportTopicConnection },
-    { icon: LifeBuoy,   label: o.supportTopicCompat },
+    { icon: Smartphone, label: l.topicInstall },
+    { icon: Wifi,       label: l.topicConnection },
+    { icon: LifeBuoy,   label: l.topicCompat },
   ];
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5" data-testid="card-support">
-      <h2 className="font-semibold text-gray-900 text-base mb-4">{o.supportTitle}</h2>
+      <h2 className="font-semibold text-gray-900 text-base mb-4">{l.title}</h2>
 
       <ul className="space-y-2 mb-5">
         {topics.map(({ icon: Icon, label }) => (
@@ -34,7 +43,7 @@ const SupportCard = () => {
           className="w-full bg-palop-green hover:bg-palop-green/90 text-white"
           data-testid="button-contact-support"
         >
-          <Link to="/support">{o.talkToSupport}</Link>
+          <Link to="/support">{l.contact}</Link>
         </Button>
         <Button
           asChild
@@ -44,7 +53,7 @@ const SupportCard = () => {
         >
           <Link to="/compatibility">
             <ExternalLink className="h-4 w-4 mr-1.5" />
-            {o.supportViewCompatibility}
+            {l.viewCompatibility}
           </Link>
         </Button>
       </div>
