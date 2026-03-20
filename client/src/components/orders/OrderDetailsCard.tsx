@@ -1,19 +1,9 @@
+import { useLanguage } from '@/contexts/language';
 import { format } from 'date-fns';
-
-interface OrderDetailsLabels {
-  detailsOrderTitle: string;
-  orderId: string;
-  detailsPlanTitle: string;
-  purchaseDate: string;
-  detailsValidity: string;
-  detailsDays: string;
-  emptyDesc: string;
-}
 
 interface OrderDetailsCardProps {
   order: any | null;
   email: string | null;
-  labels: OrderDetailsLabels;
 }
 
 const Row = ({ label, value }: { label: string; value: string }) => (
@@ -23,10 +13,13 @@ const Row = ({ label, value }: { label: string; value: string }) => (
   </div>
 );
 
-const OrderDetailsCard = ({ order, email, labels: l }: OrderDetailsCardProps) => {
+const OrderDetailsCard = ({ order, email }: OrderDetailsCardProps) => {
+  const { t } = useLanguage();
+  const o = t.orders;
+
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5" data-testid="card-order-details">
-      <h2 className="font-semibold text-gray-900 text-base mb-4">{l.detailsOrderTitle}</h2>
+      <h2 className="font-semibold text-gray-900 text-base mb-4">{o.detailsOrderTitle}</h2>
 
       <dl className="space-y-2.5">
         {email && (
@@ -34,29 +27,29 @@ const OrderDetailsCard = ({ order, email, labels: l }: OrderDetailsCardProps) =>
         )}
         {order?.id && (
           <Row
-            label={l.orderId}
+            label={o.orderId}
             value={order.id.slice(0, 8) + '…'}
           />
         )}
         {order?.plan_name && (
-          <Row label={l.detailsPlanTitle} value={order.plan_name} />
+          <Row label={o.detailsPlanTitle} value={order.plan_name} />
         )}
         {order?.created_at && (
           <Row
-            label={l.purchaseDate}
+            label={o.purchaseDate}
             value={format(new Date(order.created_at), 'dd MMM yyyy')}
           />
         )}
         {order?.duration_days && (
           <Row
-            label={l.detailsValidity}
-            value={l.detailsDays.replace('{days}', String(order.duration_days))}
+            label={o.detailsValidity}
+            value={o.detailsDays.replace('{days}', String(order.duration_days))}
           />
         )}
       </dl>
 
       {!order && !email && (
-        <p className="text-sm text-gray-400">{l.emptyDesc}</p>
+        <p className="text-sm text-gray-400">{o.emptyDesc}</p>
       )}
     </div>
   );

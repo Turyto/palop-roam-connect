@@ -37,22 +37,6 @@ const Orders = () => {
     ? deriveActivationState(latestOrder, latestQRCode)
     : null;
 
-  /* ── Strings for hook-free cards ────────────────────────
-     DashboardHeader and OrderDetailsCard must be hook-free;
-     all translated labels are resolved here and passed as props. */
-  const o = t.orders;
-  const dashboardTitle = o.dashboardTitle;
-  const welcomeText = email ? o.dashboardWelcome.replace('{email}', email) : null;
-  const orderDetailsLabels = {
-    detailsOrderTitle: o.detailsOrderTitle,
-    orderId: o.orderId,
-    detailsPlanTitle: o.detailsPlanTitle,
-    purchaseDate: o.purchaseDate,
-    detailsValidity: o.detailsValidity,
-    detailsDays: o.detailsDays,
-    emptyDesc: o.emptyDesc,
-  };
-
   /* ── QR modal state for dashboard card CTAs ──────────── */
   const [dashboardQR, setDashboardQR] = useState<{
     activationUrl: string;
@@ -86,7 +70,7 @@ const Orders = () => {
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-gray-500 text-sm">{o.loading}</div>
+        <div className="text-gray-500 text-sm">{t.orders.loading}</div>
       </div>
     );
   }
@@ -100,18 +84,18 @@ const Orders = () => {
       <main className="flex-grow">
         <div className="container mx-auto px-4 py-8 max-w-6xl">
 
-          {/* Dashboard header — no hooks; receives pre-resolved strings */}
-          <DashboardHeader title={dashboardTitle} welcomeText={welcomeText} />
+          {/* Dashboard header — receives email; resolves own display text internally */}
+          <DashboardHeader email={email} />
 
           {/* 2-column grid (stacked on mobile) */}
           {ordersLoading ? (
             <div className="flex items-center justify-center min-h-[220px]">
               <Loader2 className="h-6 w-6 text-palop-green animate-spin mr-2" />
-              <span className="text-gray-500 text-sm">{o.loading}</span>
+              <span className="text-gray-500 text-sm">{t.orders.loading}</span>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
-              {/* Left column: eSIM status card + next step */}
+              {/* Left column: eSIM status + next step */}
               <div className="flex flex-col gap-4">
                 <EsimSummaryCard
                   order={latestOrder}
@@ -129,12 +113,7 @@ const Orders = () => {
 
               {/* Right column: order details + help */}
               <div className="flex flex-col gap-4">
-                {/* No hooks inside; labels passed from here */}
-                <OrderDetailsCard
-                  order={latestOrder}
-                  email={email}
-                  labels={orderDetailsLabels}
-                />
+                <OrderDetailsCard order={latestOrder} email={email} />
                 <SupportCard />
               </div>
             </div>
@@ -143,7 +122,7 @@ const Orders = () => {
           {/* Full order history — prop-driven; no internal data fetching */}
           <div>
             <h2 className="text-lg font-semibold text-gray-800 mb-4">
-              {o.historyTitle}
+              {t.orders.historyTitle}
             </h2>
             <OrderHistory
               orders={orders}
