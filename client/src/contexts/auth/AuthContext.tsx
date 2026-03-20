@@ -11,7 +11,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [roleError, setRoleError] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const resolveRole = async (userId: string) => {
+    const role = await fetchUserRole(userId);
+    if (role === null) {
+      // Role lookup failed — do not default to 'customer'.
+      // Leave userRole as null and surface the error so Auth.tsx can show a safe message.
+      setRoleError(true);
+      setUserRole(null);
+    } else {
+      setRoleError(false);
+      setUserRole(role);
+    }
+  };
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -21,11 +35,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
           setTimeout(async () => {
-            const role = await fetchUserRole(session.user.id);
-            setUserRole(role);
+            await resolveRole(session.user.id);
           }, 0);
         } else if (event === 'SIGNED_OUT' || !session) {
           setUserRole(null);
+          setRoleError(false);
         }
 
         setLoading(false);
@@ -45,8 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (session) {
           setSession(session);
           setUser(session.user);
-          const role = await fetchUserRole(session.user.id);
-          setUserRole(role);
+          await resolveRole(session.user.id);
         }
 
         setLoading(false);
@@ -70,6 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(null);
       setUser(null);
       setUserRole(null);
+      setRoleError(false);
     }
     setLoading(false);
     return result;
@@ -100,6 +114,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     session,
     loading,
     userRole,
+    roleError,
     signUp: handleSignUp,
     signIn: handleSignIn,
     signOut: handleSignOut,

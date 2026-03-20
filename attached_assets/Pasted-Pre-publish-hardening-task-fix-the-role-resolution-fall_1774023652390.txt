@@ -1,0 +1,72 @@
+Pre-publish hardening task: fix the role-resolution fallback so admin/customer post-login redirects cannot silently downgrade to customer when role lookup fails.
+
+CONTEXT:
+A recent auth redirect fix correctly waits for userRole !== null before redirecting, but the current fetchUserRole(userId) logic reportedly defaults to 'customer' on error. That means a role lookup failure could still silently misclassify an admin as a customer. For trial testing, this should be made explicit and safe.
+
+OBJECTIVE:
+Harden role resolution with the smallest possible change so that:
+- admin users are never silently downgraded to customer because of a role fetch error
+- customer users still log in normally when role resolution succeeds
+- redirects only occur when role resolution is known with confidence
+- the app remains stable and usable
+- no broader auth refactor is introduced
+
+STRICT SCOPE:
+- Change only the minimum logic related to role fetch failure handling and post-login redirect gating
+- Do NOT change logout flow, pricing, checkout, provisioning, dashboard implementations, route structure, or admin/customer page content
+- Do NOT invent a new role system
+- Reuse the existing profiles.role source of truth
+- Keep the existing successful-login behavior:
+  - admin -> /admin/dashboard
+  - customer -> /orders
+
+REQUIRED BEHAVIOR:
+1. If role lookup succeeds:
+   - role = admin -> redirect to admin dashboard
+   - role = customer -> redirect to customer dashboard
+
+2. If role lookup fails, is missing, or returns an invalid value:
+   - do NOT silently set role to customer
+   - do NOT redirect to the wrong dashboard
+   - keep the user in a safe unresolved auth state OR show a controlled error state/message on the auth page
+   - make the failure diagnosable in a clean way
+
+3. Redirect logic must continue waiting until role resolution has definitively succeeded before redirecting.
+
+IMPLEMENTATION GUIDANCE:
+- Inspect fetchUserRole(userId) and the related auth context state handling.
+- Replace any "default to customer on error" behavior with an explicit failure path.
+- Prefer a minimal, explicit pattern such as:
+  - resolved role state: 'admin' | 'customer'
+  - unresolved/error state handled separately
+- If needed, add a small auth error/roleResolutionError state rather than overloading the role value.
+- If a profile row is missing or invalid, treat that as a controlled failure, not as customer by default.
+- Keep the smallest possible code surface.
+
+UX REQUIREMENT:
+If role resolution fails after login:
+- show a short, user-safe message such as:
+  "Não foi possível carregar o tipo de conta. Tenta novamente ou contacta o suporte."
+- or the English equivalent if language requires
+- do NOT expose internal error details to the user
+- do NOT leave the user in a confusing redirect loop
+
+VALIDATION REQUIRED:
+1. Login with a valid admin account:
+   - confirm redirect goes to /admin/dashboard
+2. Login with a valid customer account:
+   - confirm redirect goes to /orders
+3. Simulate or test a role lookup failure/missing profile case if feasible:
+   - confirm the user is NOT redirected as customer by default
+   - confirm a safe unresolved/error state is shown instead
+4. Confirm logout still works
+5. Confirm no regressions in normal auth flow
+
+DELIVERABLE:
+At the end, report:
+- root cause/risk addressed
+- exact files changed
+- previous behavior vs new behavior
+- how role lookup failure is now handled
+- whether any user-visible message was added
+- confirmation that only auth role-resolution hardening was changed

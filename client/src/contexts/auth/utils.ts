@@ -1,7 +1,9 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-export const fetchUserRole = async (userId: string): Promise<string> => {
+// Returns the user's role ('admin' | 'customer') or null if resolution fails.
+// Callers must treat null as an unresolved/error state — never assume 'customer' by default.
+export const fetchUserRole = async (userId: string): Promise<string | null> => {
   try {
     const { data, error } = await supabase
       .from('profiles')
@@ -11,13 +13,19 @@ export const fetchUserRole = async (userId: string): Promise<string> => {
 
     if (error) {
       console.error('Error fetching user role:', error);
-      return 'customer';
+      return null;
     }
 
-    return data?.role || 'customer';
+    const role = data?.role;
+    if (role !== 'admin' && role !== 'customer') {
+      console.error('Unexpected or missing role value in profile:', role);
+      return null;
+    }
+
+    return role;
   } catch (error) {
     console.error('Error fetching user role:', error);
-    return 'customer';
+    return null;
   }
 };
 
