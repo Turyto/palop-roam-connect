@@ -1,0 +1,129 @@
+Before publishing, perform a thorough pre-release audit of the current PALOP Connect application and fix any issues that are clearly within the existing implementation scope.
+
+PRIMARY GOAL:
+Validate that this version is stable, consistent, secure, performant enough for release, and provides a good customer experience without breaking any current functionality.
+
+STRICT CONSTRAINTS:
+- Do NOT redesign the product.
+- Do NOT change pricing logic, Stripe plan mapping, provisioning flow, supplier sync, inventory logic, admin logic, auth architecture, or route structure unless a fix is required to resolve a real bug/blocker.
+- Do NOT introduce speculative refactors.
+- Use the smallest safe change surface.
+- Preserve all current business logic and current working flows.
+- Only fix real issues, blockers, regressions, obvious inconsistencies, and release risks discovered during the audit.
+
+AUDIT SCOPE:
+Run a full release-readiness review across:
+
+1. Functional correctness
+- Verify the public site loads correctly
+- Verify navigation links work
+- Verify language toggle still works correctly
+- Verify login works
+- Verify logout works
+- Verify post-login redirect to dashboard works
+- Verify “A minha conta” dashboard loads correctly
+- Verify dashboard greeting logic works correctly (name if present, email fallback)
+- Verify order history renders correctly
+- Verify support and compatibility links work
+- Verify checkout-related entry points still route correctly
+- Verify no broken buttons, dead links, or missing routes
+- Verify no regressions from the recent dashboard changes
+
+2. Frontend stability
+- Check for TypeScript errors
+- Check for build errors
+- Check for lint issues if linting exists
+- Check for runtime console errors
+- Check for React warnings
+- Check for broken imports, unused imports that cause issues, duplicate components accidentally left behind, or stale references
+- Check that removed/replaced dashboard components are not still referenced anywhere
+
+3. UI/UX consistency
+- Ensure the logged-out experience still behaves like the public site
+- Ensure the logged-in experience now correctly lands on the dashboard
+- Ensure the dashboard no longer shows homepage hero/marketing sections
+- Ensure spacing, buttons, labels, and card hierarchy are visually consistent
+- Ensure empty/error/loading states are sensible
+- Ensure no obvious confusing UX remains in the updated dashboard
+- Ensure mobile responsiveness is acceptable on core screens
+- Ensure desktop responsiveness is acceptable on core screens
+
+4. Performance and release risks
+- Check for unnecessary duplicate data fetches introduced by recent changes
+- Check for avoidable render loops, duplicated queries, or repeated expensive calculations
+- Check for oversized assets or obviously wasteful frontend patterns if any exist
+- Check for obvious opportunities to reduce blocking UI or repeated requests without changing architecture
+- Fix only meaningful, low-risk issues discovered
+
+5. Security and safe release posture
+- Check for obvious exposure of secrets or unsafe client-side configuration
+- Check that no sensitive values are accidentally logged to console
+- Check that error messages shown to users are reasonable and do not expose internals
+- Check that auth-protected routes still behave properly
+- Check that no recent change weakened access control assumptions in the UI
+- Check that environment-variable usage is appropriate for client vs server
+- Do not invent enterprise-grade changes; focus on practical release safety
+
+6. Build and publish readiness
+- Confirm the app builds successfully for production
+- Confirm there are no obvious blockers to publishing this version
+- Confirm current environment assumptions are valid
+- Identify any issues that must be fixed before publish versus issues that can be deferred
+
+EXECUTION APPROACH:
+1. First produce a short audit plan with the exact checks you will run.
+2. Then execute the checks.
+3. Fix any real bugs/blockers/regressions found.
+4. Re-run the relevant checks after fixes.
+5. Keep a clear distinction between:
+   - critical issues fixed now
+   - medium risks worth noting
+   - low-priority improvements to defer
+
+PRIORITY RULE:
+Focus first on anything that could block publish, break user journeys, cause inconsistent customer experience, create security concerns, or create obvious performance/stability issues.
+
+KEY USER FLOWS TO TEST END-TO-END:
+- Public visitor lands on homepage
+- Visitor browses plans / compatibility / support
+- User logs in
+- User is redirected to dashboard
+- Dashboard shows correct greeting identity
+- Customer can access order history
+- Customer can use support/compatibility actions
+- Logout works correctly
+- Logged-in user can still manually access public pages if intended
+
+IMPORTANT:
+- Be conservative.
+- Do not make broad refactors.
+- Do not change unrelated code.
+- If a potential issue is not clearly a blocker or clear-value fix, document it instead of changing it.
+
+DELIVERABLE FORMAT:
+At the end, provide a release-readiness report with:
+
+1. Executive summary
+- ready to publish / ready with minor caveats / not ready
+
+2. Checks performed
+- concise list of actual checks run
+
+3. Issues fixed
+- file changed
+- problem found
+- fix applied
+- risk level
+
+4. Remaining risks / watchouts
+- what remains
+- severity
+- whether it blocks release
+
+5. Publish recommendation
+- clear go / no-go recommendation
+
+6. Files changed
+- exact files touched during the audit
+
+Start now with the audit plan, then execute the audit and apply only necessary fixes.

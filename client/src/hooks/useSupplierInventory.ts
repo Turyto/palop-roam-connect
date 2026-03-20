@@ -126,8 +126,6 @@ export const useSupplierInventory = (filters: SupplierInventoryFilters = {}) => 
     mutationFn: async () => {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
-      console.log('[sync-hook] session token present=', !!token, 'prefix=', token?.slice(0, 30));
-
       // Direct fetch bypasses Supabase JS function client (avoids SDK header issues)
       const FUNCTION_URL = 'https://btallyhejhqfpqwaboee.supabase.co/functions/v1/sync-supplier-inventory';
       const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ0YWxseWhlamhxZnBxd2Fib2VlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2Nzc4MjksImV4cCI6MjA4OTI1MzgyOX0.CB7TXgFgRx_CdaUmegCUl9woUFjk7x05CCYs4VNtL5Y';
@@ -143,7 +141,6 @@ export const useSupplierInventory = (filters: SupplierInventoryFilters = {}) => 
       });
 
       const responseText = await res.text();
-      console.log('[sync-hook] status=', res.status, 'body=', responseText.slice(0, 300));
 
       let data: any;
       try { data = JSON.parse(responseText); } catch { data = { error: responseText }; }

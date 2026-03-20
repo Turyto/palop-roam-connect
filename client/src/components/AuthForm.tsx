@@ -26,7 +26,7 @@ const AuthForm = () => {
     if (loading) return; // Prevent double submissions
     
     setLoading(true);
-    console.log('AuthForm: Starting', mode, 'for user:', email);
+    console.log('AuthForm: Starting', mode);
 
     try {
       let result;
