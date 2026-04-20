@@ -51,10 +51,22 @@ async function verifyUser(supabaseUrl: string, serviceKey: string, token: string
         'Authorization': `Bearer ${token}`,
       },
     });
-    if (!res.ok) return null;
-    const user = await res.json();
-    return user?.id ? { id: user.id, email: user.email } : null;
-  } catch {
+    const text = await res.text();
+    // Diagnostic logging — token prefix helps identify type (anon key vs user JWT) without leaking secrets
+    console.log(`[verifyUser] status=${res.status} tokenPrefix=${token.slice(0, 30)} bodySnippet=${text.slice(0, 200)}`);
+    if (!res.ok) {
+      console.error(`[verifyUser] auth check failed — status=${res.status} body=${text.slice(0, 300)}`);
+      return null;
+    }
+    let user: any;
+    try { user = JSON.parse(text); } catch { return null; }
+    if (!user?.id) {
+      console.error(`[verifyUser] user object missing id — body=${text.slice(0, 200)}`);
+      return null;
+    }
+    return { id: user.id, email: user.email };
+  } catch (e: any) {
+    console.error(`[verifyUser] exception: ${e.message}`);
     return null;
   }
 }
@@ -159,7 +171,12 @@ async function createOrder(orderData: ESIMOrderRequest, creds: ESIMAccessCredent
     try { data = JSON.parse(text); } catch { data = { rawResponse: text }; }
 
     if (data?.success === true) {
+      // Log full obj shape to diagnose esimTranNo / esimList location in response
       console.log(`[create-order] success — esimTranNo=${data?.obj?.esimTranNo ?? data?.obj?.orderNo ?? '(not returned yet)'}`);
+      console.log(`[create-order] obj keys=${Object.keys(data?.obj ?? {}).join(',')}`);
+      console.log(`[create-order] packageInfoList[0] keys=${Object.keys(data?.obj?.packageInfoList?.[0] ?? {}).join(',')}`);
+      console.log(`[create-order] esimList[0] keys=${Object.keys(data?.obj?.packageInfoList?.[0]?.esimList?.[0] ?? {}).join(',')}`);
+      console.log(`[create-order] raw obj=${JSON.stringify(data?.obj).slice(0, 800)}`);
       return { success: true, data };
     }
 
