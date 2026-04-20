@@ -29,7 +29,8 @@ interface OrderInsertWithESIM {
 // Raw API response: { success, obj: { esimTranNo, packageInfoList: [{ esimList: [{ iccid, activationCode, qrCodeUrl, shortUrl, downloadUrl }] }] } }
 function parseESIMResponse(esimOrderData: any) {
   const obj = esimOrderData?.obj;
-  const esimTranNo: string | undefined = obj?.esimTranNo;
+  // esimTranNo may be at obj level (query endpoint) OR inside packageInfoList[0] (order endpoint)
+  const esimTranNo: string | undefined = obj?.esimTranNo ?? obj?.packageInfoList?.[0]?.esimTranNo;
   const esimEntry = obj?.packageInfoList?.[0]?.esimList?.[0];
   return {
     esimTranNo,
