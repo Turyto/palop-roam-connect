@@ -27,19 +27,17 @@ interface OrderInsertWithESIM {
 // Extract the relevant eSIM fields from the nested eSIM Access API response.
 // Edge fn returns: { success, data: <raw_api_response> }
 // Raw API response: { success, obj: { esimTranNo, packageInfoList: [{ esimList: [{ iccid, activationCode, qrCodeUrl, shortUrl, downloadUrl }] }] } }
-function parseESIMResponse(esimOrderData: any) {
-  const obj = esimOrderData?.obj;
-  // esimTranNo may be at obj level (query endpoint) OR inside packageInfoList[0] (order endpoint)
-  const esimTranNo: string | undefined = obj?.esimTranNo ?? obj?.packageInfoList?.[0]?.esimTranNo;
+function parseESIMResponse(r: any) {
+  const obj = r?.obj ?? r?.data?.obj;
+  const esimTranNo = r?.esimTranNo ?? obj?.esimTranNo ?? obj?.packageInfoList?.[0]?.esimTranNo;
+  const entry = obj?.packageInfoList?.[0]?.esimList?.[0];
+  return { esimTranNo, iccid: (r?.iccid ?? entry?.iccid) as string|undefined, activationCode: (r?.activationCode ?? entry?.activationCode ?? entry?.ac) as string|undefined, qrCodeUrl: (r?.qrCodeUrl ?? entry?.qrCodeUrl) as string|undefined, shortUrl: (r?.shortUrl ?? entry?.shortUrl ?? entry?.downloadUrl ?? entry?.url) as string|undefined };
+}
+const esimTranNo_UNUSED: string | undefined = obj?.esimTranNo ?? obj?.packageInfoList?.[0]?.esimTranNo;
   const esimEntry = obj?.packageInfoList?.[0]?.esimList?.[0];
   return {
     esimTranNo,
-    iccid: esimEntry?.iccid as string | undefined,
-    activationCode: esimEntry?.activationCode as string | undefined,
-    qrCodeUrl: esimEntry?.qrCodeUrl as string | undefined,
-    shortUrl: (esimEntry?.shortUrl || esimEntry?.downloadUrl || esimEntry?.url) as string | undefined,
-  };
-}
+
 
 export const useCreateOrderWithESIM = () => {
   const { user } = useAuth();
@@ -100,7 +98,7 @@ export const useCreateOrderWithESIM = () => {
 
           if (esimResponse.success && esimResponse.data) {
             esimOrderData = esimResponse.data;
-            parsedESIM = parseESIMResponse(esimOrderData);
+            parsedESIM = parseESIMResponse(esimResponse);
           } else {
             esimError = esimResponse.error || 'Failed to create eSIM order';
             console.error('eSIM order creation failed:', esimResponse);
