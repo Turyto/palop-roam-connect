@@ -28,49 +28,18 @@ interface OrderInsertWithESIM {
 // Edge fn returns: { success, data: <raw_api_response> }
 // Raw API response: { success, obj: { esimTranNo, packageInfoList: [{ esimList: [{ iccid, activationCode, qrCodeUrl, shortUrl, downloadUrl }] }] } }
 function parseESIMResponse(r: any) {
+  // Edge fn v18+ returns iccid/activationCode/qrCodeUrl at top level; fall back to nested
   const obj = r?.obj ?? r?.data?.obj;
   const esimTranNo = r?.esimTranNo ?? obj?.esimTranNo ?? obj?.packageInfoList?.[0]?.esimTranNo;
   const entry = obj?.packageInfoList?.[0]?.esimList?.[0];
-  return { esimTranNo, iccid: (r?.iccid ?? entry?.iccid) as string|undefined, activationCode: (r?.activationCode ?? entry?.activationCode ?? entry?.ac) as string|undefined, qrCodeUrl: (r?.qrCodeUrl ?? entry?.qrCodeUrl) as string|undefined, shortUrl: (r?.shortUrl ?? entry?.shortUrl ?? entry?.downloadUrl ?? entry?.url) as string|undefined };
-}import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/auth';
-import { useToast } from '@/hooks/use-toast';
-import { useESIMAccess } from '@/hooks/useESIMAccess';
-import type { CreateOrderData } from './types';
-
-interface OrderInsertWithESIM {
-  user_id: string;
-  plan_id: string;
-  plan_name: string;
-  data_amount: string;
-  duration_days: number;
-  price: number;
-  currency: string;
-  status: string;
-  payment_status: string;
-  customer_email?: string;
-  payment_intent_id?: string;
-  esim_package_id?: string;
-  esim_status?: string;
-  esim_order_id?: string;
-  esim_delivered_at?: string;
-}
-
-// Extract the relevant eSIM fields from the nested eSIM Access API response.
-// Edge fn returns: { success, data: <raw_api_response> }
-// Raw API response: { success, obj: { esimTranNo, packageInfoList: [{ esimList: [{ iccid, activationCode, qrCodeUrl, shortUrl, downloadUrl }] }] } }
-function parseESIMResponse(r: any) {
-  const obj = r?.obj ?? r?.data?.obj;
-  const esimTranNo = r?.esimTranNo ?? obj?.esimTranNo ?? obj?.packageInfoList?.[0]?.esimTranNo;
-  const entry = obj?.packageInfoList?.[0]?.esimList?.[0];
-  return { esimTranNo, iccid: (r?.iccid ?? entry?.iccid) as string|undefined, activationCode: (r?.activationCode ?? entry?.activationCode ?? entry?.ac) as string|undefined, qrCodeUrl: (r?.qrCodeUrl ?? entry?.qrCodeUrl) as string|undefined, shortUrl: (r?.shortUrl ?? entry?.shortUrl ?? entry?.downloadUrl ?? entry?.url) as string|undefined };
-}
-const esimTranNo_UNUSED: string | undefined = obj?.esimTranNo ?? obj?.packageInfoList?.[0]?.esimTranNo;
-  const esimEntry = obj?.packageInfoList?.[0]?.esimList?.[0];
   return {
     esimTranNo,
-
+    iccid: (r?.iccid ?? entry?.iccid) as string | undefined,
+    activationCode: (r?.activationCode ?? entry?.activationCode ?? entry?.ac) as string | undefined,
+    qrCodeUrl: (r?.qrCodeUrl ?? entry?.qrCodeUrl) as string | undefined,
+    shortUrl: (r?.shortUrl ?? entry?.shortUrl ?? entry?.downloadUrl ?? entry?.url) as string | undefined,
+  };
+}
 
 export const useCreateOrderWithESIM = () => {
   const { user } = useAuth();
