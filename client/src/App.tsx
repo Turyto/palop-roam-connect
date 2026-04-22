@@ -12,6 +12,7 @@ import { lazy, Suspense } from "react";
 import Index from "./pages/Index";
 import Plans from "./pages/Plans";
 import Purchase from "./pages/Purchase";
+import OrderSuccess from "./pages/OrderSuccess";
 import Support from "./pages/Support";
 import Auth from "./pages/Auth";
 import Orders from "./pages/Orders";
@@ -71,6 +72,7 @@ const AppRoutes = () => (
     <Route path="/orders" element={<Orders />} />
     <Route path="/compatibility" element={<CompatibilityPage />} />
     <Route path="/how-it-works" element={<HowItWorksPage />} />
+    <Route path="/success" element={<OrderSuccess />} />
     <Route path="/admin/dashboard" element={<AdminDashboard />} />
     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
     <Route path="*" element={<NotFound />} />

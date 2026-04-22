@@ -27,6 +27,9 @@ const PaymentDetails = ({ onSuccess, onBack, isCreatingOrder, amount, currency }
     const result = await stripe.confirmPayment({
       elements,
       redirect: "if_required",
+      confirmParams: {
+        return_url: `${window.location.origin}/success`,
+      },
     });
 
     if (result.error) {
