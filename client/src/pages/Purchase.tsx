@@ -9,7 +9,7 @@ import SelectedPlanSummary from "@/components/SelectedPlanSummary";
 import ESIMPlans from "@/components/ESIMPlans";
 import { PLAN_PRICES } from "@/content/plansPageContent";
 
-type PurchaseStep = "plans" | "checkout" | "payment" | "confirmation";
+type PurchaseStep = "plans" | "checkout" | "payment";
 
 export type ESIMPlan = {
   id: string;
@@ -257,10 +257,6 @@ const Purchase = () => {
     setCurrentStep("payment");
   };
 
-  const handleConfirmation = () => {
-    setCurrentStep("confirmation");
-  };
-
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <HomeHeader />
@@ -284,7 +280,6 @@ const Purchase = () => {
                   currentStep={currentStep}
                   onBackToPlans={handleBackToPlans}
                   onProceedToPayment={handleProceedToPayment}
-                  onConfirmation={handleConfirmation}
                 />
               </div>
             </div>

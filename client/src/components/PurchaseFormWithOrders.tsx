@@ -12,18 +12,17 @@ import { useToast } from "@/hooks/use-toast";
 import { useCreateOrderWithESIM } from "@/hooks/orders/useCreateOrderWithESIM";
 import { useAuth } from "@/contexts/auth";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 import CartOverview from "./CartOverview";
 import PaymentDetails from "./PaymentDetails";
 import ContactForm, { checkoutFormSchema } from "./ContactForm";
-import ConfirmationView from "./ConfirmationView";
 import { Loader2 } from "lucide-react";
 
 interface PurchaseFormWithOrdersProps {
   plan: ESIMPlan;
-  currentStep: "checkout" | "payment" | "confirmation";
+  currentStep: "checkout" | "payment";
   onBackToPlans: () => void;
   onProceedToPayment: () => void;
-  onConfirmation: () => void;
 }
 
 const PurchaseFormWithOrders = ({
@@ -31,17 +30,16 @@ const PurchaseFormWithOrders = ({
   currentStep,
   onBackToPlans,
   onProceedToPayment,
-  onConfirmation,
 }: PurchaseFormWithOrdersProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { createOrderAsync, isCreatingOrder } = useCreateOrderWithESIM();
 
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
-  const [confirmedOrderId, setConfirmedOrderId] = useState<string | null>(null);
   const [guestEmail, setGuestEmail] = useState<string>("");
   // True only when checkout was completed by an unauthenticated (anonymous) user
   const [isGuestCheckout, setIsGuestCheckout] = useState(false);
@@ -131,8 +129,6 @@ const PurchaseFormWithOrders = ({
         customerEmail: emailForOrder,
       });
 
-      setConfirmedOrderId(result.order.id);
-
       // Send a magic-link sign-in email so guests can re-access their order later.
       if (isGuestCheckout && emailForOrder) {
         const { error: otpError } = await supabase.auth.signInWithOtp({
@@ -153,7 +149,7 @@ const PurchaseFormWithOrders = ({
         }
       }
 
-      onConfirmation();
+      navigate(`/success?payment_intent=${confirmedPaymentIntentId}`);
     } catch (error: unknown) {
       console.error("Order creation failed:", error);
       toast({
@@ -164,17 +160,6 @@ const PurchaseFormWithOrders = ({
       });
     }
   };
-
-  if (currentStep === "confirmation") {
-    return (
-      <ConfirmationView
-        plan={plan}
-        orderId={confirmedOrderId}
-        guestEmail={isGuestCheckout ? guestEmail : undefined}
-        onBackToPlans={onBackToPlans}
-      />
-    );
-  }
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">

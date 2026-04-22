@@ -2,7 +2,7 @@
 import { Check, CreditCard, ShoppingCart } from "lucide-react";
 
 interface PurchaseStepsProps {
-  currentStep: "plans" | "checkout" | "payment" | "confirmation";
+  currentStep: "plans" | "checkout" | "payment";
 }
 
 const PurchaseSteps = ({ currentStep }: PurchaseStepsProps) => {
@@ -10,7 +10,6 @@ const PurchaseSteps = ({ currentStep }: PurchaseStepsProps) => {
     { id: "plans", label: "Select Plan" },
     { id: "checkout", label: "Cart Overview" },
     { id: "payment", label: "Data and Payment" },
-    { id: "confirmation", label: "Confirmation" },
   ];
 
   return (
