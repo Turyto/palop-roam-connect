@@ -120,12 +120,10 @@ const SupportPage = () => {
     ].filter(Boolean).join('\n\n---\n');
 
     const subject = categoryLabelMap[values.category] ?? values.category;
-    const ticketId = crypto.randomUUID();
 
     const { error } = await supabase
       .from('support_tickets')
       .insert({
-        id: ticketId,
         user_id: user?.id ?? null,
         name: values.name,
         email: values.email,
@@ -138,6 +136,7 @@ const SupportPage = () => {
 
     setSubmitting(false);
     if (error) {
+      console.error('[Support] insert error:', error);
       setSubmitState('error');
     } else {
       setSubmitState('success');
@@ -146,7 +145,7 @@ const SupportPage = () => {
       // Fire-and-forget internal notification — errors do not affect the user experience
       supabase.functions.invoke('notify-support-ticket', {
         body: {
-          ticket_id: ticketId,
+          ticket_id: null,
           name: values.name,
           email: values.email,
           category: values.category,
