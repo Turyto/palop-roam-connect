@@ -86,6 +86,14 @@ export const useCreateOrderWithESIM = () => {
       let esimError: string | null = null;
       let parsedESIM: ReturnType<typeof parseESIMResponse> | null = null;
 
+      // Guard: package row found but no eSIM Access package ID — another supplier's row
+      // was returned. Treat as a hard provisioning failure so the failure path fires
+      // and creates an esim_activations record for debugging.
+      if (packageData && !packageData.esim_access_package_id) {
+        esimError = `Plan '${orderData.plan_id}' has no eSIM Access package configured (supplier: ${packageData.supplier ?? 'unknown'})`;
+        console.error('[useCreateOrderWithESIM] package found but esim_access_package_id is null:', packageData);
+      }
+
       // --- PROVISION eSIM WITH SUPPLIER ---
       if (packageData?.esim_access_package_id) {
 

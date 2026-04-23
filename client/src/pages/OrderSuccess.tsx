@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import HomeHeader from "@/components/home/HomeHeader";
 import HomeFooter from "@/components/home/HomeFooter";
@@ -11,9 +11,12 @@ type PageStatus = "loading" | "success" | "processing" | "failed";
 interface OrderDetails {
   id: string;
   plan_id: string;
+  plan_name: string;
   customer_email: string | null;
   price: number;
   currency: string;
+  esim_status: string | null;
+  payment_intent_id: string | null;
 }
 
 interface ActivationDetails {
@@ -22,12 +25,90 @@ interface ActivationDetails {
   activation_url?: string | null;
 }
 
+// Attempt to (re-)provision an eSIM for an existing order.
+// Safe to call multiple times — uses payment_intent_id as idempotent outOrder reference.
+async function attemptProvision(order: OrderDetails, paymentIntentRef: string): Promise<boolean> {
+  try {
+    // 1. Fetch the correct eSIM Access package for this plan
+    const { data: pkgResponse, error: pkgError } = await supabase.functions.invoke(
+      'get-esim-package',
+      { body: { plan_id: order.plan_id } }
+    );
+    if (pkgError || !pkgResponse?.data?.esim_access_package_id) {
+      console.error('[OrderSuccess] no esim_access package for plan', order.plan_id, pkgError);
+      return false;
+    }
+    const pkg = pkgResponse.data;
+
+    // 2. Call esim-access create-order (idempotent via referenceId = payment_intent_id)
+    const { data: esimResult, error: esimError } = await supabase.functions.invoke(
+      'esim-access',
+      {
+        body: {
+          action: 'create-order',
+          packageId: pkg.esim_access_package_id,
+          customerEmail: order.customer_email || '',
+          customerName: order.customer_email || '',
+          referenceId: paymentIntentRef,
+        },
+      }
+    );
+
+    if (esimError || !esimResult?.success) {
+      console.error('[OrderSuccess] esim-access create-order failed', esimError, esimResult);
+      return false;
+    }
+
+    // 3. Extract the supplier transaction number (ICCID arrives asynchronously)
+    const obj = esimResult?.obj ?? esimResult?.data?.obj;
+    const esimTranNo =
+      obj?.esimTranNo ?? obj?.orderNo ?? obj?.packageInfoList?.[0]?.esimTranNo ?? null;
+
+    // 4. Update order row
+    await supabase
+      .from('orders')
+      .update({
+        esim_order_id: esimTranNo,
+        esim_status: 'provisioned',
+        esim_package_id: pkg.esim_access_package_id,
+        esim_delivered_at: new Date().toISOString(),
+      })
+      .eq('id', order.id);
+
+    // 5. Upsert esim_activations placeholder (ICCID etc. filled later by check-esim-status)
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from('esim_activations').upsert(
+        {
+          order_id: order.id,
+          user_id: user.id,
+          status: 'pending',
+          provisioning_status: 'completed',
+          provisioning_log: {
+            esim_order_id: esimTranNo,
+            package_code: pkg.esim_access_package_id,
+            retried_at: new Date().toISOString(),
+          },
+        },
+        { onConflict: 'order_id' }
+      );
+    }
+
+    console.log('[OrderSuccess] re-provision succeeded, esimTranNo:', esimTranNo);
+    return true;
+  } catch (err) {
+    console.error('[OrderSuccess] attemptProvision exception:', err);
+    return false;
+  }
+}
+
 const OrderSuccess = () => {
   const [searchParams] = useSearchParams();
   const [pageStatus, setPageStatus] = useState<PageStatus>("loading");
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [activation, setActivation] = useState<ActivationDetails | null>(null);
   const { t } = useLanguage();
+  const hasRetried = useRef(false);
 
   const paymentIntent = searchParams.get("payment_intent");
   const redirectStatus = searchParams.get("redirect_status");
@@ -44,52 +125,80 @@ const OrderSuccess = () => {
         return;
       }
 
-      const { data: orderData, error: orderError } = await supabase
+      // --- First attempt ---
+      let orderData: OrderDetails | null = null;
+
+      const { data: first, error: firstError } = await supabase
         .from("orders")
-        .select("id, plan_id, customer_email, price, currency")
+        .select("id, plan_id, plan_name, customer_email, price, currency, esim_status, payment_intent_id")
         .eq("payment_intent_id", paymentIntent)
         .maybeSingle();
 
-      if (orderError || !orderData) {
-        await new Promise((r) => setTimeout(r, 2000));
-        const { data: retryData } = await supabase
+      if (firstError || !first) {
+        // Order not written yet (race between Stripe redirect and createOrderAsync)
+        await new Promise((r) => setTimeout(r, 2500));
+        const { data: retry } = await supabase
           .from("orders")
-          .select("id, plan_id, customer_email, price, currency")
+          .select("id, plan_id, plan_name, customer_email, price, currency, esim_status, payment_intent_id")
           .eq("payment_intent_id", paymentIntent)
           .maybeSingle();
 
-        if (!retryData) {
+        if (!retry) {
+          // Still not there — likely the browser closed mid-flow. Show processing.
           setPageStatus("processing");
           return;
         }
-        setOrder(retryData);
-
-        const { data: activationData } = await supabase
-          .from("esim_activations")
-          .select("provisioning_status, qr_code_data, activation_url")
-          .eq("order_id", retryData.id)
-          .maybeSingle();
-
-        if (activationData) {
-          setActivation(activationData);
-          setPageStatus(activationData.provisioning_status === "completed" ? "success" : "processing");
-        } else {
-          setPageStatus("processing");
-        }
-        return;
+        orderData = retry as OrderDetails;
+      } else {
+        orderData = first as OrderDetails;
       }
 
       setOrder(orderData);
 
+      // --- Fetch activation record ---
       const { data: activationData } = await supabase
         .from("esim_activations")
         .select("provisioning_status, qr_code_data, activation_url")
         .eq("order_id", orderData.id)
         .maybeSingle();
 
+      // --- Provisioning succeeded and activation record exists ---
+      if (activationData?.provisioning_status === "completed") {
+        setActivation(activationData);
+        setPageStatus("success");
+        return;
+      }
+
+      // --- Auto-retry: order failed provisioning and we haven't retried yet ---
+      // This covers: page refresh after failure, 3DS redirect landing, wrong package returned.
+      if (
+        !hasRetried.current &&
+        (orderData.esim_status === "failed" || !activationData) &&
+        orderData.esim_status !== "provisioned"
+      ) {
+        hasRetried.current = true;
+        console.log('[OrderSuccess] esim_status is', orderData.esim_status, '— attempting re-provision');
+        const ok = await attemptProvision(orderData, paymentIntent);
+        if (ok) {
+          // Re-fetch activation after successful retry
+          const { data: newActivation } = await supabase
+            .from("esim_activations")
+            .select("provisioning_status, qr_code_data, activation_url")
+            .eq("order_id", orderData.id)
+            .maybeSingle();
+          setActivation(newActivation ?? null);
+          // Supplier allocates ICCID asynchronously — show processing, not success
+          setPageStatus("processing");
+        } else {
+          setPageStatus("processing");
+        }
+        return;
+      }
+
+      // --- Still waiting (esim_status = provisioned but no completed activation yet) ---
       if (activationData) {
         setActivation(activationData);
-        setPageStatus(activationData.provisioning_status === "completed" ? "success" : "processing");
+        setPageStatus("processing");
       } else {
         setPageStatus("processing");
       }
