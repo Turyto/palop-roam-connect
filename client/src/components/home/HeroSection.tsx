@@ -2,8 +2,18 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, Wifi, Shield, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/contexts/language";
 
 export default function HeroSection() {
+  const { t } = useLanguage();
+  const h = t.hero;
+
+  const featurePills = [
+    { icon: Wifi, text: h.pill1 },
+    { icon: Globe, text: h.pill2 },
+    { icon: Shield, text: h.pill3 },
+  ];
+
   return (
     <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden">
       {/* Abstract Background Elements */}
@@ -22,39 +32,35 @@ export default function HeroSection() {
           >
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 backdrop-blur-sm border border-gray-200/50 shadow-sm mb-6">
               <span className="flex h-2 w-2 rounded-full bg-palop-green animate-ping"></span>
-              <span className="text-xs font-semibold uppercase tracking-wider text-gray-600">Instant Connectivity for PALOP</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-gray-600">{h.heroBadge}</span>
             </div>
             
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-display font-black leading-[1.1] mb-6 text-palop-dark">
-              Connect to <span className="text-gradient">Africa</span> <br/>
-              Without Borders.
+              {h.headlinePre} <span className="text-gradient">{h.headlineAccent}</span> <br/>
+              {h.headlineSuf}
             </h1>
             
             <p className="text-lg md:text-xl text-gray-600 mb-8 leading-relaxed max-w-xl">
-              Get premium eSIM data plans for Portuguese-speaking African countries. No physical SIMs, no roaming fees, instant activation.
+              {h.newSubheadline}
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 mb-12">
               <Link to="/plans">
                 <Button variant="gradient" size="lg" className="w-full sm:w-auto gap-2 group">
-                  Find Your Plan
+                  {h.findPlan}
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
               <Link to="/how-it-works">
                 <Button variant="glass" size="lg" className="w-full sm:w-auto">
-                  See How it Works
+                  {h.seeHowItWorks}
                 </Button>
               </Link>
             </div>
 
             {/* Feature Pills */}
             <div className="flex flex-wrap gap-4 md:gap-8">
-              {[
-                { icon: Wifi, text: "5G/4G Speeds" },
-                { icon: Globe, text: "Multi-Country" },
-                { icon: Shield, text: "Secure Activation" },
-              ].map((feature, i) => (
+              {featurePills.map((feature, i) => (
                 <motion.div 
                   key={i}
                   initial={{ opacity: 0, y: 20 }}
@@ -79,7 +85,6 @@ export default function HeroSection() {
             className="relative lg:ml-auto w-full max-w-lg"
           >
             <div className="relative rounded-[2.5rem] overflow-hidden shadow-2xl shadow-palop-blue/20 border-8 border-white/50 glass-panel aspect-[4/5]">
-              {/* hero scenic travel lifestyle shot */}
               <img 
                 src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1200&h=1500&fit=crop" 
                 alt="Traveler connected with eSIM"
@@ -89,15 +94,15 @@ export default function HeroSection() {
               {/* Floating UI Elements over the image */}
               <div className="absolute top-6 left-6 right-6 flex justify-between items-start pointer-events-none">
                 <div className="bg-white/90 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-white">
-                  <div className="text-xs font-bold text-gray-500 uppercase mb-1">Status</div>
+                  <div className="text-xs font-bold text-gray-500 uppercase mb-1">{h.imgStatus}</div>
                   <div className="flex items-center gap-2 text-palop-green font-bold">
-                    <Wifi className="w-4 h-4" /> Connected
+                    <Wifi className="w-4 h-4" /> {h.imgConnected}
                   </div>
                 </div>
               </div>
               
               <div className="absolute bottom-6 right-6 bg-gradient-to-r from-palop-blue to-palop-green rounded-2xl p-4 shadow-xl text-white transform rotate-2 pointer-events-none">
-                <div className="text-sm font-bold opacity-90 mb-1">Angola Data Plan</div>
+                <div className="text-sm font-bold opacity-90 mb-1">{h.imgPlanLabel}</div>
                 <div className="text-2xl font-black">10 GB</div>
               </div>
             </div>
