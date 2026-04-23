@@ -4,7 +4,7 @@ const corsHeaders = {
 };
 
 const ADMIN_EMAIL = 'turyto@gmail.com';
-const FROM_EMAIL = 'BuéChama Alerts <onboarding@resend.dev>';
+const FROM_EMAIL = 'BuéChama Alerts <esims@palopconnect.com>';
 
 Deno.serve(async (req: Request): Promise<Response> => {
   if (req.method === 'OPTIONS') {
