@@ -60,7 +60,7 @@ const EnhancedSupportContact = () => {
               <CardTitle className="text-lg">Email Support</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-600 mb-4">support@paloproam.com</p>
+              <a href="mailto:suporte@palopconnect.com" className="text-gray-600 hover:text-palop-green mb-4 block">suporte@palopconnect.com</a>
               <p className="text-sm text-gray-500 mb-3">Response within 24 hours</p>
               <Badge variant="outline" className="text-green-600 border-green-600">
                 <CheckCircle className="h-3 w-3 mr-1" />
