@@ -46,7 +46,7 @@ externalPort = 3000
 [userenv]
 
 [userenv.shared]
-VITE_STRIPE_PUBLISHABLE_KEY = "pk_test_51TBtENL9w3YgrT2lVwnh31RmwMuJza5FAHT5rHNfWOIjmXSicgIxmgTbOZJuvkqEgqZVOrRfZxBdeMAtmAekEGVU00ReK87wnn"
+VITE_STRIPE_PUBLISHABLE_KEY = "pk_live_51QU5jiKy6kP7f0TQYNEuqomlNtPnbtV0yuyksk6iD7LUdFTzJqOD62tMHGrQMqoVQAyUieHNYz8Ie1T3D8R5osID00LBHeegxQ"
 
 [postMerge]
 path = "scripts/post-merge.sh"
