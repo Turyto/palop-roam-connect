@@ -51,7 +51,7 @@ const SupportPage = () => {
     order_id: z.string().optional(),
     device: z.string().optional(),
     category: z.string().min(1, sp.form.selectCategory),
-    message: z.string().min(20, sp.form.minMessage),
+    message: z.string().min(10, sp.form.minMessage),
   });
 
   type FormValues = z.infer<typeof formSchema>;
@@ -120,10 +120,12 @@ const SupportPage = () => {
     ].filter(Boolean).join('\n\n---\n');
 
     const subject = categoryLabelMap[values.category] ?? values.category;
+    const ticketId = crypto.randomUUID();
 
-    const { data: ticket, error } = await supabase
+    const { error } = await supabase
       .from('support_tickets')
       .insert({
+        id: ticketId,
         user_id: user?.id ?? null,
         name: values.name,
         email: values.email,
@@ -132,9 +134,7 @@ const SupportPage = () => {
         message: messageParts,
         status: 'open',
         priority: 'medium',
-      })
-      .select('id')
-      .single();
+      });
 
     setSubmitting(false);
     if (error) {
@@ -146,7 +146,7 @@ const SupportPage = () => {
       // Fire-and-forget internal notification — errors do not affect the user experience
       supabase.functions.invoke('notify-support-ticket', {
         body: {
-          ticket_id: ticket?.id ?? null,
+          ticket_id: ticketId,
           name: values.name,
           email: values.email,
           category: values.category,
