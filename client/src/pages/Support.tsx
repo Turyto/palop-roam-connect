@@ -119,16 +119,22 @@ const SupportPage = () => {
       values.device ? `Device: ${values.device}` : null,
     ].filter(Boolean).join('\n\n---\n');
 
-    const { error } = await supabase.from('support_tickets').insert({
-      user_id: user?.id ?? null,
-      name: values.name,
-      email: values.email,
-      subject: categoryLabelMap[values.category] ?? values.category,
-      category: values.category,
-      message: messageParts,
-      status: 'open',
-      priority: 'medium',
-    });
+    const subject = categoryLabelMap[values.category] ?? values.category;
+
+    const { data: ticket, error } = await supabase
+      .from('support_tickets')
+      .insert({
+        user_id: user?.id ?? null,
+        name: values.name,
+        email: values.email,
+        subject,
+        category: values.category,
+        message: messageParts,
+        status: 'open',
+        priority: 'medium',
+      })
+      .select('id')
+      .single();
 
     setSubmitting(false);
     if (error) {
@@ -136,6 +142,22 @@ const SupportPage = () => {
     } else {
       setSubmitState('success');
       form.reset({ name: '', email: '', order_id: '', device: '', category: '', message: '' });
+
+      // Fire-and-forget internal notification — errors do not affect the user experience
+      supabase.functions.invoke('notify-support-ticket', {
+        body: {
+          ticket_id: ticket?.id ?? null,
+          name: values.name,
+          email: values.email,
+          category: values.category,
+          subject,
+          message: messageParts,
+          order_id: values.order_id || null,
+          device: values.device || null,
+        },
+      }).catch((err: any) => {
+        console.error('[Support] notify-support-ticket failed (non-fatal):', err?.message);
+      });
     }
   };
 
