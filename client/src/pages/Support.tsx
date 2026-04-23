@@ -124,7 +124,7 @@ const SupportPage = () => {
     const { error } = await supabase
       .from('support_tickets')
       .insert({
-        user_id: user?.id ?? null,
+        user_id: null,
         name: values.name,
         email: values.email,
         subject,
