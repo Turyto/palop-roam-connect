@@ -14,7 +14,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
-    const { amount, currency = 'eur', plan_name, plan_id } = await req.json();
+    const { amount, currency = 'eur', plan_name, plan_id, customer_email } = await req.json();
     if (!amount || amount <= 0) {
       return new Response(JSON.stringify({ error: 'Invalid amount' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -27,6 +27,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
       'automatic_payment_methods[enabled]': 'true',
       'metadata[plan_name]': plan_name ?? '',
       'metadata[plan_id]': plan_id ?? '',
+      'metadata[customer_email]': customer_email ?? '',
+      ...(customer_email ? { 'receipt_email': customer_email } : {}),
     });
     const response = await fetch('https://api.stripe.com/v1/payment_intents', {
       method: 'POST',

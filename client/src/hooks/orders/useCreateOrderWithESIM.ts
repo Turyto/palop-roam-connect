@@ -123,7 +123,7 @@ export const useCreateOrderWithESIM = () => {
         currency: orderData.currency || 'EUR',
         status: paymentIntentId ? 'completed' : 'pending',
         payment_status: paymentIntentId ? 'succeeded' : 'pending',
-        customer_email: customerEmail || undefined,
+        customer_email: customerEmail || null,
         payment_intent_id: paymentIntentId,
         ...(packageData && {
           esim_package_id: packageData.esim_access_package_id,

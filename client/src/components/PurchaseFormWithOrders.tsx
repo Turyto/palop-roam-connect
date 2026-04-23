@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,8 @@ const PurchaseFormWithOrders = ({
   const [guestEmail, setGuestEmail] = useState<string>("");
   // True only when checkout was completed by an unauthenticated (anonymous) user
   const [isGuestCheckout, setIsGuestCheckout] = useState(false);
+  // Email captured at checkout — used for both guests and authenticated users
+  const collectedEmailRef = useRef<string>("");
 
   const stripePromise = useMemo(() => {
     const pk = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
@@ -72,6 +74,7 @@ const PurchaseFormWithOrders = ({
           currency: plan.currency.toLowerCase(),
           plan_name: plan.name,
           plan_id: plan.id,
+          customer_email: collectedEmailRef.current,
         },
       })
       .then(({ data, error }) => {
@@ -90,6 +93,9 @@ const PurchaseFormWithOrders = ({
   // Checkout form submit → move to payment step (supports both guests and signed-in users)
   const onCheckoutSubmit = async (data: z.infer<typeof checkoutFormSchema>) => {
     const emailForOrder = data.email || user?.email || "";
+
+    // Always capture the email from the form so it's available at payment success time
+    collectedEmailRef.current = emailForOrder;
 
     if (!user) {
       // Guest path: sign in anonymously so the order can be saved with a valid user_id
@@ -114,8 +120,9 @@ const PurchaseFormWithOrders = ({
 
   // Called by PaymentDetails after Stripe confirms payment
   const handlePaymentSuccess = async (confirmedPaymentIntentId: string) => {
-    // For guests, use the email collected at checkout. For registered users, use their account email.
-    const emailForOrder = isGuestCheckout ? guestEmail : (user?.email || "");
+    // Use the email captured at checkout (works for both guests and authenticated users).
+    // Fall back to user.email if somehow the ref wasn't set (e.g. deep-link straight to payment).
+    const emailForOrder = collectedEmailRef.current || user?.email || "";
 
     try {
       const result = await createOrderAsync({
