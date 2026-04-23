@@ -11,6 +11,8 @@ interface StripePaymentFormProps {
   currency: string;
 }
 
+const isTestMode = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY?.startsWith("pk_test_");
+
 const PaymentDetails = ({ onSuccess, onBack, isCreatingOrder, amount, currency }: StripePaymentFormProps) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -51,12 +53,14 @@ const PaymentDetails = ({ onSuccess, onBack, isCreatingOrder, amount, currency }
           </div>
         </div>
         <div className="p-6">
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-md flex items-start gap-2 text-sm text-blue-700">
-            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-            <span>
-              Test mode: use card <strong>4242 4242 4242 4242</strong>, any future expiry, any 3-digit CVC.
-            </span>
-          </div>
+          {isTestMode && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-md flex items-start gap-2 text-sm text-blue-700">
+              <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+              <span>
+                Test mode: use card <strong>4242 4242 4242 4242</strong>, any future expiry, any 3-digit CVC.
+              </span>
+            </div>
+          )}
           <PaymentElement
             options={{
               layout: "tabs",
