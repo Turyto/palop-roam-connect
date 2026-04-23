@@ -7,6 +7,8 @@ interface ESIMAccessOrder {
   customerEmail: string;
   customerName?: string;
   referenceId?: string;
+  planName?: string;
+  dataAmount?: string;
 }
 
 interface ESIMAccessResponse {

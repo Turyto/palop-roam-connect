@@ -104,6 +104,8 @@ export const useCreateOrderWithESIM = () => {
             customerName: user.user_metadata?.full_name || customerEmail,
             // Use payment_intent_id as the idempotent outOrder reference
             referenceId: paymentIntentId ?? `order-${Date.now()}`,
+            planName: orderData.plan_name,
+            dataAmount: orderData.data_amount,
           });
 
           if (esimResponse.success && esimResponse.data) {
