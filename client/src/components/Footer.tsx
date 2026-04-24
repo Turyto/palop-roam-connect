@@ -7,11 +7,12 @@ const Footer = () => {
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="md:col-span-1">
-            <Link to="/" className="flex items-center space-x-2">
-              <span className="font-display font-bold text-xl text-white">
-                <span className="text-palop-green">PALOP</span>
-                <span className="text-palop-blue">Roam</span>
-              </span>
+            <Link to="/" className="flex items-center">
+              <img
+                src="/palop-connect-logo.jpg"
+                alt="PALOP Connect"
+                className="h-10 w-44 object-cover object-center rounded-md"
+              />
             </Link>
             <p className="mt-4 text-sm">
               Connecting the PALOP community across borders with affordable and reliable roaming solutions.

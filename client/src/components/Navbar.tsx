@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, FlameKindling } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useAuth } from "@/contexts/auth";
 import UserMenu from "./UserMenu";
 
@@ -56,18 +56,12 @@ const Navbar = () => {
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <img 
-              src="/lovable-uploads/5ba8dc07-fd7f-40d9-a399-d4d2c2f19ea5.png" 
-              alt="BuéChama Logo" 
-              className="h-8 w-8 object-contain"
+          <Link to="/" className="flex items-center">
+            <img
+              src="/palop-connect-logo.jpg"
+              alt="PALOP Connect"
+              className="h-10 w-44 object-cover object-center"
             />
-            <span className="font-bold text-xl">
-              <span className="gradient-text">BuéChama</span>
-              <span className="text-gray-900"> eSIM</span>
-            </span>
-            <FlameKindling className="h-8 w-8 text-red-500" />
-            <FlameKindling className="h-8 w-8 text-red-500" />
           </Link>
 
           {/* Desktop Navigation */}
