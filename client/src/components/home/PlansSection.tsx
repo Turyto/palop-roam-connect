@@ -33,6 +33,15 @@ const PlansSection = () => {
       price: t.plans.plan3Price,
       popular: false,
     },
+    {
+      key: 'plan4' as const,
+      name: t.plans.plan4Name,
+      tagline: t.plans.plan4Tagline,
+      duration: t.plans.plan4Duration,
+      gb: t.plans.plan4Gb,
+      price: t.plans.plan4Price,
+      popular: false,
+    },
   ];
 
   return (
@@ -45,7 +54,7 @@ const PlansSection = () => {
         </div>
         <p className="text-center text-gray-600 max-w-xl mx-auto mb-12">{t.plans.subtitle}</p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
           {plans.map(({ key, name, tagline, duration, gb, price, popular }) => (
             <div
               key={key}
