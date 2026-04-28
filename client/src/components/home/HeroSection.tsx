@@ -35,8 +35,8 @@ export default function HeroSection() {
               <span className="text-xs font-semibold uppercase tracking-wider text-gray-600">{h.heroBadge}</span>
             </div>
             
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-display font-black leading-[1.1] mb-6 text-palop-dark">
-              {h.headlinePre} <span className="text-gradient">{h.headlineAccent}</span> <br/>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-black leading-[1.1] mb-6 text-palop-dark">
+              {h.headlinePre} <span className="text-gradient">{h.headlineAccent}</span> {h.headlinePost}<br/>
               {h.headlineSuf}
             </h1>
             
@@ -86,9 +86,9 @@ export default function HeroSection() {
           >
             <div className="relative rounded-[2.5rem] overflow-hidden shadow-2xl shadow-palop-blue/20 border-8 border-white/50 glass-panel aspect-[4/5]">
               <img 
-                src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1200&h=1500&fit=crop" 
-                alt="Traveler connected with eSIM"
-                className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+                src="/hero-image.png" 
+                alt="PALOP diaspora woman connected with eSIM"
+                className="w-full h-full object-cover object-top transition-transform duration-700 hover:scale-105"
               />
               
               {/* Floating UI Elements over the image */}
