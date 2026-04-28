@@ -35,9 +35,9 @@ export default function HeroSection() {
               <span className="text-xs font-semibold uppercase tracking-wider text-gray-600">{h.heroBadge}</span>
             </div>
             
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-black leading-[1.1] mb-6 text-palop-dark">
-              {h.headlinePre} <span className="text-gradient">{h.headlineAccent}</span> {h.headlinePost}<br/>
-              {h.headlineSuf}
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-display font-black leading-[1.1] mb-6 text-palop-dark">
+              {h.headlinePre}<br/>
+              <span className="text-gradient">{h.headlineAccent}</span> {h.headlinePost}
             </h1>
             
             <p className="text-lg md:text-xl text-gray-600 mb-8 leading-relaxed max-w-xl">
@@ -88,7 +88,8 @@ export default function HeroSection() {
               <img 
                 src="/hero-image.png" 
                 alt="PALOP diaspora woman connected with eSIM"
-                className="w-full h-full object-cover object-top transition-transform duration-700 hover:scale-105"
+                className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+                style={{ objectPosition: 'center 20%' }}
               />
               
               {/* Floating UI Elements over the image */}
