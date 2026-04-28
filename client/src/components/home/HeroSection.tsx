@@ -36,7 +36,7 @@ export default function HeroSection() {
             </div>
             
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-display font-black leading-[1.1] mb-6 text-palop-dark">
-              {h.headlinePre}<br/>
+              <span className="whitespace-nowrap">{h.headlinePre}</span><br/>
               <span className="text-gradient">{h.headlineAccent}</span> {h.headlinePost}
             </h1>
             
