@@ -60,7 +60,7 @@ const Navbar = () => {
             <img
               src="/palop-connect-logo.jpg"
               alt="PALOP Connect"
-              className="h-10 w-44 object-cover object-center ml-1"
+              className="h-10 w-44 object-cover object-left"
             />
           </Link>
 
