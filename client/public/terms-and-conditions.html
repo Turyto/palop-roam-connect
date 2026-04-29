@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Terms & Conditions — PALOP Connect</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      color: #1A1A1A;
+      background: #ffffff;
+      line-height: 1.7;
+      font-size: 16px;
+    }
+
+    /* ── NAV ── */
+    nav {
+      background: #ffffff;
+      border-bottom: 1px solid #e5e5e5;
+      padding: 0 40px;
+      height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo { display: flex; align-items: center; gap: 6px; text-decoration: none; }
+    .logo-palop { font-weight: 800; font-size: 1.35rem; color: #2DB84B; letter-spacing: -0.5px; }
+    .logo-connect { font-weight: 700; font-size: 1.35rem; color: #1A1A1A; letter-spacing: -0.5px; }
+    .nav-links { display: flex; gap: 28px; list-style: none; }
+    .nav-links a { text-decoration: none; color: #444; font-size: 0.92rem; font-weight: 500; }
+    .nav-links a:hover { color: #2DB84B; }
+    .btn-signin {
+      background: #2DB84B; color: #fff; border: none; border-radius: 8px;
+      padding: 9px 22px; font-size: 0.92rem; font-weight: 600; cursor: pointer;
+      text-decoration: none;
+    }
+
+    /* ── HERO BANNER ── */
+    .page-hero {
+      background: linear-gradient(135deg, #0d1f0f 0%, #1a3a1f 100%);
+      padding: 56px 40px 48px;
+      text-align: center;
+    }
+    .page-hero h1 { color: #ffffff; font-size: 2.1rem; font-weight: 800; margin-bottom: 10px; }
+    .page-hero p { color: rgba(255,255,255,0.72); font-size: 1rem; }
+    .page-hero .badge {
+      display: inline-block; background: rgba(45,184,75,0.18); color: #2DB84B;
+      border: 1px solid rgba(45,184,75,0.4); border-radius: 20px;
+      padding: 4px 14px; font-size: 0.82rem; font-weight: 600; margin-bottom: 16px;
+    }
+
+    /* ── LAYOUT ── */
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 56px 40px 80px;
+    }
+
+    /* ── TOC ── */
+    .toc {
+      background: #F5F5F0;
+      border-left: 4px solid #2DB84B;
+      border-radius: 0 10px 10px 0;
+      padding: 24px 28px;
+      margin-bottom: 52px;
+    }
+    .toc h3 { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.08em; color: #666; margin-bottom: 14px; }
+    .toc ol { padding-left: 20px; }
+    .toc li { margin-bottom: 6px; }
+    .toc a { color: #2DB84B; text-decoration: none; font-size: 0.93rem; font-weight: 500; }
+    .toc a:hover { text-decoration: underline; }
+
+    /* ── SECTIONS ── */
+    .section { margin-bottom: 48px; }
+    .section h2 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #1A1A1A;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #2DB84B;
+      margin-bottom: 18px;
+    }
+    .section h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #1A1A1A;
+      margin: 20px 0 8px;
+    }
+    .section p { margin-bottom: 14px; color: #333; }
+    .section ul, .section ol { padding-left: 22px; margin-bottom: 14px; }
+    .section li { margin-bottom: 8px; color: #333; }
+
+    /* ── INFO BOXES ── */
+    .info-box {
+      background: #F5F5F0;
+      border-radius: 10px;
+      padding: 18px 22px;
+      margin: 20px 0;
+      font-size: 0.94rem;
+    }
+    .info-box.green { background: #edfaf1; border-left: 4px solid #2DB84B; }
+    .info-box.amber { background: #fffbea; border-left: 4px solid #f59e0b; }
+    .info-box strong { display: block; margin-bottom: 6px; font-size: 0.88rem; text-transform: uppercase; letter-spacing: 0.06em; color: #555; }
+
+    /* ── TABLE ── */
+    table { width: 100%; border-collapse: collapse; margin: 18px 0 24px; font-size: 0.93rem; }
+    th { background: #2DB84B; color: #fff; text-align: left; padding: 10px 14px; font-weight: 700; }
+    td { padding: 10px 14px; border-bottom: 1px solid #e8e8e8; color: #333; vertical-align: top; }
+    tr:nth-child(even) td { background: #f9f9f7; }
+
+    /* ── FOOTER ── */
+    footer {
+      background: #0d1f0f;
+      color: rgba(255,255,255,0.6);
+      padding: 48px 40px 32px;
+    }
+    .footer-grid {
+      max-width: 1100px; margin: 0 auto;
+      display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px;
+      margin-bottom: 36px;
+    }
+    .footer-brand .logo-palop { font-size: 1.2rem; }
+    .footer-brand .logo-connect { font-size: 1.2rem; color: #fff; }
+    .footer-brand p { margin-top: 10px; font-size: 0.87rem; line-height: 1.6; }
+    .footer-col h4 { color: #fff; font-size: 0.88rem; font-weight: 700; margin-bottom: 14px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: rgba(255,255,255,0.55); text-decoration: none; font-size: 0.87rem; }
+    .footer-col a:hover { color: #2DB84B; }
+    .footer-bottom {
+      max-width: 1100px; margin: 0 auto;
+      border-top: 1px solid rgba(255,255,255,0.12);
+      padding-top: 22px;
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 0.83rem;
+    }
+    .footer-bottom a { color: rgba(255,255,255,0.55); text-decoration: none; }
+    .footer-bottom a:hover { color: #2DB84B; }
+    .social-links { display: flex; gap: 16px; }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="logo">
+    <span class="logo-palop">PALOP</span><span class="logo-connect">Connect</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="/">Home</a></li>
+    <li><a href="/plans">Plans</a></li>
+    <li><a href="/esim-guide">eSIM Guide</a></li>
+    <li><a href="/countries">Countries</a></li>
+    <li><a href="/community">Community</a></li>
+    <li><a href="/support">Support</a></li>
+  </ul>
+  <a href="/signin" class="btn-signin">Sign In</a>
+</nav>
+
+<!-- HERO -->
+<div class="page-hero">
+  <div class="badge">Legal</div>
+  <h1>Terms &amp; Conditions</h1>
+  <p>Last updated: 28 April 2026 &nbsp;·&nbsp; Effective: 28 April 2026</p>
+</div>
+
+<!-- CONTENT -->
+<div class="container">
+
+  <!-- TOC -->
+  <div class="toc">
+    <h3>Contents</h3>
+    <ol>
+      <li><a href="#s1">Introduction &amp; Acceptance</a></li>
+      <li><a href="#s2">Who We Are</a></li>
+      <li><a href="#s3">Our Services</a></li>
+      <li><a href="#s4">Eligibility &amp; Account Registration</a></li>
+      <li><a href="#s5">Plans, Pricing &amp; Payment</a></li>
+      <li><a href="#s6">Cancellation &amp; Refund Policy</a></li>
+      <li><a href="#s7">Acceptable Use</a></li>
+      <li><a href="#s8">Service Availability &amp; Limitations</a></li>
+      <li><a href="#s9">Intellectual Property</a></li>
+      <li><a href="#s10">Liability</a></li>
+      <li><a href="#s11">Changes to These Terms</a></li>
+      <li><a href="#s12">Governing Law &amp; Disputes</a></li>
+      <li><a href="#s13">Contact Us</a></li>
+    </ol>
+  </div>
+
+  <div class="info-box amber">
+    <strong>⚠ Please read carefully</strong>
+    By accessing or using any PALOP Connect service, you agree to be bound by these Terms &amp; Conditions. If you do not agree, please do not use our services.
+  </div>
+
+  <!-- 1 -->
+  <div class="section" id="s1">
+    <h2>1. Introduction &amp; Acceptance</h2>
+    <p>These Terms &amp; Conditions ("Terms") govern your access to and use of the website, mobile applications, and eSIM connectivity services ("Services") provided by PALOP Roam Connect, Lda. ("PALOP Connect", "we", "us", or "our").</p>
+    <p>By creating an account, purchasing a plan, or activating an eSIM through our platform, you confirm that you have read, understood, and agree to these Terms. These Terms form a legally binding contract between you and PALOP Connect.</p>
+    <p>We may also publish additional guidelines, policies, or terms that apply to specific features or promotions. Those documents are incorporated into these Terms by reference.</p>
+  </div>
+
+  <!-- 2 -->
+  <div class="section" id="s2">
+    <h2>2. Who We Are</h2>
+    <p>PALOP Roam Connect, Lda. is a company incorporated in Portugal under Portuguese law. Our registered address and contact details are:</p>
+    <div class="info-box green">
+      <strong>Company Details</strong>
+      <strong>PALOP Roam Connect, Lda.</strong><br/>
+      Registered in Portugal<br/>
+      Email: <a href="mailto:legal@palopconnect.com" style="color:#2DB84B;">legal@palopconnect.com</a><br/>
+      Website: <a href="https://palopconnect.com" style="color:#2DB84B;">palopconnect.com</a>
+    </div>
+    <p>We act as a reseller and facilitator of eSIM data plans issued by third-party mobile network operators (MNOs) and eSIM providers, operating in compliance with the regulations of the Authority for Electronic Communications (ANACOM) in Portugal and applicable EU law.</p>
+  </div>
+
+  <!-- 3 -->
+  <div class="section" id="s3">
+    <h2>3. Our Services</h2>
+    <p>PALOP Connect provides:</p>
+    <ul>
+      <li><strong>eSIM data plans</strong> — digital SIM cards delivered by QR code or activation code, covering data, and in selected plans, voice and SMS services in Portugal, Europe, and PALOP countries (Angola, Cabo Verde, Moçambique, Guiné-Bissau, São Tomé e Príncipe).</li>
+      <li><strong>Roaming connectivity</strong> — access to local and international mobile networks for travellers and newcomers.</li>
+      <li><strong>Account management</strong> — an online platform to purchase, activate, top up, and manage your eSIM plans.</li>
+      <li><strong>Customer support</strong> — assistance available in Portuguese and English.</li>
+    </ul>
+    <p>Our Services are delivered electronically. Activation is completed by the customer via a QR code sent to the registered email address. No physical SIM card is shipped.</p>
+    <div class="info-box green">
+      <strong>✅ eSIM Compatibility</strong>
+      eSIM technology requires a compatible device. It is your responsibility to verify that your device supports eSIM before purchasing a plan. We are not liable for purchases made on incompatible devices.
+    </div>
+  </div>
+
+  <!-- 4 -->
+  <div class="section" id="s4">
+    <h2>4. Eligibility &amp; Account Registration</h2>
+    <h3>4.1 Eligibility</h3>
+    <p>To use our Services you must be at least 18 years of age (or the age of majority in your country of residence, if higher). By registering, you confirm that you meet this requirement.</p>
+    <h3>4.2 Account Information</h3>
+    <p>When you create an account, you agree to provide accurate, complete, and up-to-date information. You are responsible for maintaining the confidentiality of your password and for all activities that occur under your account.</p>
+    <p>Please notify us immediately at <a href="mailto:support@palopconnect.com" style="color:#2DB84B;">support@palopconnect.com</a> if you suspect unauthorised access to your account. We are not liable for losses arising from unauthorised use of your credentials.</p>
+    <h3>4.3 One Account per Person</h3>
+    <p>Each individual may hold one account. We reserve the right to terminate duplicate or fraudulent accounts.</p>
+  </div>
+
+  <!-- 5 -->
+  <div class="section" id="s5">
+    <h2>5. Plans, Pricing &amp; Payment</h2>
+    <h3>5.1 Plan Types</h3>
+    <p>We offer a range of eSIM plans, which may include:</p>
+    <table>
+      <tr><th>Plan Type</th><th>Description</th></tr>
+      <tr><td>Data Plans</td><td>Fixed data allowance valid for a set number of days.</td></tr>
+      <tr><td>Voice &amp; Data Plans</td><td>Combined data and call/SMS allowance.</td></tr>
+      <tr><td>Combo Plans</td><td>Multi-country coverage bundles.</td></tr>
+      <tr><td>Top-ups</td><td>Additional data added to an active plan.</td></tr>
+    </table>
+    <p>Plan details, coverage, validity periods, and prices are displayed on our website at the time of purchase. Prices are shown in Euros (EUR) and include applicable VAT at the Portuguese standard rate unless stated otherwise.</p>
+    <h3>5.2 Payment</h3>
+    <p>Payment is due at the time of purchase. We accept major payment methods as displayed at checkout. All transactions are processed securely through our certified payment partners. We do not store your full card details on our servers.</p>
+    <h3>5.3 Plan Validity</h3>
+    <p>Plans are valid from the moment of first use or activation (whichever occurs first) and expire at the end of the stated validity period. Unused data or minutes at expiry are forfeited and will not be rolled over or refunded unless required by applicable law.</p>
+    <h3>5.4 Pricing Changes</h3>
+    <p>We reserve the right to change plan prices at any time. Changes will not affect orders already placed and paid for. We will communicate significant pricing changes via our website or registered email address.</p>
+  </div>
+
+  <!-- 6 -->
+  <div class="section" id="s6">
+    <h2>6. Cancellation &amp; Refund Policy</h2>
+    <h3>6.1 Right of Withdrawal (EU Consumers)</h3>
+    <p>As a consumer in the European Union, you have the right to withdraw from a purchase within <strong>14 days</strong> of the transaction date, in accordance with Directive 2011/83/EU and Portuguese Decree-Law No. 24/2014.</p>
+    <div class="info-box amber">
+      <strong>⚠ Important exception</strong>
+      If you request and activate your eSIM or begin using the service before the 14-day withdrawal period expires, you expressly waive your right of withdrawal for that purchase. By proceeding with activation, you acknowledge this waiver.
+    </div>
+    <h3>6.2 Refund Eligibility</h3>
+    <p>Refunds may be considered in the following circumstances:</p>
+    <ul>
+      <li>The eSIM was not delivered to your registered email within 24 hours of purchase due to a technical error on our side.</li>
+      <li>The plan is completely non-functional and we are unable to resolve the issue within a reasonable timeframe.</li>
+      <li>A duplicate charge occurred due to a billing error.</li>
+    </ul>
+    <p>We do not offer refunds for:</p>
+    <ul>
+      <li>Purchased plans that have already been activated or partially used.</li>
+      <li>Incompatibility with your device (please verify compatibility before purchasing).</li>
+      <li>Poor signal or network performance beyond our direct control.</li>
+      <li>Expired plans where data was unused.</li>
+    </ul>
+    <h3>6.3 How to Request a Refund</h3>
+    <p>To request a refund, contact us at <a href="mailto:support@palopconnect.com" style="color:#2DB84B;">support@palopconnect.com</a> within the applicable timeframe, stating your order number and the reason for your request. We will respond within 5 business days.</p>
+    <h3>6.4 Alternative Dispute Resolution</h3>
+    <p>If we cannot resolve your complaint directly, you may refer your complaint to an authorised Alternative Dispute Resolution (ADR) entity in Portugal, in accordance with Law No. 144/2015. You may also use the EU Online Dispute Resolution platform at <a href="https://ec.europa.eu/odr" style="color:#2DB84B;" target="_blank">ec.europa.eu/odr</a>.</p>
+  </div>
+
+  <!-- 7 -->
+  <div class="section" id="s7">
+    <h2>7. Acceptable Use</h2>
+    <p>Our Services are provided for personal, lawful use only. You agree not to use our Services to:</p>
+    <ul>
+      <li>Violate any applicable laws or regulations in Portugal, the EU, or your country of use.</li>
+      <li>Engage in fraudulent activity, identity theft, or misrepresentation.</li>
+      <li>Resell, share, or redistribute our eSIM plans without our written authorisation.</li>
+      <li>Use the service to transmit spam, malware, or any harmful content.</li>
+      <li>Interfere with, damage, or disrupt network infrastructure or our systems.</li>
+      <li>Use the service through automated means (bots, scripts) for commercial purposes.</li>
+      <li>Engage in SIM-boxing, call termination, or any form of arbitrage.</li>
+    </ul>
+    <p>We reserve the right to suspend or terminate accounts that breach these requirements without prior notice and without liability for any resulting losses.</p>
+  </div>
+
+  <!-- 8 -->
+  <div class="section" id="s8">
+    <h2>8. Service Availability &amp; Limitations</h2>
+    <p>We aim to provide a reliable, high-quality service. However, you acknowledge that:</p>
+    <ul>
+      <li>Coverage and speeds depend on the underlying networks of our partner operators and may vary by location.</li>
+      <li>Network outages, maintenance, force majeure events (natural disasters, government actions, etc.) may affect service availability.</li>
+      <li>Some countries or regions may impose restrictions on internet access that are outside our control.</li>
+      <li>Fair Use Policies may apply on unlimited or high-data plans; details are stated in each plan description.</li>
+    </ul>
+    <p>We do not guarantee uninterrupted or error-free service and disclaim liability for disruptions caused by third-party network operators or events beyond our reasonable control.</p>
+  </div>
+
+  <!-- 9 -->
+  <div class="section" id="s9">
+    <h2>9. Intellectual Property</h2>
+    <p>All content on the PALOP Connect platform — including the brand name, logo, website design, text, graphics, and software — is the exclusive property of PALOP Roam Connect, Lda. or its licensors and is protected under Portuguese and EU intellectual property law.</p>
+    <p>You may not copy, modify, reproduce, distribute, or create derivative works from any part of our content without prior written permission. Authorised use is limited to personal, non-commercial browsing of our website and use of our Services as intended.</p>
+  </div>
+
+  <!-- 10 -->
+  <div class="section" id="s10">
+    <h2>10. Liability</h2>
+    <h3>10.1 Our Liability</h3>
+    <p>To the maximum extent permitted by Portuguese and EU law, PALOP Connect's total liability to you for any claim arising under these Terms shall not exceed the amount paid by you for the specific plan or service giving rise to the claim in the 12 months preceding the claim.</p>
+    <p>We are not liable for any indirect, special, consequential, or punitive damages, including loss of profits, loss of data, or business interruption, except where such exclusion is prohibited by mandatory consumer protection law.</p>
+    <h3>10.2 Consumer Rights</h3>
+    <p>Nothing in these Terms limits or excludes rights you have as a consumer under EU or Portuguese mandatory law (including the Consumer Rights Directive 2011/83/EU and the Portuguese Consumer Defence Law, Law No. 24/96). In case of conflict, mandatory law prevails.</p>
+  </div>
+
+  <!-- 11 -->
+  <div class="section" id="s11">
+    <h2>11. Changes to These Terms</h2>
+    <p>We may update these Terms from time to time. When we do, we will update the "Last updated" date at the top of this page. For material changes, we will notify registered users by email at least <strong>30 days</strong> before the changes take effect.</p>
+    <p>Your continued use of our Services after changes become effective constitutes your acceptance of the updated Terms. If you disagree with the changes, you may close your account and stop using our Services before the effective date.</p>
+  </div>
+
+  <!-- 12 -->
+  <div class="section" id="s12">
+    <h2>12. Governing Law &amp; Disputes</h2>
+    <p>These Terms are governed by the laws of <strong>Portugal</strong> and, where applicable, European Union law. The courts of Portugal shall have exclusive jurisdiction over disputes arising from or related to these Terms and our Services, subject to your rights as a consumer to bring proceedings in the courts of your country of residence within the EU.</p>
+    <p>We encourage you to contact us first to resolve any dispute informally. If we cannot reach an agreement, you may also use the ADR mechanisms described in Section 6.4 above.</p>
+  </div>
+
+  <!-- 13 -->
+  <div class="section" id="s13">
+    <h2>13. Contact Us</h2>
+    <p>For any questions, complaints, or requests related to these Terms, please reach us at:</p>
+    <div class="info-box green">
+      <strong>Customer &amp; Legal Contact</strong>
+      📧 <a href="mailto:legal@palopconnect.com" style="color:#2DB84B;">legal@palopconnect.com</a><br/>
+      📧 General support: <a href="mailto:support@palopconnect.com" style="color:#2DB84B;">support@palopconnect.com</a><br/>
+      🌐 <a href="https://palopconnect.com/support" style="color:#2DB84B;">palopconnect.com/support</a>
+    </div>
+    <p>We will respond to all inquiries within 5 business days.</p>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <div><span class="logo-palop">PALOP</span><span class="logo-connect">Connect</span></div>
+      <p>Connecting the PALOP community across borders with affordable and reliable roaming solutions.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Plans</h4>
+      <ul>
+        <li><a href="/plans/data">Data Plans</a></li>
+        <li><a href="/plans/voice">Voice Plans</a></li>
+        <li><a href="/plans/combo">Combo Plans</a></li>
+        <li><a href="/plans/business">Business Solutions</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <ul>
+        <li><a href="/about">About Us</a></li>
+        <li><a href="/careers">Careers</a></li>
+        <li><a href="/news">News</a></li>
+        <li><a href="/contact">Contact</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Support</h4>
+      <ul>
+        <li><a href="/faqs">FAQs</a></li>
+        <li><a href="/support">Customer Support</a></li>
+        <li><a href="/coverage">Coverage Map</a></li>
+        <li><a href="/terms-and-conditions.html" style="color:#2DB84B;">Terms &amp; Conditions</a></li>
+        <li><a href="/privacy-policy.html">Privacy Policy</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 PALOP Roam Connect, Lda. All rights reserved.</span>
+    <div class="social-links">
+      <a href="#">Facebook</a>
+      <a href="#">Instagram</a>
+      <a href="#">Twitter / X</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

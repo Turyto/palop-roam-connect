@@ -54,7 +54,7 @@ const ContactForm = ({ form }: ContactFormProps) => {
               </FormControl>
               <div className="space-y-1 leading-none">
                 <FormLabel className="cursor-pointer">
-                  I agree with the <a href="#" className="text-palop-green underline">online purchase general conditions</a>
+                  I agree with the <a href="/terms-and-conditions.html" className="text-palop-green underline" target="_blank" rel="noopener noreferrer">online purchase general conditions</a>
                 </FormLabel>
                 <FormMessage />
               </div>
