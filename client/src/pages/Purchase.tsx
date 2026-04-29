@@ -1,15 +1,14 @@
 
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import HomeHeader from "@/components/home/HomeHeader";
 import HomeFooter from "@/components/home/HomeFooter";
 import PurchaseFormWithOrders from "@/components/PurchaseFormWithOrders";
 import PurchaseSteps from "@/components/PurchaseSteps";
 import SelectedPlanSummary from "@/components/SelectedPlanSummary";
-import ESIMPlans from "@/components/ESIMPlans";
 import { PLAN_PRICES } from "@/content/plansPageContent";
 
-type PurchaseStep = "plans" | "checkout" | "payment";
+type PurchaseStep = "checkout" | "payment";
 
 export type ESIMPlan = {
   id: string;
@@ -23,9 +22,16 @@ export type ESIMPlan = {
 
 const Purchase = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const planParam = searchParams.get('plan');
-  const [currentStep, setCurrentStep] = useState<PurchaseStep>(planParam ? "checkout" : "plans");
+  const [currentStep, setCurrentStep] = useState<PurchaseStep>("checkout");
   const [selectedPlan, setSelectedPlan] = useState<ESIMPlan | null>(null);
+
+  useEffect(() => {
+    if (!planParam) {
+      navigate('/plans', { replace: true });
+    }
+  }, [planParam, navigate]);
 
   // Pre-defined plans — new public plans + legacy eSIM Access plans
   const availablePlans: ESIMPlan[] = [
@@ -214,13 +220,8 @@ const Purchase = () => {
     }
   }, [planParam]);
 
-  const handlePlanSelection = (plan: ESIMPlan) => {
-    setSelectedPlan(plan);
-    setCurrentStep("checkout");
-  };
-
   const handleBackToPlans = () => {
-    setCurrentStep("plans");
+    navigate('/plans');
   };
 
   const handleProceedToPayment = () => {
@@ -235,11 +236,7 @@ const Purchase = () => {
 
       <main className="flex-grow">
         <div className="container mx-auto px-4 py-8 max-w-6xl">
-          {currentStep === "plans" && (
-            <ESIMPlans onSelectPlan={handlePlanSelection} />
-          )}
-
-          {currentStep !== "plans" && selectedPlan && (
+          {selectedPlan && (
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
               <div className="lg:col-span-2">
                 <SelectedPlanSummary plan={selectedPlan} />
