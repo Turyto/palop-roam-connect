@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — PALOP Connect</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      color: #1A1A1A;
+      background: #ffffff;
+      line-height: 1.7;
+      font-size: 16px;
+    }
+
+    /* ── NAV ── */
+    nav {
+      background: #ffffff;
+      border-bottom: 1px solid #e5e5e5;
+      padding: 0 40px;
+      height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo { display: flex; align-items: center; gap: 6px; text-decoration: none; }
+    .logo-palop { font-weight: 800; font-size: 1.35rem; color: #2DB84B; letter-spacing: -0.5px; }
+    .logo-connect { font-weight: 700; font-size: 1.35rem; color: #1A1A1A; letter-spacing: -0.5px; }
+    .nav-links { display: flex; gap: 28px; list-style: none; }
+    .nav-links a { text-decoration: none; color: #444; font-size: 0.92rem; font-weight: 500; }
+    .nav-links a:hover { color: #2DB84B; }
+    .btn-signin {
+      background: #2DB84B; color: #fff; border: none; border-radius: 8px;
+      padding: 9px 22px; font-size: 0.92rem; font-weight: 600; cursor: pointer;
+      text-decoration: none;
+    }
+
+    /* ── HERO BANNER ── */
+    .page-hero {
+      background: linear-gradient(135deg, #0d1f0f 0%, #1a3a1f 100%);
+      padding: 56px 40px 48px;
+      text-align: center;
+    }
+    .page-hero h1 { color: #ffffff; font-size: 2.1rem; font-weight: 800; margin-bottom: 10px; }
+    .page-hero p { color: rgba(255,255,255,0.72); font-size: 1rem; }
+    .page-hero .badge {
+      display: inline-block; background: rgba(45,184,75,0.18); color: #2DB84B;
+      border: 1px solid rgba(45,184,75,0.4); border-radius: 20px;
+      padding: 4px 14px; font-size: 0.82rem; font-weight: 600; margin-bottom: 16px;
+    }
+
+    /* ── LAYOUT ── */
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 56px 40px 80px;
+    }
+
+    /* ── TOC ── */
+    .toc {
+      background: #F5F5F0;
+      border-left: 4px solid #2DB84B;
+      border-radius: 0 10px 10px 0;
+      padding: 24px 28px;
+      margin-bottom: 52px;
+    }
+    .toc h3 { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.08em; color: #666; margin-bottom: 14px; }
+    .toc ol { padding-left: 20px; }
+    .toc li { margin-bottom: 6px; }
+    .toc a { color: #2DB84B; text-decoration: none; font-size: 0.93rem; font-weight: 500; }
+    .toc a:hover { text-decoration: underline; }
+
+    /* ── SECTIONS ── */
+    .section { margin-bottom: 48px; }
+    .section h2 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #1A1A1A;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #2DB84B;
+      margin-bottom: 18px;
+    }
+    .section h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #1A1A1A;
+      margin: 20px 0 8px;
+    }
+    .section p { margin-bottom: 14px; color: #333; }
+    .section ul, .section ol { padding-left: 22px; margin-bottom: 14px; }
+    .section li { margin-bottom: 8px; color: #333; }
+
+    /* ── INFO BOXES ── */
+    .info-box {
+      background: #F5F5F0;
+      border-radius: 10px;
+      padding: 18px 22px;
+      margin: 20px 0;
+      font-size: 0.94rem;
+    }
+    .info-box.green { background: #edfaf1; border-left: 4px solid #2DB84B; }
+    .info-box.amber { background: #fffbea; border-left: 4px solid #f59e0b; }
+    .info-box.blue { background: #eff6ff; border-left: 4px solid #3b82f6; }
+    .info-box strong { display: block; margin-bottom: 6px; font-size: 0.88rem; text-transform: uppercase; letter-spacing: 0.06em; color: #555; }
+
+    /* ── RIGHTS GRID ── */
+    .rights-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 20px 0;
+    }
+    .right-card {
+      background: #F5F5F0;
+      border-radius: 10px;
+      padding: 16px 18px;
+    }
+    .right-card .icon { font-size: 1.4rem; margin-bottom: 8px; }
+    .right-card h4 { font-size: 0.92rem; font-weight: 700; margin-bottom: 6px; color: #1A1A1A; }
+    .right-card p { font-size: 0.87rem; color: #555; margin: 0; }
+
+    /* ── TABLE ── */
+    table { width: 100%; border-collapse: collapse; margin: 18px 0 24px; font-size: 0.92rem; }
+    th { background: #2DB84B; color: #fff; text-align: left; padding: 10px 14px; font-weight: 700; }
+    td { padding: 10px 14px; border-bottom: 1px solid #e8e8e8; color: #333; vertical-align: top; }
+    tr:nth-child(even) td { background: #f9f9f7; }
+
+    /* ── FOOTER ── */
+    footer {
+      background: #0d1f0f;
+      color: rgba(255,255,255,0.6);
+      padding: 48px 40px 32px;
+    }
+    .footer-grid {
+      max-width: 1100px; margin: 0 auto;
+      display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px;
+      margin-bottom: 36px;
+    }
+    .footer-brand .logo-palop { font-size: 1.2rem; }
+    .footer-brand .logo-connect { font-size: 1.2rem; color: #fff; }
+    .footer-brand p { margin-top: 10px; font-size: 0.87rem; line-height: 1.6; }
+    .footer-col h4 { color: #fff; font-size: 0.88rem; font-weight: 700; margin-bottom: 14px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: rgba(255,255,255,0.55); text-decoration: none; font-size: 0.87rem; }
+    .footer-col a:hover { color: #2DB84B; }
+    .footer-bottom {
+      max-width: 1100px; margin: 0 auto;
+      border-top: 1px solid rgba(255,255,255,0.12);
+      padding-top: 22px;
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 0.83rem;
+    }
+    .footer-bottom a { color: rgba(255,255,255,0.55); text-decoration: none; }
+    .footer-bottom a:hover { color: #2DB84B; }
+    .social-links { display: flex; gap: 16px; }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="logo">
+    <span class="logo-palop">PALOP</span><span class="logo-connect">Connect</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="/">Home</a></li>
+    <li><a href="/plans">Plans</a></li>
+    <li><a href="/esim-guide">eSIM Guide</a></li>
+    <li><a href="/countries">Countries</a></li>
+    <li><a href="/community">Community</a></li>
+    <li><a href="/support">Support</a></li>
+  </ul>
+  <a href="/signin" class="btn-signin">Sign In</a>
+</nav>
+
+<!-- HERO -->
+<div class="page-hero">
+  <div class="badge">Legal</div>
+  <h1>Privacy Policy</h1>
+  <p>Last updated: 28 April 2026 &nbsp;·&nbsp; Effective: 28 April 2026</p>
+</div>
+
+<!-- CONTENT -->
+<div class="container">
+
+  <!-- TOC -->
+  <div class="toc">
+    <h3>Contents</h3>
+    <ol>
+      <li><a href="#p1">Introduction</a></li>
+      <li><a href="#p2">Who Is the Data Controller</a></li>
+      <li><a href="#p3">What Data We Collect</a></li>
+      <li><a href="#p4">How We Use Your Data</a></li>
+      <li><a href="#p5">Legal Basis for Processing (GDPR)</a></li>
+      <li><a href="#p6">Who We Share Your Data With</a></li>
+      <li><a href="#p7">International Data Transfers</a></li>
+      <li><a href="#p8">How Long We Keep Your Data</a></li>
+      <li><a href="#p9">Your Rights Under GDPR</a></li>
+      <li><a href="#p10">Cookies &amp; Tracking</a></li>
+      <li><a href="#p11">Security</a></li>
+      <li><a href="#p12">Children</a></li>
+      <li><a href="#p13">Changes to This Policy</a></li>
+      <li><a href="#p14">Contact &amp; Supervisory Authority</a></li>
+    </ol>
+  </div>
+
+  <div class="info-box blue">
+    <strong>🔒 Our commitment to you</strong>
+    We take your privacy seriously. This policy explains clearly what data we collect, why we collect it, and what rights you have. We comply fully with the EU General Data Protection Regulation (GDPR — Regulation (EU) 2016/679) and Portuguese data protection law.
+  </div>
+
+  <!-- P1 -->
+  <div class="section" id="p1">
+    <h2>1. Introduction</h2>
+    <p>This Privacy Policy explains how PALOP Roam Connect, Lda. ("PALOP Connect", "we", "us", or "our") collects, uses, stores, and protects your personal data when you visit our website, create an account, or use our eSIM connectivity services.</p>
+    <p>Please read this policy carefully. If you have questions, contact us using the details in Section 14.</p>
+  </div>
+
+  <!-- P2 -->
+  <div class="section" id="p2">
+    <h2>2. Who Is the Data Controller</h2>
+    <p>The data controller responsible for your personal data is:</p>
+    <div class="info-box green">
+      <strong>Data Controller</strong>
+      <strong>PALOP Roam Connect, Lda.</strong><br/>
+      Registered in Portugal (EU)<br/>
+      Data Protection contact: <a href="mailto:privacy@palopconnect.com" style="color:#2DB84B;">privacy@palopconnect.com</a>
+    </div>
+    <p>As a company established in Portugal, we are subject to the GDPR and are supervised by the <strong>Comissão Nacional de Proteção de Dados (CNPD)</strong>, the Portuguese data protection authority.</p>
+  </div>
+
+  <!-- P3 -->
+  <div class="section" id="p3">
+    <h2>3. What Data We Collect</h2>
+    <p>We collect personal data in the following ways:</p>
+
+    <h3>3.1 Data You Provide Directly</h3>
+    <ul>
+      <li><strong>Account registration:</strong> name, email address, password (encrypted).</li>
+      <li><strong>Purchase &amp; billing:</strong> billing address, payment method details (processed by our payment provider — we do not store full card numbers).</li>
+      <li><strong>Support requests:</strong> messages, email correspondence, device information you share with us.</li>
+    </ul>
+
+    <h3>3.2 Data Collected Automatically</h3>
+    <ul>
+      <li><strong>Usage data:</strong> pages visited, features used, timestamps, click data.</li>
+      <li><strong>Device &amp; technical data:</strong> IP address, browser type, operating system, eSIM device identifiers (EID).</li>
+      <li><strong>Network data:</strong> data consumption associated with your active eSIM plan (required for billing and service delivery).</li>
+    </ul>
+
+    <h3>3.3 Data from Third Parties</h3>
+    <ul>
+      <li><strong>Payment processors:</strong> transaction confirmation and fraud signals.</li>
+      <li><strong>Network operators:</strong> data usage reports necessary to manage your plan.</li>
+    </ul>
+
+    <p>We do not collect special categories of personal data (such as health, religion, or biometrics) and we do not sell your data to any third party.</p>
+  </div>
+
+  <!-- P4 -->
+  <div class="section" id="p4">
+    <h2>4. How We Use Your Data</h2>
+    <table>
+      <tr><th>Purpose</th><th>Data Used</th></tr>
+      <tr>
+        <td>Provide and manage your account and eSIM services</td>
+        <td>Name, email, payment info, EID, usage data</td>
+      </tr>
+      <tr>
+        <td>Process payments and prevent fraud</td>
+        <td>Billing info, IP address, transaction data</td>
+      </tr>
+      <tr>
+        <td>Send service-related communications (e.g., activation codes, plan expiry reminders)</td>
+        <td>Email, name</td>
+      </tr>
+      <tr>
+        <td>Respond to customer support requests</td>
+        <td>Contact info, support history</td>
+      </tr>
+      <tr>
+        <td>Comply with legal obligations (e.g., accounting, tax, telecoms regulations)</td>
+        <td>Billing and usage records</td>
+      </tr>
+      <tr>
+        <td>Improve our services and website (analytics)</td>
+        <td>Anonymised or aggregated usage data</td>
+      </tr>
+      <tr>
+        <td>Send marketing communications (only with your consent)</td>
+        <td>Email, name, preferences</td>
+      </tr>
+    </table>
+    <p>We do not use your data for automated decision-making or profiling that produces significant legal effects without human review.</p>
+  </div>
+
+  <!-- P5 -->
+  <div class="section" id="p5">
+    <h2>5. Legal Basis for Processing (GDPR)</h2>
+    <p>Under the GDPR (Article 6), we process your data on the following legal bases:</p>
+    <ul>
+      <li><strong>Contract performance (Art. 6(1)(b)):</strong> Processing your account data, delivering eSIM plans, and handling payments is necessary to fulfil our contract with you.</li>
+      <li><strong>Legal obligation (Art. 6(1)(c)):</strong> Retaining billing records and usage data to comply with Portuguese tax law, ANACOM regulations, and other applicable legal requirements.</li>
+      <li><strong>Legitimate interests (Art. 6(1)(f)):</strong> Fraud prevention, network security, improving our services, and direct marketing of similar products to existing customers (where permitted).</li>
+      <li><strong>Consent (Art. 6(1)(a)):</strong> Sending you marketing emails or using non-essential cookies — where you have given explicit opt-in consent. You may withdraw consent at any time.</li>
+    </ul>
+  </div>
+
+  <!-- P6 -->
+  <div class="section" id="p6">
+    <h2>6. Who We Share Your Data With</h2>
+    <p>We do not sell your personal data. We share data only as necessary and with appropriate safeguards:</p>
+    <table>
+      <tr><th>Recipient</th><th>Purpose</th><th>Location</th></tr>
+      <tr>
+        <td>eSIM &amp; Network Operators</td>
+        <td>Provision of eSIM profiles and data connectivity</td>
+        <td>EU / EEA or adequacy-protected countries</td>
+      </tr>
+      <tr>
+        <td>Payment Processors</td>
+        <td>Secure transaction processing</td>
+        <td>EU / EEA</td>
+      </tr>
+      <tr>
+        <td>Cloud &amp; Hosting Providers</td>
+        <td>Platform infrastructure and data storage</td>
+        <td>EU / EEA (where possible)</td>
+      </tr>
+      <tr>
+        <td>Analytics Providers</td>
+        <td>Website performance and usage analytics (anonymised)</td>
+        <td>EU / EEA or under Standard Contractual Clauses</td>
+      </tr>
+      <tr>
+        <td>Customer Support Tools</td>
+        <td>Ticket management and communication</td>
+        <td>EU / EEA or under Standard Contractual Clauses</td>
+      </tr>
+      <tr>
+        <td>Law Enforcement / Authorities</td>
+        <td>When required by law or court order</td>
+        <td>Portugal / EU</td>
+      </tr>
+    </table>
+    <p>All third-party processors are bound by Data Processing Agreements (DPAs) that require them to handle your data in compliance with the GDPR.</p>
+  </div>
+
+  <!-- P7 -->
+  <div class="section" id="p7">
+    <h2>7. International Data Transfers</h2>
+    <p>Your data is primarily stored and processed within the European Economic Area (EEA). Where transfers outside the EEA are necessary (for example, to network operators in PALOP countries), we ensure appropriate safeguards are in place, including:</p>
+    <ul>
+      <li>Standard Contractual Clauses (SCCs) approved by the European Commission.</li>
+      <li>Transfers to countries with an EU adequacy decision.</li>
+      <li>Case-by-case assessment and necessary protective measures in accordance with GDPR Chapter V.</li>
+    </ul>
+    <p>You may request information about specific safeguards by contacting us at <a href="mailto:privacy@palopconnect.com" style="color:#2DB84B;">privacy@palopconnect.com</a>.</p>
+  </div>
+
+  <!-- P8 -->
+  <div class="section" id="p8">
+    <h2>8. How Long We Keep Your Data</h2>
+    <table>
+      <tr><th>Data Type</th><th>Retention Period</th><th>Reason</th></tr>
+      <tr>
+        <td>Account data</td>
+        <td>Until account deletion + 12 months</td>
+        <td>Dispute resolution &amp; legal claims</td>
+      </tr>
+      <tr>
+        <td>Billing &amp; payment records</td>
+        <td>10 years</td>
+        <td>Portuguese tax law (Código do IVA &amp; CIRC)</td>
+      </tr>
+      <tr>
+        <td>eSIM usage &amp; network data</td>
+        <td>12 months</td>
+        <td>Billing accuracy &amp; ANACOM compliance</td>
+      </tr>
+      <tr>
+        <td>Support communications</td>
+        <td>3 years</td>
+        <td>Quality assurance &amp; legal claims</td>
+      </tr>
+      <tr>
+        <td>Marketing preferences (consent records)</td>
+        <td>Until consent is withdrawn + 3 years</td>
+        <td>Proof of consent (GDPR)</td>
+      </tr>
+      <tr>
+        <td>Website analytics (anonymised)</td>
+        <td>26 months</td>
+        <td>Industry standard analytics retention</td>
+      </tr>
+    </table>
+    <p>After the applicable retention period, data is securely deleted or irreversibly anonymised.</p>
+  </div>
+
+  <!-- P9 -->
+  <div class="section" id="p9">
+    <h2>9. Your Rights Under GDPR</h2>
+    <p>As a data subject under the GDPR, you have the following rights. We aim to respond to all requests within <strong>30 days</strong>.</p>
+
+    <div class="rights-grid">
+      <div class="right-card">
+        <div class="icon">👁</div>
+        <h4>Right of Access</h4>
+        <p>Request a copy of the personal data we hold about you (Article 15).</p>
+      </div>
+      <div class="right-card">
+        <div class="icon">✏️</div>
+        <h4>Right to Rectification</h4>
+        <p>Ask us to correct inaccurate or incomplete data (Article 16).</p>
+      </div>
+      <div class="right-card">
+        <div class="icon">🗑️</div>
+        <h4>Right to Erasure</h4>
+        <p>Request deletion of your data where no legal basis remains ("right to be forgotten") (Article 17).</p>
+      </div>
+      <div class="right-card">
+        <div class="icon">⏸️</div>
+        <h4>Right to Restriction</h4>
+        <p>Ask us to pause processing of your data in certain circumstances (Article 18).</p>
+      </div>
+      <div class="right-card">
+        <div class="icon">📦</div>
+        <h4>Right to Portability</h4>
+        <p>Receive your data in a structured, machine-readable format (Article 20).</p>
+      </div>
+      <div class="right-card">
+        <div class="icon">🚫</div>
+        <h4>Right to Object</h4>
+        <p>Object to processing based on legitimate interests or for direct marketing (Article 21).</p>
+      </div>
+    </div>
+
+    <p>To exercise any of these rights, email us at <a href="mailto:privacy@palopconnect.com" style="color:#2DB84B;">privacy@palopconnect.com</a> with your name, registered email, and description of your request. We may ask you to verify your identity before processing the request.</p>
+
+    <div class="info-box amber">
+      <strong>⚠ Note on erasure</strong>
+      Some data cannot be deleted where we are legally required to retain it (e.g., billing records for tax purposes). We will always tell you clearly if and why this applies.
+    </div>
+  </div>
+
+  <!-- P10 -->
+  <div class="section" id="p10">
+    <h2>10. Cookies &amp; Tracking</h2>
+    <p>Our website uses cookies and similar technologies. We use:</p>
+    <table>
+      <tr><th>Cookie Type</th><th>Purpose</th><th>Consent Required?</th></tr>
+      <tr>
+        <td>Strictly Necessary</td>
+        <td>Core site functionality, security, session management</td>
+        <td>No — essential for the site to work</td>
+      </tr>
+      <tr>
+        <td>Analytics</td>
+        <td>Understanding how visitors use the site (e.g., Google Analytics anonymised)</td>
+        <td>Yes — opt-in required</td>
+      </tr>
+      <tr>
+        <td>Functional</td>
+        <td>Remembering your preferences (language, plan selections)</td>
+        <td>Yes — opt-in required</td>
+      </tr>
+      <tr>
+        <td>Marketing</td>
+        <td>Showing relevant ads on third-party platforms</td>
+        <td>Yes — opt-in required</td>
+      </tr>
+    </table>
+    <p>You can manage your cookie preferences at any time via the Cookie Settings panel on our website, or by adjusting your browser settings. Blocking certain cookies may affect your experience.</p>
+    <p>We comply with EU Directive 2002/58/EC (the ePrivacy Directive) as implemented in Portuguese law.</p>
+  </div>
+
+  <!-- P11 -->
+  <div class="section" id="p11">
+    <h2>11. Security</h2>
+    <p>We take appropriate technical and organisational measures to protect your personal data against accidental or unlawful destruction, loss, alteration, or unauthorised access. These include:</p>
+    <ul>
+      <li>Encryption of data in transit (TLS/HTTPS) and at rest where appropriate.</li>
+      <li>Access controls — only authorised personnel can access personal data.</li>
+      <li>Regular security assessments and vulnerability testing.</li>
+      <li>Secure password storage using hashing.</li>
+    </ul>
+    <p>In the event of a personal data breach that poses a risk to your rights, we will notify the CNPD within 72 hours as required by GDPR Article 33, and inform affected users without undue delay where required by Article 34.</p>
+  </div>
+
+  <!-- P12 -->
+  <div class="section" id="p12">
+    <h2>12. Children</h2>
+    <p>Our Services are intended for adults aged 18 and over. We do not knowingly collect personal data from children under 18. If we become aware that we have collected data from a minor, we will delete it promptly. If you believe a minor has registered on our platform, please contact us at <a href="mailto:privacy@palopconnect.com" style="color:#2DB84B;">privacy@palopconnect.com</a>.</p>
+  </div>
+
+  <!-- P13 -->
+  <div class="section" id="p13">
+    <h2>13. Changes to This Policy</h2>
+    <p>We may update this Privacy Policy from time to time to reflect changes in our practices or legal requirements. When we make material changes, we will update the "Last updated" date and notify you by email if you are a registered user, at least <strong>30 days</strong> before the changes take effect.</p>
+    <p>We encourage you to review this policy periodically. Continued use of our Services after changes indicates acceptance of the updated policy.</p>
+  </div>
+
+  <!-- P14 -->
+  <div class="section" id="p14">
+    <h2>14. Contact &amp; Supervisory Authority</h2>
+    <p>For any privacy-related questions, requests, or concerns, please contact us:</p>
+    <div class="info-box green">
+      <strong>Privacy Contact</strong>
+      📧 <a href="mailto:privacy@palopconnect.com" style="color:#2DB84B;">privacy@palopconnect.com</a><br/>
+      Subject line: "Privacy Request — [Your Name]"<br/>
+      We will respond within 30 days.
+    </div>
+    <p>If you are not satisfied with our response, you have the right to lodge a complaint with the Portuguese supervisory authority:</p>
+    <div class="info-box blue">
+      <strong>Supervisory Authority (CNPD)</strong>
+      <strong>Comissão Nacional de Proteção de Dados (CNPD)</strong><br/>
+      Rua de São Bento, 148–3°, 1200-821 Lisboa, Portugal<br/>
+      🌐 <a href="https://www.cnpd.pt" style="color:#3b82f6;" target="_blank">www.cnpd.pt</a><br/>
+      📞 +351 21 392 84 00<br/>
+      📧 <a href="mailto:geral@cnpd.pt" style="color:#3b82f6;">geral@cnpd.pt</a>
+    </div>
+    <p>You may also lodge a complaint with the data protection authority in your EU country of residence if it differs from Portugal.</p>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <div><span class="logo-palop">PALOP</span><span class="logo-connect">Connect</span></div>
+      <p>Connecting the PALOP community across borders with affordable and reliable roaming solutions.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Plans</h4>
+      <ul>
+        <li><a href="/plans/data">Data Plans</a></li>
+        <li><a href="/plans/voice">Voice Plans</a></li>
+        <li><a href="/plans/combo">Combo Plans</a></li>
+        <li><a href="/plans/business">Business Solutions</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <ul>
+        <li><a href="/about">About Us</a></li>
+        <li><a href="/careers">Careers</a></li>
+        <li><a href="/news">News</a></li>
+        <li><a href="/contact">Contact</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Support</h4>
+      <ul>
+        <li><a href="/faqs">FAQs</a></li>
+        <li><a href="/support">Customer Support</a></li>
+        <li><a href="/coverage">Coverage Map</a></li>
+        <li><a href="/terms">Terms &amp; Conditions</a></li>
+        <li><a href="/privacy" style="color:#2DB84B;">Privacy Policy</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 PALOP Roam Connect, Lda. All rights reserved.</span>
+    <div class="social-links">
+      <a href="#">Facebook</a>
+      <a href="#">Instagram</a>
+      <a href="#">Twitter / X</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

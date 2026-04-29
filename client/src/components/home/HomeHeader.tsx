@@ -53,11 +53,11 @@ const HomeHeader = () => {
     <header className="bg-white border-b border-gray-100 sticky top-0 z-50 shadow-sm">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          <Link to="/" className="flex items-center overflow-visible">
+          <Link to="/" className="flex items-center pl-2">
             <img
               src="/palop-connect-logo.jpg"
               alt="PALOP Connect"
-              className="h-10 w-44 object-cover object-left"
+              className="h-10 w-44 object-cover object-center"
             />
           </Link>
 
