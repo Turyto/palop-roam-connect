@@ -1,5 +1,4 @@
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Outfit:wght@400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -7,35 +6,35 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 0 0% 99%;
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 120 100% 26%;  /* Green */
+    --primary: 152 100% 26%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 48 100% 50%;  /* Yellow */
-    --secondary-foreground: 0 0% 0%;
+    --secondary: 210 100% 39%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
 
-    --accent: 0 72.2% 50.6%;  /* Red */
-    --accent-foreground: 0 0% 100%;
+    --accent: 43 96% 50%;
+    --accent-foreground: 222 47% 11%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 120 100% 26%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 152 100% 26%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -48,34 +47,34 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 222 47% 11%;
     --foreground: 210 40% 98%;
 
-    --card: 222.2 84% 4.9%;
+    --card: 222 47% 11%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222.2 84% 4.9%;
+    --popover: 222 47% 11%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 120 100% 26%;
+    --primary: 152 100% 26%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 48 100% 50%;
-    --secondary-foreground: 0 0% 0%;
+    --secondary: 210 100% 39%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 217 32% 17%;
+    --muted-foreground: 215 20% 65%;
 
-    --accent: 0 72.2% 50.6%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 43 96% 50%;
+    --accent-foreground: 222 47% 11%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 120 100% 26%;
-    
+    --border: 217 32% 17%;
+    --input: 217 32% 17%;
+    --ring: 152 100% 26%;
+
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -93,18 +92,47 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+    background-image:
+      radial-gradient(at 0% 0%, hsla(152, 100%, 26%, 0.03) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, hsla(210, 100%, 39%, 0.03) 0px, transparent 50%);
+    background-attachment: fixed;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-display font-bold;
+    font-family: 'Outfit', ui-sans-serif, system-ui, sans-serif;
+    @apply font-bold tracking-tight;
   }
 }
 
-.gradient-text {
-  @apply text-transparent bg-clip-text bg-gradient-to-r from-palop-green via-palop-yellow to-palop-red;
-}
+@layer utilities {
+  .glass-panel {
+    @apply bg-white/70 backdrop-blur-xl border border-white/50;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+  }
 
-.card-hover {
-  @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-palop-blue to-palop-green;
+  }
+
+  .gradient-text {
+    @apply text-transparent bg-clip-text bg-gradient-to-r from-palop-green via-palop-yellow to-palop-red;
+  }
+
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+  }
+
+  .shadow-glass {
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+  }
+
+  .shadow-glow-primary {
+    box-shadow: 0 0 20px 0 rgba(0, 132, 61, 0.4);
+  }
+
+  .shadow-glow-secondary {
+    box-shadow: 0 0 20px 0 rgba(0, 114, 198, 0.4);
+  }
 }

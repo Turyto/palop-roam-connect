@@ -14,8 +14,8 @@ const HomeFooter = () => {
   ];
 
   const legalLinks = [
-    { label: t.footer.terms, href: '/terms' },
-    { label: t.footer.privacy, href: '/privacy' },
+    { label: t.footer.terms, href: '/terms-and-conditions.html' },
+    { label: t.footer.privacy, href: '/privacy-policy.html' },
   ];
 
   const handleScroll = (href: string) => {

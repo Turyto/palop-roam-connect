@@ -30,7 +30,7 @@ const SupportSection = () => {
               className="bg-palop-green hover:bg-palop-green/90 text-white"
               data-testid="support-primary-cta"
             >
-              <Link to="/esim">{t.support.primaryCta}</Link>
+              <Link to="/how-it-works">{t.support.primaryCta}</Link>
             </Button>
             <Button
               asChild

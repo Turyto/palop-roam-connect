@@ -3,7 +3,7 @@ import { Check } from "lucide-react";
 import { useLanguage } from "@/contexts/language";
 
 interface PurchaseStepsProps {
-  currentStep: "plans" | "checkout" | "payment" | "confirmation";
+  currentStep: "plans" | "checkout" | "payment";
 }
 
 const PurchaseSteps = ({ currentStep }: PurchaseStepsProps) => {

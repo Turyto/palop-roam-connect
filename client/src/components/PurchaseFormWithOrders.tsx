@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { useCreateOrderWithESIM } from "@/hooks/orders/useCreateOrderWithESIM";
 import { useAuth } from "@/contexts/auth";
 import { useLanguage } from "@/contexts/language";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 import CartOverview from "./CartOverview";
 import PaymentDetails from "./PaymentDetails";
 import ContactForm, { makeCheckoutFormSchema } from "./ContactForm";
@@ -21,10 +22,9 @@ import { Loader2 } from "lucide-react";
 
 interface PurchaseFormWithOrdersProps {
   plan: ESIMPlan;
-  currentStep: "checkout" | "payment" | "confirmation";
+  currentStep: "checkout" | "payment";
   onBackToPlans: () => void;
   onProceedToPayment: () => void;
-  onConfirmation: () => void;
 }
 
 const PurchaseFormWithOrders = ({
@@ -32,7 +32,6 @@ const PurchaseFormWithOrders = ({
   currentStep,
   onBackToPlans,
   onProceedToPayment,
-  onConfirmation,
 }: PurchaseFormWithOrdersProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -44,10 +43,11 @@ const PurchaseFormWithOrders = ({
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
-  const [confirmedOrderId, setConfirmedOrderId] = useState<string | null>(null);
   const [guestEmail, setGuestEmail] = useState<string>("");
   // True only when checkout was completed by an unauthenticated (anonymous) user
   const [isGuestCheckout, setIsGuestCheckout] = useState(false);
+  // Email captured at checkout — used for both guests and authenticated users
+  const collectedEmailRef = useRef<string>("");
 
   const stripePromise = useMemo(() => {
     const pk = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
@@ -83,6 +83,7 @@ const PurchaseFormWithOrders = ({
           currency: plan.currency.toLowerCase(),
           plan_name: plan.name,
           plan_id: plan.id,
+          customer_email: collectedEmailRef.current,
         },
       })
       .then(({ data, error }) => {
@@ -101,6 +102,9 @@ const PurchaseFormWithOrders = ({
   // Checkout form submit → move to payment step (supports both guests and signed-in users)
   const onCheckoutSubmit = async (data: z.infer<typeof checkoutSchema>) => {
     const emailForOrder = data.email || user?.email || "";
+
+    // Always capture the email from the form so it's available at payment success time
+    collectedEmailRef.current = emailForOrder;
 
     if (!user) {
       // Guest path: sign in anonymously so the order can be saved with a valid user_id
@@ -125,8 +129,9 @@ const PurchaseFormWithOrders = ({
 
   // Called by PaymentDetails after Stripe confirms payment
   const handlePaymentSuccess = async (confirmedPaymentIntentId: string) => {
-    // For guests, use the email collected at checkout. For registered users, use their account email.
-    const emailForOrder = isGuestCheckout ? guestEmail : (user?.email || "");
+    // Use the email captured at checkout (works for both guests and authenticated users).
+    // Fall back to user.email if somehow the ref wasn't set (e.g. deep-link straight to payment).
+    const emailForOrder = collectedEmailRef.current || user?.email || "";
 
     try {
       const result = await createOrderAsync({
@@ -139,8 +144,6 @@ const PurchaseFormWithOrders = ({
         payment_intent_id: confirmedPaymentIntentId,
         customerEmail: emailForOrder,
       });
-
-      setConfirmedOrderId(result.order.id);
 
       // Send a magic-link sign-in email so guests can re-access their order later.
       if (isGuestCheckout && emailForOrder) {
@@ -162,7 +165,7 @@ const PurchaseFormWithOrders = ({
         }
       }
 
-      onConfirmation();
+      navigate(`/success?payment_intent=${confirmedPaymentIntentId}`);
     } catch (error: unknown) {
       console.error("Order creation failed:", error);
       toast({
@@ -172,17 +175,6 @@ const PurchaseFormWithOrders = ({
       });
     }
   };
-
-  if (currentStep === "confirmation") {
-    return (
-      <ConfirmationView
-        plan={plan}
-        orderId={confirmedOrderId}
-        guestEmail={isGuestCheckout ? guestEmail : undefined}
-        onBackToPlans={onBackToPlans}
-      />
-    );
-  }
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">

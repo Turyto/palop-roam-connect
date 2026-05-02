@@ -1,15 +1,14 @@
 
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import HomeHeader from "@/components/home/HomeHeader";
 import HomeFooter from "@/components/home/HomeFooter";
 import PurchaseFormWithOrders from "@/components/PurchaseFormWithOrders";
 import PurchaseSteps from "@/components/PurchaseSteps";
 import SelectedPlanSummary from "@/components/SelectedPlanSummary";
-import ESIMPlans from "@/components/ESIMPlans";
 import { PLAN_PRICES } from "@/content/plansPageContent";
 
-type PurchaseStep = "plans" | "checkout" | "payment" | "confirmation";
+type PurchaseStep = "checkout" | "payment";
 
 export type ESIMPlan = {
   id: string;
@@ -23,99 +22,76 @@ export type ESIMPlan = {
 
 const Purchase = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const planParam = searchParams.get('plan');
-  const [currentStep, setCurrentStep] = useState<PurchaseStep>(planParam ? "checkout" : "plans");
+  const [currentStep, setCurrentStep] = useState<PurchaseStep>("checkout");
   const [selectedPlan, setSelectedPlan] = useState<ESIMPlan | null>(null);
+
+  useEffect(() => {
+    if (!planParam) {
+      navigate('/plans', { replace: true });
+    }
+  }, [planParam, navigate]);
 
   // Pre-defined plans — new public plans + legacy eSIM Access plans
   const availablePlans: ESIMPlan[] = [
     // Active public plans (from /plans page)
     {
-      id: "portugal-starter",
-      name: "Portugal Arrival",
-      data: "1 GB",
+      id: "arrival",
+      name: "Arrival",
+      data: "2 GB",
       days: 7,
-      price: PLAN_PRICES['portugal-starter'],
+      price: PLAN_PRICES['arrival'],
       currency: "EUR",
       features: [
-        "1 GB of Internet",
+        "2 GB of Internet",
         "Valid for 7 days",
-        "Portugal coverage",
+        "Portugal + Europe coverage",
         "Instant QR delivery",
         "No contract required"
       ]
     },
     {
-      id: "portugal-weekly",
-      name: "Portugal 5GB",
+      id: "essential",
+      name: "Essential",
       data: "5 GB",
       days: 30,
-      price: PLAN_PRICES['portugal-weekly'],
+      price: PLAN_PRICES['essential'],
       currency: "EUR",
       features: [
         "5 GB of Internet",
         "Valid for 30 days",
-        "Portugal coverage",
+        "Portugal + Europe coverage",
         "Instant QR delivery",
         "No contract required"
       ]
     },
     {
-      id: "portugal-monthly",
-      name: "Portugal 10GB",
+      id: "comfort",
+      name: "Comfort",
       data: "10 GB",
       days: 30,
-      price: PLAN_PRICES['portugal-monthly'],
+      price: PLAN_PRICES['comfort'],
       currency: "EUR",
       features: [
         "10 GB of Internet",
         "Valid for 30 days",
-        "Portugal coverage",
+        "Portugal + Europe coverage",
         "Instant QR delivery",
         "No contract required"
       ]
     },
     {
-      id: "europe-weekly",
-      name: "Europe 5GB",
-      data: "5 GB",
-      days: 30,
-      price: PLAN_PRICES['europe-weekly'],
-      currency: "EUR",
-      features: [
-        "5 GB of Internet",
-        "Valid for 30 days",
-        "Portugal + Europe (30+ areas)",
-        "Instant QR delivery",
-        "No contract required"
-      ]
-    },
-    {
-      id: "europe-monthly",
-      name: "Europe 10GB",
-      data: "10 GB",
-      days: 30,
-      price: PLAN_PRICES['europe-monthly'],
-      currency: "EUR",
-      features: [
-        "10 GB of Internet",
-        "Valid for 30 days",
-        "Portugal + Europe (30+ areas)",
-        "Instant QR delivery",
-        "No contract required"
-      ]
-    },
-    {
-      id: "europe-plus",
-      name: "Europe 20GB",
+      id: "freedom",
+      name: "Freedom",
       data: "20 GB",
       days: 30,
-      price: PLAN_PRICES['europe-plus'],
+      price: PLAN_PRICES['freedom'],
       currency: "EUR",
       features: [
         "20 GB of Internet",
         "Valid for 30 days",
-        "Portugal + Europe (30+ areas)",
+        "Portugal + Europe coverage",
         "Instant QR delivery",
         "No contract required"
       ]
@@ -244,21 +220,12 @@ const Purchase = () => {
     }
   }, [planParam]);
 
-  const handlePlanSelection = (plan: ESIMPlan) => {
-    setSelectedPlan(plan);
-    setCurrentStep("checkout");
-  };
-
   const handleBackToPlans = () => {
-    setCurrentStep("plans");
+    navigate('/plans');
   };
 
   const handleProceedToPayment = () => {
     setCurrentStep("payment");
-  };
-
-  const handleConfirmation = () => {
-    setCurrentStep("confirmation");
   };
 
   return (
@@ -269,11 +236,7 @@ const Purchase = () => {
 
       <main className="flex-grow">
         <div className="container mx-auto px-4 py-8 max-w-6xl">
-          {currentStep === "plans" && (
-            <ESIMPlans onSelectPlan={handlePlanSelection} />
-          )}
-
-          {currentStep !== "plans" && selectedPlan && (
+          {selectedPlan && (
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
               <div className="lg:col-span-2">
                 <SelectedPlanSummary plan={selectedPlan} />
@@ -284,7 +247,6 @@ const Purchase = () => {
                   currentStep={currentStep}
                   onBackToPlans={handleBackToPlans}
                   onProceedToPayment={handleProceedToPayment}
-                  onConfirmation={handleConfirmation}
                 />
               </div>
             </div>

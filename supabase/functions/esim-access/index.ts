@@ -15,6 +15,161 @@ interface ESIMOrderRequest {
   customerEmail: string;
   customerName?: string;
   referenceId?: string;
+  planName?: string;
+  dataAmount?: string;
+}
+
+// ---------------------------------------------------------------------------
+// AUTOMATIC EMAIL DELIVERY — called fire-and-forget after create-order success
+// ---------------------------------------------------------------------------
+async function sendProvisioningEmail(opts: {
+  customerEmail: string;
+  planName: string;
+  dataAmount: string;
+  iccid: string | null;
+  lpaCode: string | null;
+  webUrl: string | null;
+  qrImageUrl: string | null;
+  supabaseUrl: string;
+  serviceKey: string;
+  resendApiKey: string;
+  origin: string;
+}): Promise<void> {
+  const {
+    customerEmail, planName, dataAmount, iccid, lpaCode, webUrl, qrImageUrl,
+    supabaseUrl, serviceKey, resendApiKey, origin,
+  } = opts;
+
+  // Generate a magic link so the customer can view their orders without a password
+  let magicLink = `${origin || 'https://palopconnect.com'}/orders`;
+  try {
+    const mlRes = await fetch(`${supabaseUrl}/auth/v1/admin/generate_link`, {
+      method: 'POST',
+      headers: {
+        'apikey': serviceKey,
+        'Authorization': `Bearer ${serviceKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        type: 'magiclink',
+        email: customerEmail,
+        options: { redirect_to: `${origin || 'https://palopconnect.com'}/orders` },
+      }),
+    });
+    if (mlRes.ok) {
+      const mlData = await mlRes.json();
+      magicLink = mlData?.action_link ?? magicLink;
+    } else {
+      console.warn('[esim-access] magic link generation failed — using fallback orders URL');
+    }
+  } catch (e: any) {
+    console.warn('[esim-access] magic link exception (non-fatal):', e.message);
+  }
+
+  const lpaSection = lpaCode
+    ? `<div style="background:#f4f4f5;border-radius:8px;padding:16px;margin:16px 0;">
+        <p style="margin:0 0 6px;font-size:12px;color:#71717a;font-weight:600;text-transform:uppercase;letter-spacing:.05em">LPA Activation Code</p>
+        <code style="font-size:13px;color:#18181b;word-break:break-all;line-height:1.6">${lpaCode}</code>
+      </div>`
+    : '';
+
+  const iccidSection = iccid
+    ? `<p style="margin:4px 0;font-size:14px;color:#52525b"><strong>ICCID:</strong> <code>${iccid}</code></p>`
+    : '';
+
+  const qrSection = qrImageUrl
+    ? `<div style="text-align:center;margin:20px 0;">
+        <img src="${qrImageUrl}" alt="eSIM QR Code" width="180" height="180" style="border:3px solid #16a34a;border-radius:8px;padding:6px;" />
+        <p style="font-size:12px;color:#71717a;margin:8px 0 0">Scan this QR code on your device to install the eSIM</p>
+      </div>`
+    : '';
+
+  const webUrlSection = webUrl
+    ? `<div style="text-align:center;margin:16px 0;">
+        <a href="${webUrl}" style="color:#2563eb;font-size:13px;">Or tap here to activate on your device</a>
+      </div>`
+    : '';
+
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;padding:32px 16px;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;max-width:600px;width:100%;">
+        <tr><td style="background:linear-gradient(135deg,#16a34a,#1d4ed8);padding:32px 40px;text-align:center;">
+          <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;">O teu eSIM está pronto! 🌍</h1>
+          <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:15px;">BuéChama · PALOP Roam Connect</p>
+        </td></tr>
+        <tr><td style="padding:32px 40px;">
+          <p style="margin:0 0 20px;font-size:15px;color:#374151;">
+            O teu <strong>${planName || 'eSIM'}</strong>${dataAmount ? ` (${dataAmount})` : ''} foi aprovisionado e está pronto para instalar.
+            Aqui estão os teus dados de ativação:
+          </p>
+          ${qrSection}
+          ${lpaSection}
+          ${iccidSection}
+          ${webUrlSection}
+          <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+          <h2 style="margin:0 0 12px;font-size:16px;color:#18181b;">Como instalar</h2>
+          <ol style="margin:0;padding:0 0 0 20px;font-size:14px;color:#52525b;line-height:2;">
+            <li>Vai a <strong>Definições → Dados Móveis / Celular</strong></li>
+            <li>Toca em <strong>"Adicionar eSIM"</strong> ou <strong>"Adicionar Plano de Dados"</strong></li>
+            <li>Digitaliza o código QR acima, ou introduz o código LPA manualmente</li>
+          </ol>
+          <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+          <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:20px;text-align:center;">
+            <p style="margin:0 0 12px;font-size:14px;color:#1e40af;">
+              <strong>Acede ao histórico das tuas encomendas</strong><br>
+              Clica abaixo para entrar instantaneamente — sem palavra-passe.
+            </p>
+            <a href="${magicLink}" style="display:inline-block;background:#1d4ed8;color:#ffffff;font-size:14px;font-weight:600;padding:12px 28px;border-radius:8px;text-decoration:none;">
+              Ver as minhas encomendas →
+            </a>
+            <p style="margin:12px 0 0;font-size:11px;color:#6b7280;">Este link expira em 1 hora.</p>
+          </div>
+        </td></tr>
+        <tr><td style="background:#f9fafb;padding:20px 40px;text-align:center;">
+          <p style="margin:0;font-size:12px;color:#9ca3af;">BuéChama · PALOP Roam Connect · <a href="mailto:suporte@palopconnect.com" style="color:#9ca3af;">suporte@palopconnect.com</a></p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  const textBody = [
+    `O teu eSIM está pronto — BuéChama`,
+    `Plano: ${planName || 'eSIM'}${dataAmount ? ` (${dataAmount})` : ''}`,
+    iccid ? `ICCID: ${iccid}` : '',
+    lpaCode ? `Código LPA: ${lpaCode}` : '',
+    webUrl ? `URL de ativação: ${webUrl}` : '',
+    ``,
+    `Ver encomendas: ${magicLink}`,
+    `(Link expira em 1 hora)`,
+  ].filter(Boolean).join('\n');
+
+  const sendRes = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${resendApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: 'BuéChama <esims@palopconnect.com>',
+      to: [customerEmail],
+      subject: `O teu eSIM está pronto — ${planName || 'BuéChama'}`,
+      html,
+      text: textBody,
+    }),
+  });
+
+  if (!sendRes.ok) {
+    const err = await sendRes.json().catch(() => ({}));
+    console.error(`[esim-access] Resend delivery failed — status=${sendRes.status} error=${err?.message ?? '(unknown)'} to=${customerEmail}`);
+  } else {
+    console.log(`[esim-access] provisioning email sent — to=${customerEmail} plan=${planName}`);
+  }
 }
 
 async function buildESIMHeaders(creds: ESIMAccessCredentials): Promise<Record<string, string>> {
@@ -523,6 +678,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
       }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
+    const resendApiKey = Deno.env.get('RESEND_API_KEY') ?? '';
+    const origin = req.headers.get('origin') ?? 'https://palopconnect.com';
+
     const creds: ESIMAccessCredentials = { accessCode, secretKey };
     const { action, ...body } = await req.json();
     console.log(`[esim-access] action=${action} user=${user.email} userId=${user.id}`);
@@ -535,9 +693,38 @@ Deno.serve(async (req: Request): Promise<Response> => {
       case 'get-packages':
         response = await getPackages(creds, body.locationCode);
         break;
-      case 'create-order':
+      case 'create-order': {
         response = await createOrder(body as ESIMOrderRequest, creds);
+
+        // Fire-and-forget provisioning email — does not block or affect the response
+        if (response.success && body.customerEmail && resendApiKey) {
+          const obj = response.data?.obj;
+          const esimEntry = obj?.packageInfoList?.[0]?.esimList?.[0];
+          const iccid = esimEntry?.iccid ?? null;
+          const lpaCode = esimEntry?.ac ?? esimEntry?.activationCode ?? null;
+          const qrImageUrl = esimEntry?.qrCodeUrl ?? null;
+          const webUrl = esimEntry?.shortUrl ?? esimEntry?.downloadUrl ?? esimEntry?.url ?? null;
+
+          sendProvisioningEmail({
+            customerEmail: body.customerEmail,
+            planName: body.planName ?? '',
+            dataAmount: body.dataAmount ?? '',
+            iccid,
+            lpaCode,
+            webUrl,
+            qrImageUrl,
+            supabaseUrl,
+            serviceKey,
+            resendApiKey,
+            origin,
+          }).catch((e: any) =>
+            console.error('[esim-access] sendProvisioningEmail failed (non-fatal):', e?.message)
+          );
+        } else if (response.success && !resendApiKey) {
+          console.warn('[esim-access] RESEND_API_KEY not set — provisioning email skipped');
+        }
         break;
+      }
       case 'get-order':
         response = await getOrder(body.orderId ?? body.esimTranNo, creds);
         break;

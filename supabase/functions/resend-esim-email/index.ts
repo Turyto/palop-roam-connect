@@ -149,7 +149,7 @@ async function sendESIMEmail(opts: {
 
         <!-- Footer -->
         <tr><td style="background:#f9fafb;padding:20px 40px;text-align:center;">
-          <p style="margin:0;font-size:12px;color:#9ca3af;">BuéChama · PALOP Roam Connect · support@buechama.com</p>
+          <p style="margin:0;font-size:12px;color:#9ca3af;">BuéChama · PALOP Roam Connect · <a href="mailto:suporte@palopconnect.com" style="color:#9ca3af;">suporte@palopconnect.com</a></p>
         </td></tr>
 
       </table>

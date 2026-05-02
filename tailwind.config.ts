@@ -114,8 +114,8 @@ export default {
                                 'slide-from-right': 'slide-from-right 0.5s ease-out'
                         },
                         fontFamily: {
-                                'sans': ['Inter', 'sans-serif'],
-                                'display': ['Montserrat', 'sans-serif'],
+                                'sans': ['DM Sans', 'Inter', 'sans-serif'],
+                                'display': ['Outfit', 'Montserrat', 'sans-serif'],
                         }
                 }
         },

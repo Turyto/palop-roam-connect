@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,21 +10,20 @@ import { lazy, Suspense } from "react";
 // Eagerly loaded — active customer funnel pages
 import Index from "./pages/Index";
 import Plans from "./pages/Plans";
-import Purchase from "./pages/Purchase";
 import Support from "./pages/Support";
-import Auth from "./pages/Auth";
-import Orders from "./pages/Orders";
-import CompatibilityPage from "./pages/CompatibilityPage";
-import HowItWorksPage from "./pages/HowItWorksPage";
-import NotFound from "./pages/NotFound";
 
-// Lazy loaded — admin: keeps recharts + all admin components out of customer bundle
-const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
-
-// Lazy loaded — legacy/orphaned pages: keeps mapbox-gl + old content out of initial bundle
-const ESim = lazy(() => import("./pages/ESim"));
-const Community = lazy(() => import("./pages/Community"));
-const Countries = lazy(() => import("./pages/Countries"));
+// Lazy loaded pages to keep bundle small
+const Purchase = lazy(() => import("./pages/Purchase").catch(() => ({ default: () => <div className="p-20 text-center">Page missing or loading...</div> })));
+const OrderSuccess = lazy(() => import("./pages/OrderSuccess").catch(() => ({ default: () => <div className="p-20 text-center">Page missing or loading...</div> })));
+const Auth = lazy(() => import("./pages/Auth").catch(() => ({ default: () => <div className="p-20 text-center">Page missing or loading...</div> })));
+const Orders = lazy(() => import("./pages/Orders").catch(() => ({ default: () => <div className="p-20 text-center">Page missing or loading...</div> })));
+const CompatibilityPage = lazy(() => import("./pages/CompatibilityPage").catch(() => ({ default: () => <div className="p-20 text-center">Page missing or loading...</div> })));
+const HowItWorksPage = lazy(() => import("./pages/HowItWorksPage").catch(() => ({ default: () => <div className="p-20 text-center">Page missing or loading...</div> })));
+const NotFound = lazy(() => import("./pages/NotFound").catch(() => ({ default: () => <div className="p-20 text-center">404 Not Found</div> })));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard").catch(() => ({ default: () => <div className="p-20 text-center">Page missing or loading...</div> })));
+const ESim = lazy(() => import("./pages/ESim").catch(() => ({ default: () => <div className="p-20 text-center">Page missing or loading...</div> })));
+const Community = lazy(() => import("./pages/Community").catch(() => ({ default: () => <div className="p-20 text-center">Page missing or loading...</div> })));
+const Countries = lazy(() => import("./pages/Countries").catch(() => ({ default: () => <div className="p-20 text-center">Page missing or loading...</div> })));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -53,8 +51,11 @@ const ErrorBoundary = ({ children }: { children: React.ReactNode }) => {
 };
 
 const LoadingFallback = () => (
-  <div className="min-h-screen flex items-center justify-center">
-    <div className="text-lg">Loading...</div>
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="flex flex-col items-center">
+      <div className="w-12 h-12 border-4 border-palop-green/20 border-t-palop-green rounded-full animate-spin"></div>
+      <div className="mt-4 text-palop-dark font-display font-medium tracking-wider">LOADING</div>
+    </div>
   </div>
 );
 
@@ -71,8 +72,8 @@ const AppRoutes = () => (
     <Route path="/orders" element={<Orders />} />
     <Route path="/compatibility" element={<CompatibilityPage />} />
     <Route path="/how-it-works" element={<HowItWorksPage />} />
+    <Route path="/success" element={<OrderSuccess />} />
     <Route path="/admin/dashboard" element={<AdminDashboard />} />
-    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
     <Route path="*" element={<NotFound />} />
   </Routes>
 );

@@ -102,6 +102,14 @@ export const useCreateOrderWithESIM = () => {
       let esimError: string | null = null;
       let parsedESIM: ReturnType<typeof parseESIMResponse> | null = null;
 
+      // Guard: package row found but no eSIM Access package ID — another supplier's row
+      // was returned. Treat as a hard provisioning failure so the failure path fires
+      // and creates an esim_activations record for debugging.
+      if (packageData && !packageData.esim_access_package_id) {
+        esimError = `Plan '${orderData.plan_id}' has no eSIM Access package configured (supplier: ${packageData.supplier ?? 'unknown'})`;
+        console.error('[useCreateOrderWithESIM] package found but esim_access_package_id is null:', packageData);
+      }
+
       // --- PROVISION eSIM WITH SUPPLIER ---
       if (packageData?.esim_access_package_id) {
 
@@ -112,6 +120,8 @@ export const useCreateOrderWithESIM = () => {
             customerName: user.user_metadata?.full_name || customerEmail,
             // Use payment_intent_id as the idempotent outOrder reference
             referenceId: paymentIntentId ?? `order-${Date.now()}`,
+            planName: orderData.plan_name,
+            dataAmount: orderData.data_amount,
           });
 
           if (esimResponse.success && esimResponse.data) {
@@ -141,7 +151,7 @@ export const useCreateOrderWithESIM = () => {
         currency: orderData.currency || 'EUR',
         status: paymentIntentId ? 'completed' : 'pending',
         payment_status: paymentIntentId ? 'succeeded' : 'pending',
-        customer_email: customerEmail || undefined,
+        customer_email: customerEmail || null,
         payment_intent_id: paymentIntentId,
         ...(packageData && {
           esim_package_id: packageData.esim_access_package_id,

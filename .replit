@@ -1,4 +1,4 @@
-modules = ["nodejs-20", "web", "postgresql-16"]
+modules = ["nodejs-20", "web", "postgresql-16", "python-3.11"]
 [agent]
 expertMode = true
 integrations = ["stripe:1.0.0"]
@@ -46,4 +46,8 @@ externalPort = 3000
 [userenv]
 
 [userenv.shared]
-VITE_STRIPE_PUBLISHABLE_KEY = "pk_test_51TBtENL9w3YgrT2lVwnh31RmwMuJza5FAHT5rHNfWOIjmXSicgIxmgTbOZJuvkqEgqZVOrRfZxBdeMAtmAekEGVU00ReK87wnn"
+VITE_STRIPE_PUBLISHABLE_KEY = "pk_live_51QU5jiKy6kP7f0TQYNEuqomlNtPnbtV0yuyksk6iD7LUdFTzJqOD62tMHGrQMqoVQAyUieHNYz8Ie1T3D8R5osID00LBHeegxQ"
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 20000
