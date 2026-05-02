@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === 'development' &&
-    componentTagger(),
+      componentTagger(),
   ].filter(Boolean),
   resolve: {
     alias: {
@@ -24,5 +24,16 @@ export default defineConfig(({ mode }) => ({
   build: {
     outDir: '../dist',
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react':   ['react', 'react-dom'],
+          'vendor-stripe':  ['@stripe/stripe-js', '@stripe/react-stripe-js'],
+          'vendor-supabase': ['@supabase/supabase-js'],
+          'vendor-router':  ['react-router-dom'],
+          'vendor-sentry':  ['@sentry/react'],
+        },
+      },
+    },
   },
 }));
