@@ -132,6 +132,144 @@ async function getPackages(creds: ESIMAccessCredentials, locationCode?: string) 
   }
 }
 
+// ---------------------------------------------------------------------------
+// fetchESIMDetails — query /esim/query after order creation to retrieve
+// ICCID, LPA activation code, and QR code URL.
+//
+// The eSIM Access /esim/order endpoint provisions asynchronously: it returns
+// only orderNo + transactionId. We need to poll /esim/query to get credentials.
+//
+// Two strategies per attempt:
+//
+//   Strategy 1: { esimTranNo: orderNo }
+//     The orderNo from /esim/order is an ORDER number, not the eSIM's own
+//     esimTranNo. This query returns success=false in practice — kept for
+//     logging in case the API behaviour changes.
+//
+//   Strategy 2: { pager: { pageNum: 1, pageSize: 20 }, packageCode }
+//     List the most recent eSIMs for the given package code. The one we just
+//     purchased will be near the top. Try to match by orderNo/outOrder field;
+//     fall back to esimList[0] (newest). This is the reliable path.
+// ---------------------------------------------------------------------------
+async function fetchESIMDetails(
+  orderNo: string,
+  packageCode: string,
+  creds: ESIMAccessCredentials,
+  maxAttempts = 4,
+) {
+  // Progressive backoff: attempt 1 is immediate, then 5 s, 10 s, 20 s.
+  // Total worst-case wait: ~35 s — well within Supabase's 60 s edge function timeout.
+  // Rationale: eSIM Access typically provisions in 3–8 s; the longer tail handles
+  // slower batches without hammering the API.
+  const delays = [0, 5000, 10000, 20000]; // ms before each attempt
+
+  // Helper: extract the first usable eSIM entry from a /esim/query response obj
+  function extractESIMEntry(obj: any, label: string): any | null {
+    const flatList: any[] = obj?.esimList ?? [];
+    const nestedList: any[] = obj?.packageInfoList?.[0]?.esimList ?? [];
+    const directList: any[] = Array.isArray(obj) ? obj : [];
+    const esimList = flatList.length > 0 ? flatList
+      : nestedList.length > 0 ? nestedList
+      : directList;
+    console.log(`[fetch-esim-details] ${label} obj keys=${Object.keys(obj ?? {}).join(',')} flatList=${flatList.length} nestedList=${nestedList.length} directList=${directList.length} total=${esimList.length}`);
+    if (esimList.length > 0) {
+      esimList.forEach((e: any, i: number) => {
+        console.log(`[fetch-esim-details] ${label} esimList[${i}] keys=${Object.keys(e).join(',')} iccid=${e.iccid} activeType=${e.activeType} orderNo=${e.orderNo ?? e.outOrder ?? 'n/a'} esimTranNo=${e.esimTranNo ?? 'n/a'}`);
+      });
+    }
+    return esimList.length > 0 ? esimList : null;
+  }
+
+  function buildResult(entry: any) {
+    const activationCode = entry?.activationCode ?? entry?.ac ?? null;
+    return {
+      iccid: entry?.iccid ?? null,
+      activationCode,
+      qrCodeUrl: entry?.qrCodeUrl ?? null,
+      shortUrl: entry?.shortUrl ?? entry?.downloadUrl ?? entry?.url ?? null,
+    };
+  }
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    if (delays[attempt] > 0) {
+      await new Promise(r => setTimeout(r, delays[attempt]));
+    }
+    console.log(`[fetch-esim-details] attempt ${attempt + 1}/${maxAttempts} — orderNo=${orderNo} packageCode=${packageCode}`);
+
+    // --- Strategy 1: direct lookup by esimTranNo (likely returns success=false) ---
+    try {
+      const body1 = JSON.stringify({ esimTranNo: orderNo });
+      const headers1 = await buildESIMHeaders(creds);
+      const res1 = await fetch(`${ESIM_ACCESS_BASE_URL}/esim/query`, {
+        method: 'POST', headers: headers1, body: body1,
+      });
+      const text1 = await res1.text();
+      console.log(`[fetch-esim-details] S1 attempt=${attempt + 1} status=${res1.status} body=${text1.slice(0, 500)}`);
+      let data1: any;
+      try { data1 = JSON.parse(text1); } catch { /* ignore */ }
+      if (data1?.success === true) {
+        const list1 = extractESIMEntry(data1?.obj, `S1-a${attempt + 1}`);
+        if (list1) {
+          const entry = list1.find((e: any) => e.iccid) ?? list1[0];
+          const result = buildResult(entry);
+          if (result.iccid || result.activationCode) {
+            console.log(`[fetch-esim-details] S1 found credentials — iccid=${result.iccid} hasLPA=${!!result.activationCode}`);
+            return result;
+          }
+        }
+      }
+    } catch (e: any) {
+      console.error(`[fetch-esim-details] S1 attempt=${attempt + 1} exception — ${e.message}`);
+    }
+
+    // --- Strategy 2: list eSIMs by packageCode, match/newest ---
+    try {
+      const body2 = JSON.stringify({ pager: { pageNum: 1, pageSize: 20 }, packageCode });
+      const headers2 = await buildESIMHeaders(creds);
+      const res2 = await fetch(`${ESIM_ACCESS_BASE_URL}/esim/query`, {
+        method: 'POST', headers: headers2, body: body2,
+      });
+      const text2 = await res2.text();
+      console.log(`[fetch-esim-details] S2 attempt=${attempt + 1} status=${res2.status} body=${text2.slice(0, 1000)}`);
+      let data2: any;
+      try { data2 = JSON.parse(text2); } catch { continue; }
+
+      if (data2?.success !== true) {
+        console.log(`[fetch-esim-details] S2 attempt=${attempt + 1} supplier returned success=false — errorCode=${data2?.errorCode} errorMsg=${data2?.errorMsg}`);
+        continue;
+      }
+
+      const list2 = extractESIMEntry(data2?.obj, `S2-a${attempt + 1}`);
+      if (!list2 || list2.length === 0) {
+        console.log(`[fetch-esim-details] S2 attempt=${attempt + 1} — empty list, will retry`);
+        continue;
+      }
+
+      // Try to match by orderNo / outOrder field first
+      const matched = list2.find((e: any) =>
+        e.orderNo === orderNo ||
+        e.outOrder === orderNo ||
+        e.esimTranNo === orderNo
+      ) ?? list2[0]; // fallback to newest
+
+      console.log(`[fetch-esim-details] S2 selected entry iccid=${matched?.iccid} esimTranNo=${matched?.esimTranNo} orderNo=${matched?.orderNo ?? matched?.outOrder ?? 'n/a'}`);
+
+      const result2 = buildResult(matched);
+      if (result2.iccid || result2.activationCode) {
+        console.log(`[fetch-esim-details] S2 found credentials — iccid=${result2.iccid} hasLPA=${!!result2.activationCode} hasQR=${!!result2.qrCodeUrl}`);
+        return result2;
+      }
+
+      console.log(`[fetch-esim-details] S2 attempt=${attempt + 1} — entry found but no iccid/LPA yet, will retry`);
+    } catch (e: any) {
+      console.error(`[fetch-esim-details] S2 attempt=${attempt + 1} exception — ${e.message}`);
+    }
+  }
+
+  console.log(`[fetch-esim-details] all ${maxAttempts} attempts exhausted — eSIM credentials not available yet`);
+  return null;
+}
+
 async function createOrder(orderData: ESIMOrderRequest, creds: ESIMAccessCredentials) {
   const outOrder = orderData.referenceId ?? `order-${Date.now()}`;
   const payload = {
@@ -171,13 +309,32 @@ async function createOrder(orderData: ESIMOrderRequest, creds: ESIMAccessCredent
     try { data = JSON.parse(text); } catch { data = { rawResponse: text }; }
 
     if (data?.success === true) {
-      // Log full obj shape to diagnose esimTranNo / esimList location in response
-      console.log(`[create-order] success — esimTranNo=${data?.obj?.esimTranNo ?? data?.obj?.orderNo ?? '(not returned yet)'}`);
+      // eSIM Access returns only orderNo + transactionId in the create response.
+      // Actual eSIM credentials (ICCID, LPA, QR) are provisioned asynchronously
+      // and must be fetched via /esim/query.
+      const orderNo: string | null = data?.obj?.orderNo ?? null;
+      const transactionId: string | null = data?.obj?.transactionId ?? null;
+
+      console.log(`[create-order] order placed — orderNo=${orderNo} transactionId=${transactionId}`);
       console.log(`[create-order] obj keys=${Object.keys(data?.obj ?? {}).join(',')}`);
-      console.log(`[create-order] packageInfoList[0] keys=${Object.keys(data?.obj?.packageInfoList?.[0] ?? {}).join(',')}`);
-      console.log(`[create-order] esimList[0] keys=${Object.keys(data?.obj?.packageInfoList?.[0]?.esimList?.[0] ?? {}).join(',')}`);
-      console.log(`[create-order] raw obj=${JSON.stringify(data?.obj).slice(0, 800)}`);
-      return { success: true, data };
+
+      // Query for eSIM credentials (retries with backoff until provisioned)
+      let esimDetails: { iccid: string | null; activationCode: string | null; qrCodeUrl: string | null; shortUrl: string | null } | null = null;
+      if (orderNo) {
+        esimDetails = await fetchESIMDetails(orderNo, orderData.packageId, creds);
+      }
+
+      console.log(`[create-order] esim details — iccid=${esimDetails?.iccid ?? 'null'} hasLPA=${!!(esimDetails?.activationCode)} hasQR=${!!(esimDetails?.qrCodeUrl)}`);
+
+      return {
+        success: true,
+        data,
+        esimTranNo: orderNo,
+        iccid: esimDetails?.iccid ?? null,
+        activationCode: esimDetails?.activationCode ?? null,
+        qrCodeUrl: esimDetails?.qrCodeUrl ?? null,
+        shortUrl: esimDetails?.shortUrl ?? null,
+      };
     }
 
     // Non-2xx or supplier-level failure

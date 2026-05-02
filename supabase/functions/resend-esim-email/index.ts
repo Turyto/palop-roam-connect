@@ -181,7 +181,7 @@ async function sendESIMEmail(opts: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: 'BuéChama <onboarding@resend.dev>',
+      from: 'BuéChama <noreply@palopconnect.com>',
       to: [to],
       subject: `Your eSIM is ready — ${planName || 'BuéChama'}`,
       html,

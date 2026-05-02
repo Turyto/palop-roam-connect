@@ -8,6 +8,7 @@ import { ESIMPlan } from "@/pages/Purchase";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/language";
 import { Link } from "react-router-dom";
 
 interface ConfirmationViewProps {
@@ -19,6 +20,10 @@ interface ConfirmationViewProps {
 
 const ConfirmationView = ({ plan, orderId, guestEmail, onBackToPlans }: ConfirmationViewProps) => {
   const { toast } = useToast();
+  const { t } = useLanguage();
+  const c = t.checkout;
+  const o = t.orders;
+
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isSavingAccount, setIsSavingAccount] = useState(false);
@@ -57,26 +62,26 @@ const ConfirmationView = ({ plan, orderId, guestEmail, onBackToPlans }: Confirma
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast({ title: "Copied!", description: "Activation code copied to clipboard." });
+    toast({ title: c.copiedTitle, description: c.copiedDesc });
   };
 
   const handleCreateAccount = async () => {
     if (!guestEmail || !password) return;
     if (password.length < 6) {
-      toast({ title: "Password too short", description: "Please use at least 6 characters.", variant: "destructive" });
+      toast({ title: c.passwordTooShort, description: c.passwordTooShortDesc, variant: "destructive" });
       return;
     }
     setIsSavingAccount(true);
     try {
       const { error } = await supabase.auth.updateUser({ email: guestEmail, password });
       if (error) {
-        toast({ title: "Could not create account", description: error.message, variant: "destructive" });
+        toast({ title: c.accountError, description: error.message, variant: "destructive" });
       } else {
         setAccountSaved(true);
-        toast({ title: "Account created!", description: "Your account is ready. You can now sign in anytime to manage your eSIMs." });
+        toast({ title: c.accountCreatedTitle, description: c.accountCreatedDesc });
       }
     } catch {
-      toast({ title: "Something went wrong", description: "Please try again.", variant: "destructive" });
+      toast({ title: c.accountError, description: c.accountGenericError, variant: "destructive" });
     } finally {
       setIsSavingAccount(false);
     }
@@ -85,18 +90,17 @@ const ConfirmationView = ({ plan, orderId, guestEmail, onBackToPlans }: Confirma
   const hasQR = qrData || activationData;
 
   return (
-    <div className="bg-white rounded-lg shadow p-8">
+    <div className="bg-white rounded-lg shadow p-6 sm:p-8">
+      {/* Success header */}
       <div className="text-center mb-8">
         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <Check className="h-8 w-8 text-green-600" />
         </div>
-        <h2 className="text-2xl font-bold mb-2">Purchase Successful!</h2>
-        <p className="text-gray-600">
-          Your eSIM is ready. Scan the QR code below or use the activation link.
-        </p>
+        <h2 className="text-2xl font-bold mb-2">{c.successTitle}</h2>
+        <p className="text-gray-600">{c.successDesc}</p>
         {orderId && (
           <p className="text-xs text-gray-400 mt-2">
-            Order ID: <span className="font-mono">{orderId}</span>
+            {c.orderIdLabel}: <span className="font-mono">{orderId}</span>
           </p>
         )}
       </div>
@@ -106,31 +110,33 @@ const ConfirmationView = ({ plan, orderId, guestEmail, onBackToPlans }: Confirma
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 flex items-start gap-3">
           <Mail className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
           <div className="text-sm text-blue-700">
-            <p className="font-semibold mb-1">Check your inbox</p>
-            <p>
-              We've sent a sign-in link to <strong>{guestEmail}</strong>. Click it anytime to return to your orders page and view your eSIM details — no password needed.
-            </p>
-            <p className="mt-2 font-medium">
-              Your eSIM details are shown below — save or print them now.
-            </p>
+            <p className="font-semibold mb-1">{c.guestInboxTitle}</p>
+            <p
+              dangerouslySetInnerHTML={{
+                __html: c.guestInboxDesc.replace('{email}', `<strong>${guestEmail}</strong>`),
+              }}
+            />
+            <p className="mt-2 font-medium">{c.guestInboxSave}</p>
           </div>
         </div>
       )}
 
+      {/* Order summary */}
       <div className="bg-gray-50 p-4 rounded-lg mb-6">
-        <h3 className="font-semibold mb-3 text-center">Order Summary</h3>
+        <h3 className="font-semibold mb-3 text-center">{c.orderSummary}</h3>
         <div className="flex justify-between items-center">
           <div>
-            <p className="font-medium">{plan.name} Plan</p>
-            <p className="text-gray-600 text-sm">{plan.data} · {plan.days} days</p>
+            <p className="font-medium">{plan.name}</p>
+            <p className="text-gray-600 text-sm">{plan.data} · {plan.days} {o.daysUnit}</p>
           </div>
           <p className="font-bold text-lg">{plan.price.toFixed(2)} {plan.currency}</p>
         </div>
       </div>
 
+      {/* eSIM activation details or provisioning-in-progress notice */}
       {hasQR ? (
         <div className="mb-6 space-y-4">
-          <h3 className="font-semibold text-center">Your eSIM Activation</h3>
+          <h3 className="font-semibold text-center">{c.esimActivation}</h3>
 
           {qrData?.qr_image_url && (
             <div className="flex justify-center">
@@ -147,7 +153,7 @@ const ConfirmationView = ({ plan, orderId, guestEmail, onBackToPlans }: Confirma
 
           {(activationData?.activation_code || qrData?.activation_url) && (
             <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-xs font-semibold text-gray-500 uppercase mb-2">LPA Activation Code</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase mb-2">{c.lpaTitle}</p>
               <div className="flex items-center gap-2">
                 <code
                   className="text-xs break-all flex-1 text-gray-700"
@@ -176,7 +182,7 @@ const ConfirmationView = ({ plan, orderId, guestEmail, onBackToPlans }: Confirma
               data-testid="link-activation-url"
             >
               <ExternalLink className="h-4 w-4" />
-              Open activation page
+              {c.openActivation}
             </a>
           )}
 
@@ -184,11 +190,11 @@ const ConfirmationView = ({ plan, orderId, guestEmail, onBackToPlans }: Confirma
             <div className="flex items-start gap-3">
               <Smartphone className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
               <div className="text-sm text-blue-700">
-                <p className="font-semibold mb-1">How to install your eSIM</p>
+                <p className="font-semibold mb-1">{c.installTitle}</p>
                 <ol className="list-decimal list-inside space-y-1">
-                  <li>Go to Settings → Cellular / Mobile Data</li>
-                  <li>Tap "Add eSIM" or "Add Data Plan"</li>
-                  <li>Scan the QR code or enter the LPA code manually</li>
+                  <li>{c.installStep1}</li>
+                  <li>{c.installStep2}</li>
+                  <li>{c.installStep3}</li>
                 </ol>
               </div>
             </div>
@@ -196,8 +202,11 @@ const ConfirmationView = ({ plan, orderId, guestEmail, onBackToPlans }: Confirma
         </div>
       ) : (
         <div className="mb-6 bg-yellow-50 border border-yellow-100 rounded-lg p-4 text-center text-sm text-yellow-700">
-          <p className="font-semibold mb-1">eSIM provisioning in progress</p>
-          <p>Your QR code will appear here shortly. You can also check your <Link to="/orders" className="underline font-medium">orders page</Link> anytime.</p>
+          <p className="font-semibold mb-1">{c.processingTitle}</p>
+          <p>
+            {c.processingDesc}{' '}
+            <Link to="/orders" className="underline font-medium">{c.processingLink}</Link>.
+          </p>
         </div>
       )}
 
@@ -206,19 +215,22 @@ const ConfirmationView = ({ plan, orderId, guestEmail, onBackToPlans }: Confirma
         <div className="border border-gray-200 rounded-lg p-5 mb-6">
           <div className="flex items-center gap-2 mb-3">
             <Lock className="h-4 w-4 text-gray-500" />
-            <h3 className="font-semibold text-gray-800">Save your account to manage future eSIMs</h3>
+            <h3 className="font-semibold text-gray-800">{c.createAccountTitle}</h3>
           </div>
-          <p className="text-sm text-gray-500 mb-4">
-            Your email <strong>{guestEmail}</strong> is already set. Just add a password to create your account.
-          </p>
+          <p
+            className="text-sm text-gray-500 mb-4"
+            dangerouslySetInnerHTML={{
+              __html: c.createAccountDesc.replace('{email}', `<strong>${guestEmail}</strong>`),
+            }}
+          />
           <div className="space-y-3">
             <div>
-              <Label htmlFor="create-password" className="text-sm">Password</Label>
+              <Label htmlFor="create-password" className="text-sm">{c.passwordLabel}</Label>
               <div className="relative mt-1">
                 <Input
                   id="create-password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="At least 6 characters"
+                  placeholder={c.passwordPlaceholder}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   data-testid="input-create-password"
@@ -238,7 +250,7 @@ const ConfirmationView = ({ plan, orderId, guestEmail, onBackToPlans }: Confirma
               className="w-full bg-palop-green hover:bg-palop-green/90"
               data-testid="button-create-account"
             >
-              {isSavingAccount ? "Creating account..." : "Create account"}
+              {isSavingAccount ? c.creatingAccount : c.createAccountBtn}
             </Button>
           </div>
         </div>
@@ -247,10 +259,14 @@ const ConfirmationView = ({ plan, orderId, guestEmail, onBackToPlans }: Confirma
       {guestEmail && accountSaved && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 flex items-center gap-3">
           <Check className="h-5 w-5 text-green-600 shrink-0" />
-          <p className="text-sm text-green-700 font-medium">Account created! You can now sign in anytime at <Link to="/auth" className="underline">buechama.com</Link>.</p>
+          <p className="text-sm text-green-700 font-medium">
+            {c.accountCreatedTitle}{' '}
+            <Link to="/auth" className="underline">{c.accountCreatedLink}</Link>.
+          </p>
         </div>
       )}
 
+      {/* Action buttons */}
       <div className="flex flex-col sm:flex-row gap-3">
         <Button
           variant="outline"
@@ -258,7 +274,7 @@ const ConfirmationView = ({ plan, orderId, guestEmail, onBackToPlans }: Confirma
           onClick={onBackToPlans}
           data-testid="button-buy-another"
         >
-          Buy Another eSIM
+          {c.buyAnother}
         </Button>
         {guestEmail && (
           <Button
@@ -268,7 +284,7 @@ const ConfirmationView = ({ plan, orderId, guestEmail, onBackToPlans }: Confirma
             data-testid="button-save-details"
           >
             <Download className="h-4 w-4 mr-2" />
-            Save / Print Details
+            {c.saveDetails}
           </Button>
         )}
         <Link to="/orders" className="flex-1">
@@ -276,7 +292,7 @@ const ConfirmationView = ({ plan, orderId, guestEmail, onBackToPlans }: Confirma
             className="w-full bg-palop-green hover:bg-palop-green/90"
             data-testid="button-view-orders"
           >
-            View My Orders
+            {c.viewOrders}
           </Button>
         </Link>
       </div>

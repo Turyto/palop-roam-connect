@@ -41,7 +41,29 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const accessCode = Deno.env.get('ESIM_ACCESS_ACCESS_CODE');
     const secretKey = Deno.env.get('ESIM_ACCESS_SECRET_KEY');
 
+    // --- Auth check — require a valid Supabase session token ---
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      console.error('[check-esim-status] missing or malformed auth header');
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    const token = authHeader.replace('Bearer ', '');
+    const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${token}` },
+    });
+    if (!userRes.ok) {
+      console.error(`[check-esim-status] token verification failed — status=${userRes.status}`);
+      return new Response(JSON.stringify({ error: 'Invalid session' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    const userBody = await userRes.json();
+    const userId: string = userBody?.id ?? '(unknown)';
+
     if (!accessCode || !secretKey) {
+      console.error('[check-esim-status] eSIM Access credentials not configured');
       return new Response(JSON.stringify({ error: 'eSIM Access credentials not configured' }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
@@ -49,10 +71,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     const { order_id, esim_order_id } = await req.json();
     if (!esim_order_id) {
+      console.error(`[check-esim-status] esim_order_id missing — user=${userId} order=${order_id ?? 'n/a'}`);
       return new Response(JSON.stringify({ error: 'esim_order_id required' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
+
+    console.log(`[check-esim-status] querying supplier — user=${userId} order=${order_id ?? 'n/a'} esimTranNo=${esim_order_id}`);
 
     const headers = await buildESIMHeaders(accessCode, secretKey);
     const statusRes = await fetch(`${ESIM_ACCESS_BASE_URL}/esim/query`, {
@@ -63,6 +88,15 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const statusData = await statusRes.json();
 
     if (!statusData?.success) {
+      console.error(
+        `[check-esim-status] supplier query failed — ` +
+        `httpStatus=${statusRes.status} ` +
+        `errorCode=${statusData?.errorCode} ` +
+        `errorMsg=${statusData?.errorMsg} ` +
+        `esimTranNo=${esim_order_id} ` +
+        `order=${order_id ?? 'n/a'} ` +
+        `user=${userId}`
+      );
       return new Response(JSON.stringify({
         error: statusData?.errorMsg ?? 'eSIM API query failed',
         errorCode: statusData?.errorCode,
@@ -70,28 +104,42 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }
 
     const esimInfo = statusData.obj;
-    if (order_id && serviceKey && esimInfo) {
-      await fetch(`${supabaseUrl}/rest/v1/esim_activations?order_id=eq.${encodeURIComponent(order_id)}`, {
-        method: 'PATCH',
-        headers: {
-          'apikey': serviceKey,
-          'Authorization': `Bearer ${serviceKey}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal',
-        },
-        body: JSON.stringify({
-          status: esimInfo.esimStatus ?? 'unknown',
-          provisioning_status: esimInfo.esimStatus === 'GOT_RESOURCE' ? 'completed' : 'pending',
-          updated_at: new Date().toISOString(),
-        }),
-      });
+    console.log(`[check-esim-status] supplier OK — esimStatus=${esimInfo?.esimStatus ?? 'n/a'} order=${order_id ?? 'n/a'} user=${userId}`);
+
+    // Update esim_activations if order_id provided
+    if (order_id && esimInfo) {
+      const patchRes = await fetch(
+        `${supabaseUrl}/rest/v1/esim_activations?order_id=eq.${encodeURIComponent(order_id)}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'apikey': serviceKey,
+            'Authorization': `Bearer ${serviceKey}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal',
+          },
+          body: JSON.stringify({
+            status: esimInfo.esimStatus ?? 'unknown',
+            provisioning_status: esimInfo.esimStatus === 'GOT_RESOURCE' ? 'completed' : 'pending',
+            updated_at: new Date().toISOString(),
+          }),
+        }
+      );
+      if (!patchRes.ok) {
+        const patchErr = await patchRes.text();
+        console.error(`[check-esim-status] DB patch failed — httpStatus=${patchRes.status} body=${patchErr} order=${order_id}`);
+      }
     }
 
     return new Response(JSON.stringify({ success: true, data: statusData }), {
       status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   } catch (error: any) {
-    console.error('Check eSIM status error:', error);
+    console.error(
+      `[check-esim-status] unhandled exception — ` +
+      `message=${error?.message ?? '(none)'} ` +
+      `stack=${error?.stack ?? '(none)'}`
+    );
     return new Response(JSON.stringify({ error: error.message ?? 'Internal error' }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });

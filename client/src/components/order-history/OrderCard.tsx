@@ -51,7 +51,7 @@ const OrderCard = ({
           <div className="text-right shrink-0">
             <div className="text-xl font-bold text-gray-900">€{order.price}</div>
             <div className="text-xs text-gray-400 mt-0.5">
-              {order.data_amount}{order.duration_days ? ` · ${order.duration_days} days` : ''}
+              {order.data_amount}{order.duration_days ? ` · ${order.duration_days} ${o.daysUnit}` : ''}
             </div>
           </div>
         </div>

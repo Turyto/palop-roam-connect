@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/auth';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/language';
 import { useESIMAccess } from '@/hooks/useESIMAccess';
 import type { CreateOrderData } from './types';
 
@@ -27,15 +28,28 @@ interface OrderInsertWithESIM {
 // Extract the relevant eSIM fields from the nested eSIM Access API response.
 // Edge fn returns: { success, data: <raw_api_response> }
 // Raw API response: { success, obj: { esimTranNo, packageInfoList: [{ esimList: [{ iccid, activationCode, qrCodeUrl, shortUrl, downloadUrl }] }] } }
-function parseESIMResponse(esimOrderData: any) {
-  const obj = esimOrderData?.obj;
-  // esimTranNo may be at obj level (query endpoint) OR inside packageInfoList[0] (order endpoint)
+// Edge function now returns extracted fields at top level (esimTranNo, iccid, activationCode,
+// qrCodeUrl, shortUrl) alongside the raw data. We prefer those; fall back to deep-path parsing
+// for backward compatibility with older function versions.
+function parseESIMResponse(esimResponse: any) {
+  // Top-level extracted fields (set by edge fn v18+)
+  if (esimResponse?.esimTranNo || esimResponse?.iccid) {
+    return {
+      esimTranNo: esimResponse.esimTranNo as string | undefined,
+      iccid: esimResponse.iccid as string | undefined,
+      activationCode: esimResponse.activationCode as string | undefined,
+      qrCodeUrl: esimResponse.qrCodeUrl as string | undefined,
+      shortUrl: esimResponse.shortUrl as string | undefined,
+    };
+  }
+  // Fallback: navigate nested structure from raw API response
+  const obj = esimResponse?.obj ?? esimResponse?.data?.obj;
   const esimTranNo: string | undefined = obj?.esimTranNo ?? obj?.packageInfoList?.[0]?.esimTranNo;
   const esimEntry = obj?.packageInfoList?.[0]?.esimList?.[0];
   return {
     esimTranNo,
     iccid: esimEntry?.iccid as string | undefined,
-    activationCode: esimEntry?.activationCode as string | undefined,
+    activationCode: (esimEntry?.activationCode ?? esimEntry?.ac) as string | undefined,
     qrCodeUrl: esimEntry?.qrCodeUrl as string | undefined,
     shortUrl: (esimEntry?.shortUrl || esimEntry?.downloadUrl || esimEntry?.url) as string | undefined,
   };
@@ -44,6 +58,8 @@ function parseESIMResponse(esimOrderData: any) {
 export const useCreateOrderWithESIM = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useLanguage();
+  const c = t.checkout;
   const queryClient = useQueryClient();
   const { createOrderAsync: createESIMOrder } = useESIMAccess();
 
@@ -100,7 +116,9 @@ export const useCreateOrderWithESIM = () => {
 
           if (esimResponse.success && esimResponse.data) {
             esimOrderData = esimResponse.data;
-            parsedESIM = parseESIMResponse(esimOrderData);
+            // Pass the full esimResponse (not just .data) so parseESIMResponse
+            // can use the top-level extracted fields returned by edge fn v18+
+            parsedESIM = parseESIMResponse(esimResponse);
           } else {
             esimError = esimResponse.error || 'Failed to create eSIM order';
             console.error('eSIM order creation failed:', esimResponse);
@@ -266,19 +284,19 @@ export const useCreateOrderWithESIM = () => {
 
       if (result.esimSuccess) {
         toast({
-          title: 'Order Created Successfully!',
-          description: `Your eSIM has been provisioned. Check your order confirmation for activation details.`,
+          title: c.toastOrderSuccess,
+          description: c.toastOrderSuccessDesc,
         });
       } else if (result.esimError) {
         toast({
-          title: 'Order Created — eSIM Pending',
-          description: `Your payment was successful. eSIM provisioning will complete shortly. Error: ${result.esimError}`,
+          title: c.toastOrderPending,
+          description: c.toastOrderPendingDesc,
           variant: 'destructive',
         });
       } else {
         toast({
-          title: 'Order Created',
-          description: `Your order has been created successfully.`,
+          title: c.toastOrderCreated,
+          description: c.toastOrderCreatedDesc,
         });
       }
     },
@@ -286,7 +304,7 @@ export const useCreateOrderWithESIM = () => {
     onError: (error: any) => {
       console.error('Order creation error:', error);
       toast({
-        title: 'Order Creation Failed',
+        title: c.toastOrderFailed,
         description: error.message,
         variant: 'destructive',
       });

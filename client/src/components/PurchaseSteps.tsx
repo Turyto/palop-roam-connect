@@ -1,16 +1,20 @@
 
-import { Check, CreditCard, ShoppingCart } from "lucide-react";
+import { Check } from "lucide-react";
+import { useLanguage } from "@/contexts/language";
 
 interface PurchaseStepsProps {
   currentStep: "plans" | "checkout" | "payment" | "confirmation";
 }
 
 const PurchaseSteps = ({ currentStep }: PurchaseStepsProps) => {
+  const { t } = useLanguage();
+  const c = t.checkout;
+
   const steps = [
-    { id: "plans", label: "Select Plan" },
-    { id: "checkout", label: "Cart Overview" },
-    { id: "payment", label: "Data and Payment" },
-    { id: "confirmation", label: "Confirmation" },
+    { id: "plans", label: c.stepPlans },
+    { id: "checkout", label: c.stepCheckout },
+    { id: "payment", label: c.stepPayment },
+    { id: "confirmation", label: c.stepConfirmation },
   ];
 
   return (
@@ -20,7 +24,7 @@ const PurchaseSteps = ({ currentStep }: PurchaseStepsProps) => {
           {steps.map((step, index) => {
             const isActive = step.id === currentStep;
             const isComplete = steps.findIndex(s => s.id === currentStep) > index;
-            
+
             return (
               <div key={step.id} className="flex items-center">
                 {/* Step indicator */}
@@ -33,17 +37,17 @@ const PurchaseSteps = ({ currentStep }: PurchaseStepsProps) => {
                     <span className="text-sm">{index + 1}</span>
                   )}
                 </div>
-                
-                {/* Step label */}
-                <span className={`ml-2 text-sm hidden md:inline ${
+
+                {/* Step label — visible from sm upward so it shows on most phones in landscape */}
+                <span className={`ml-2 text-sm hidden sm:inline ${
                   isActive || isComplete ? "text-palop-green font-medium" : "text-gray-500"
                 }`}>
                   {step.label}
                 </span>
-                
+
                 {/* Connector line */}
                 {index < steps.length - 1 && (
-                  <div className={`w-12 md:w-24 h-0.5 mx-2 ${
+                  <div className={`w-8 sm:w-16 md:w-24 h-0.5 mx-2 ${
                     isComplete ? "bg-palop-green" : "bg-gray-300"
                   }`} />
                 )}

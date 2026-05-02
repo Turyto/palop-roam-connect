@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Download, Eye, Copy, QrCode, Mail, Zap, FileText } from "lucide-react";
 import { useLanguage } from "@/contexts/language";
+import { useToast } from "@/hooks/use-toast";
 
 interface OrderActionsProps {
   order: any;
@@ -23,12 +24,21 @@ const OrderActions = ({
   variant = 'compact'
 }: OrderActionsProps) => {
   const { t } = useLanguage();
+  const { toast } = useToast();
   const o = t.orders;
 
   const canTopUp = order.status === 'completed' && order.payment_status === 'succeeded' && !!order.esim_delivered_at;
 
   const handleDownloadReceipt = () => {
-    console.log('Download receipt for order:', order.id);
+    window.print();
+  };
+
+  const handleCopyActivationUrl = () => {
+    const url = qrCode?.activation_url ?? qrCode?.activation_code ?? '';
+    if (!url) return;
+    navigator.clipboard.writeText(url).then(() => {
+      toast({ title: o.copiedUrl, description: o.copiedUrlDesc });
+    });
   };
 
   if (variant === 'compact') {
@@ -56,7 +66,7 @@ const OrderActions = ({
                       {o.viewQR}
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent><p>View your eSIM QR code for installation</p></TooltipContent>
+                  <TooltipContent><p>{o.viewQRDesc}</p></TooltipContent>
                 </Tooltip>
               </TooltipProvider>
 
@@ -131,7 +141,7 @@ const OrderActions = ({
   if (canDownload || canTopUp) {
     return (
       <div className="bg-gray-50 p-3 rounded-lg">
-        <h4 className="font-medium text-xs text-gray-500 uppercase tracking-wide mb-2">eSIM Actions</h4>
+        <h4 className="font-medium text-xs text-gray-500 uppercase tracking-wide mb-2">{o.esimActionsLabel}</h4>
         <div className="flex flex-wrap gap-2">
           {canDownload && (
             <>
@@ -142,18 +152,18 @@ const OrderActions = ({
                       <QrCode className="h-4 w-4 mr-2" />{o.viewQR}
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent><p>Display QR code for eSIM installation</p></TooltipContent>
+                  <TooltipContent><p>{o.viewQRDesc}</p></TooltipContent>
                 </Tooltip>
               </TooltipProvider>
 
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="sm" onClick={() => onDownloadESIM(order)}>
-                      <Copy className="h-4 w-4 mr-2" />Copy Activation URL
+                    <Button variant="outline" size="sm" onClick={handleCopyActivationUrl}>
+                      <Copy className="h-4 w-4 mr-2" />{o.copyActivationUrl}
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent><p>Copy activation URL to clipboard</p></TooltipContent>
+                  <TooltipContent><p>{o.copyActivationUrlDesc}</p></TooltipContent>
                 </Tooltip>
               </TooltipProvider>
 
@@ -164,7 +174,7 @@ const OrderActions = ({
                       <Mail className="h-4 w-4 mr-2" />{o.resendEmail}
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent><p>Resend eSIM details to your email</p></TooltipContent>
+                  <TooltipContent><p>{o.resendEmailDesc}</p></TooltipContent>
                 </Tooltip>
               </TooltipProvider>
 
@@ -172,10 +182,10 @@ const OrderActions = ({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button variant="outline" size="sm" onClick={handleDownloadReceipt}>
-                      <FileText className="h-4 w-4 mr-2" />Download Receipt
+                      <FileText className="h-4 w-4 mr-2" />{o.downloadReceipt}
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent><p>Download purchase receipt (PDF)</p></TooltipContent>
+                  <TooltipContent><p>{o.downloadReceiptDesc}</p></TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             </>

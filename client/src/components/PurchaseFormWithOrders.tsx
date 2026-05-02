@@ -11,10 +11,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
 import { useCreateOrderWithESIM } from "@/hooks/orders/useCreateOrderWithESIM";
 import { useAuth } from "@/contexts/auth";
+import { useLanguage } from "@/contexts/language";
 import { supabase } from "@/integrations/supabase/client";
 import CartOverview from "./CartOverview";
 import PaymentDetails from "./PaymentDetails";
-import ContactForm, { checkoutFormSchema } from "./ContactForm";
+import ContactForm, { makeCheckoutFormSchema } from "./ContactForm";
 import ConfirmationView from "./ConfirmationView";
 import { Loader2 } from "lucide-react";
 
@@ -35,6 +36,8 @@ const PurchaseFormWithOrders = ({
 }: PurchaseFormWithOrdersProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { t } = useLanguage();
+  const c = t.checkout;
   const { createOrderAsync, isCreatingOrder } = useCreateOrderWithESIM();
 
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -52,8 +55,14 @@ const PurchaseFormWithOrders = ({
     return loadStripe(pk);
   }, []);
 
-  const form = useForm<z.infer<typeof checkoutFormSchema>>({
-    resolver: zodResolver(checkoutFormSchema),
+  // Build the schema with translated validation messages
+  const checkoutSchema = useMemo(
+    () => makeCheckoutFormSchema({ emailInvalid: c.emailInvalid, termsRequired: c.termsRequired }),
+    [c.emailInvalid, c.termsRequired]
+  );
+
+  const form = useForm<z.infer<typeof checkoutSchema>>({
+    resolver: zodResolver(checkoutSchema),
     defaultValues: {
       email: user?.email || "",
       termsAccepted: false,
@@ -78,7 +87,7 @@ const PurchaseFormWithOrders = ({
       })
       .then(({ data, error }) => {
         if (error || !data?.clientSecret) {
-          const msg = data?.error || error?.message || "Could not initialise payment. Please try again.";
+          const msg = data?.error || error?.message || c.initialisingPayment;
           setPaymentError(msg);
           toast({ title: "Payment Error", description: msg, variant: "destructive" });
         } else {
@@ -90,7 +99,7 @@ const PurchaseFormWithOrders = ({
   }, [currentStep]);
 
   // Checkout form submit → move to payment step (supports both guests and signed-in users)
-  const onCheckoutSubmit = async (data: z.infer<typeof checkoutFormSchema>) => {
+  const onCheckoutSubmit = async (data: z.infer<typeof checkoutSchema>) => {
     const emailForOrder = data.email || user?.email || "";
 
     if (!user) {
@@ -103,8 +112,8 @@ const PurchaseFormWithOrders = ({
       });
       if (anonError) {
         toast({
-          title: "Could not start session",
-          description: "Please try again or sign in to continue.",
+          title: c.sessionError,
+          description: c.sessionErrorDesc,
           variant: "destructive",
         });
         return;
@@ -146,8 +155,8 @@ const PurchaseFormWithOrders = ({
           // Non-fatal: order is created and eSIM details are on screen.
           console.error("Failed to send access link email:", otpError);
           toast({
-            title: "Order complete",
-            description: "Your eSIM is ready. We were unable to send the sign-in link — please save your details from this page.",
+            title: c.orderComplete,
+            description: c.orderCompleteDesc,
             variant: "destructive",
           });
         }
@@ -157,9 +166,8 @@ const PurchaseFormWithOrders = ({
     } catch (error: unknown) {
       console.error("Order creation failed:", error);
       toast({
-        title: "Order Error",
-        description:
-          "Payment was successful but order creation failed. Please contact support with your payment reference.",
+        title: c.orderError,
+        description: c.orderErrorDesc,
         variant: "destructive",
       });
     }
@@ -184,21 +192,21 @@ const PurchaseFormWithOrders = ({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onCheckoutSubmit)} className="space-y-6">
             <ContactForm form={form} />
-            <div className="flex justify-between">
+            <div className="flex justify-between gap-3">
               <Button
                 type="button"
                 variant="outline"
                 onClick={onBackToPlans}
                 data-testid="button-back-to-plans"
               >
-                Back
+                {c.backBtn}
               </Button>
               <Button
                 type="submit"
                 className="bg-palop-green hover:bg-palop-green/90"
                 data-testid="button-continue-to-payment"
               >
-                Continue to Payment
+                {c.continueBtn}
               </Button>
             </div>
           </form>
@@ -210,7 +218,7 @@ const PurchaseFormWithOrders = ({
           {paymentLoading && (
             <div className="bg-white rounded-lg shadow p-8 flex items-center justify-center gap-3 text-gray-500">
               <Loader2 className="h-5 w-5 animate-spin" />
-              <span>Initialising secure payment...</span>
+              <span>{c.initialisingPayment}</span>
             </div>
           )}
 
@@ -224,14 +232,14 @@ const PurchaseFormWithOrders = ({
                 }}
                 className="bg-palop-green hover:bg-palop-green/90"
               >
-                Try Again
+                {c.tryAgain}
               </Button>
             </div>
           )}
 
           {!stripePromise && !paymentLoading && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-700">
-              Stripe is not configured yet. Please connect your Stripe account to enable payments.
+              {c.paymentSupport}
             </div>
           )}
 
