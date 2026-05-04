@@ -35,9 +35,10 @@ export default function HeroSection() {
               <span className="text-xs font-semibold uppercase tracking-wider text-gray-600">{h.heroBadge}</span>
             </div>
             
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-display font-black leading-[1.1] mb-6 text-palop-dark">
-              <span className="whitespace-nowrap">{h.headlinePre}</span><br/>
-              <span className="text-gradient">{h.headlineAccent}</span> {h.headlinePost}
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-black leading-[1.1] mb-6 text-palop-dark">
+              {h.headlinePre}{' '}
+              <span className="text-gradient">{h.headlineAccent}</span>{' '}
+              {h.headlinePost}
             </h1>
             
             <p className="text-lg md:text-xl text-gray-600 mb-8 leading-relaxed max-w-xl">
