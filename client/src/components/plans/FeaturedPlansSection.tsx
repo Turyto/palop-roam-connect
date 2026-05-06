@@ -11,7 +11,9 @@ const FeaturedPlansSection = ({ selectedTab }: FeaturedPlansSectionProps) => {
   const { t, lang } = useLanguage();
   const f = t.plansPage.featured;
 
-  const filteredPlans = planCards.filter((p) => p.coverage === selectedTab);
+  const filteredPlans = planCards.filter((p) =>
+    p.coverage === selectedTab || (selectedTab === 'portugal' && p.coverage === 'europe')
+  );
 
   return (
     <section id="featured-plans" className="py-14 md:py-16 bg-white scroll-mt-20">
