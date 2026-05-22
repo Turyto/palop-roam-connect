@@ -23,6 +23,7 @@ interface OrderInsertWithESIM {
   esim_status?: string;
   esim_order_id?: string;
   esim_delivered_at?: string;
+  referral_code?: string | null;
 }
 
 // Extract the relevant eSIM fields from the nested eSIM Access API response.

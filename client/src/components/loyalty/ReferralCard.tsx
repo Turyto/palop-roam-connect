@@ -131,9 +131,9 @@ const ReferralCard = ({
                 <div className="text-sm text-green-800">
                   <div className="font-medium">How it works:</div>
                   <ul className="mt-1 space-y-1 text-xs">
-                    <li>• Your friends get 10% off their first order</li>
+                    <li>• Share your link — anyone who buys through it counts as your referral</li>
                     <li>• You earn €2 credit per successful referral</li>
-                    <li>• Credits apply automatically to your next purchase</li>
+                    <li>• Credits will be applied to your next purchase</li>
                   </ul>
                 </div>
               </div>

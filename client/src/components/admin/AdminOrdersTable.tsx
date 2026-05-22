@@ -31,6 +31,7 @@ interface Order {
   created_at: string;
   esim_delivered_at: string | null;
   customer_email: string | null;
+  referral_code: string | null;
 }
 
 const AdminOrdersTable = () => {
@@ -115,7 +116,7 @@ const AdminOrdersTable = () => {
 
   const handleExportCSV = () => {
     const csvContent = [
-      ['Order ID', 'Customer Email', 'Plan', 'Price', 'Order Status', 'Payment Status', 'Date'].join(','),
+      ['Order ID', 'Customer Email', 'Plan', 'Price', 'Order Status', 'Payment Status', 'Referral Code', 'Date'].join(','),
       ...filteredOrders.map(order => [
         order.id,
         order.customer_email || '',
@@ -123,6 +124,7 @@ const AdminOrdersTable = () => {
         `${order.price} ${order.currency}`,
         order.status,
         order.payment_status,
+        order.referral_code || '',
         new Date(order.created_at).toLocaleDateString()
       ].join(','))
     ].join('\n');

@@ -25,6 +25,7 @@ interface AdminOrder {
   esim_delivered_at: string | null;
   esim_status: string | null;
   esim_order_id: string | null;
+  referral_code: string | null;
 }
 
 interface OrderDetailsModalProps {
@@ -203,6 +204,12 @@ const OrderDetailsModal = ({ order, isOpen, onClose }: OrderDetailsModalProps) =
                     </label>
                     <p className="font-medium">{order.data_amount}</p>
                   </div>
+                  {order.referral_code && (
+                    <div className="col-span-2">
+                      <label className="text-sm font-medium text-gray-500">Referral Code</label>
+                      <p className="font-mono font-medium text-palop-green">{order.referral_code}</p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

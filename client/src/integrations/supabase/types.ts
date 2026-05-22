@@ -198,6 +198,7 @@ export type Database = {
           plan_id: string
           plan_name: string
           price: number
+          referral_code: string | null
           status: string
           updated_at: string
           user_id: string
@@ -219,6 +220,7 @@ export type Database = {
           plan_id: string
           plan_name: string
           price: number
+          referral_code?: string | null
           status?: string
           updated_at?: string
           user_id: string
@@ -240,6 +242,7 @@ export type Database = {
           plan_id?: string
           plan_name?: string
           price?: number
+          referral_code?: string | null
           status?: string
           updated_at?: string
           user_id?: string
