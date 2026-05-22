@@ -1,7 +1,7 @@
 modules = ["nodejs-20", "web", "python-3.11", "postgresql-16"]
 [agent]
 expertMode = true
-integrations = ["stripe:1.0.0"]
+integrations = ["stripe:1.0.0", "notion:1.0.0"]
 
 [nix]
 channel = "stable-25_05"
@@ -48,6 +48,8 @@ externalPort = 3000
 
 [userenv.shared]
 VITE_STRIPE_PUBLISHABLE_KEY = "pk_live_51QU5jiKy6kP7f0TQYNEuqomlNtPnbtV0yuyksk6iD7LUdFTzJqOD62tMHGrQMqoVQAyUieHNYz8Ie1T3D8R5osID00LBHeegxQ"
+VITE_GA4_ID = "G-52WWSWJ3P7"
+VITE_SENTRY_DSN = "https://65c4504d796015e0002ad02ae5bebbbb@o4511303212662784.ingest.de.sentry.io/4511303225311312"
 
 [postMerge]
 path = "scripts/post-merge.sh"
