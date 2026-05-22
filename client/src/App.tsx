@@ -2,10 +2,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useSearchParams } from "react-router-dom";
 import { AuthProvider } from "@/contexts/auth";
 import { LanguageProvider } from "@/contexts/language";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 
 // Eagerly loaded — active customer funnel pages
 import Index from "./pages/Index";
@@ -59,6 +59,19 @@ const LoadingFallback = () => (
   </div>
 );
 
+// Captures ?ref=CODE from the URL on any page load and persists it in localStorage
+// so it survives navigation to /purchase and gets attached to the order.
+const RefCapture = () => {
+  const [searchParams] = useSearchParams();
+  useEffect(() => {
+    const ref = searchParams.get("ref");
+    if (ref) {
+      localStorage.setItem("palop_ref", ref.toUpperCase().trim());
+    }
+  }, [searchParams]);
+  return null;
+};
+
 const AppRoutes = () => (
   <Routes>
     <Route path="/" element={<Index />} />
@@ -83,6 +96,7 @@ const App = () => {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
+          <RefCapture />
           <AuthProvider>
             <LanguageProvider>
               <TooltipProvider>

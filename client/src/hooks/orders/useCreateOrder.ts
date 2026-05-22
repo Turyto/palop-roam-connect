@@ -26,6 +26,7 @@ export const useCreateOrder = () => {
         status: 'pending',
         payment_status: 'pending',
         customer_email: orderData.customerEmail || user.email || undefined,
+        ...(orderData.referral_code && { referral_code: orderData.referral_code }),
       };
 
       const { data: orderResult, error: orderError } = await supabase

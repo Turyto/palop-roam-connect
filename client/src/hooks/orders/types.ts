@@ -15,6 +15,7 @@ export interface CreateOrderData {
   currency?: string;
   payment_intent_id?: string;
   customerEmail?: string;
+  referral_code?: string;
 }
 
 export interface UpdateOrderData {

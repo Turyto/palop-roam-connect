@@ -153,6 +153,7 @@ export const useCreateOrderWithESIM = () => {
         payment_status: paymentIntentId ? 'succeeded' : 'pending',
         customer_email: customerEmail || null,
         payment_intent_id: paymentIntentId,
+        ...(orderData.referral_code && { referral_code: orderData.referral_code }),
         ...(packageData && {
           esim_package_id: packageData.esim_access_package_id,
           esim_status: parsedESIM?.esimTranNo ? 'provisioned' : 'failed',

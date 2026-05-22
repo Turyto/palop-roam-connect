@@ -133,6 +133,9 @@ const PurchaseFormWithOrders = ({
     // Fall back to user.email if somehow the ref wasn't set (e.g. deep-link straight to payment).
     const emailForOrder = collectedEmailRef.current || user?.email || "";
 
+    // Read referral code captured from ?ref= URL param (stored in localStorage on page load)
+    const referralCode = localStorage.getItem("palop_ref") || undefined;
+
     try {
       const result = await createOrderAsync({
         plan_id: plan.id,
@@ -143,6 +146,7 @@ const PurchaseFormWithOrders = ({
         currency: plan.currency,
         payment_intent_id: confirmedPaymentIntentId,
         customerEmail: emailForOrder,
+        referral_code: referralCode,
       });
 
       // Send a magic-link sign-in email so guests can re-access their order later.
@@ -164,6 +168,9 @@ const PurchaseFormWithOrders = ({
           });
         }
       }
+
+      // Clear referral code from localStorage once the order is attributed
+      localStorage.removeItem("palop_ref");
 
       navigate(`/success?payment_intent=${confirmedPaymentIntentId}`);
     } catch (error: unknown) {
