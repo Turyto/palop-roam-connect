@@ -19,8 +19,12 @@ interface SupplierRateFieldsProps {
   onSupplierRatesChange: (rates: SupplierRate[]) => void;
 }
 
-const isESIMAccessSupplier = (name: string) =>
-  name.toLowerCase().replace(/[\s_-]/g, '').includes('esimaccess');
+// Match any supplier that is provisioned through the eSIM Access API.
+// eSIMCard packages are also ordered via eSIM Access — add new names here as needed.
+const isESIMAccessSupplier = (name: string) => {
+  const normalised = name.toLowerCase().replace(/[\s_-]/g, '');
+  return normalised.includes('esimaccess') || normalised.includes('esimcard');
+};
 
 const SupplierRateFields = ({ supplierRates, onSupplierRatesChange }: SupplierRateFieldsProps) => {
   const addSupplierRate = () => {

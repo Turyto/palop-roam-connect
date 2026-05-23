@@ -1,0 +1,30 @@
+Good — both concerns are closed. The 28 orders are test data, no customer impact. Airalo plan gets removed. That simplifies the immediate picture considerably.
+
+Two things follow from what you've just told me:
+
+---
+
+**eSIMCard needs to be in scope for the 7.1 fix right now**
+
+The build report says the package code field appears *"when you name a supplier 'eSIM Access' (or any variation)."* eSIMCard is a current supplier, which means any plan using eSIMCard as supplier almost certainly doesn't trigger the package code field — and if it doesn't, those plans have exactly the same provisioning gap that 7.1 was supposed to close.
+
+Before you enter the package codes for existing plans, check this: open the edit modal for a plan that uses eSIMCard as its supplier and see whether the ⚡ package code field appears. If it doesn't, Replit needs a one-line fix in `SupplierRateFields.tsx` to extend the supplier name check to include eSIMCard. This is trivial to add, but it needs to happen before you treat 7.1 as complete.
+
+---
+
+**For future suppliers (Airalo and others), flag this now for Sprint 3**
+
+The `esim_packages` table already stores `supplier` as a column, so the data model is extensible. The question is whether the `get-esim-package` edge function queries dynamically by supplier or is hardcoded to `supplier = 'esim_access'`. If it's hardcoded, adding Airalo later will require touching the edge function, not just inserting rows. Worth a quick check of that function now so it's documented as a known item — not urgent, but the answer shapes how much work Airalo integration actually is when you get there.
+
+---
+
+**Immediate action list stays the same, just cleaner now:**
+
+| Step | Notes |
+|------|-------|
+| Remove Airalo plan from catalog | Do in this session |
+| Verify ⚡ field appears for eSIMCard plans | Before entering any package codes |
+| If not — quick fix in SupplierRateFields.tsx | Trivial, same session |
+| Enter package codes for all live plans via edit modal | Chegada first |
+| Test purchase per plan, confirm `esim_order_id` | Then clear the hold |
+| Distribute Praiatur link | Only after above |
