@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { usePlans, useSupplierRates } from "@/hooks/usePlans";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -5,18 +6,22 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Eye, Edit, RefreshCw, Package, AlertTriangle, Plus } from "lucide-react";
+import { Eye, Edit, RefreshCw, Package, AlertTriangle, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import PlanDetailsDrawer from "./PlanDetailsDrawer";
 import EditPlanModal from "./EditPlanModal";
 import CreatePlanModal from "./CreatePlanModal";
+import DeletePlanDialog from "./DeletePlanDialog";
 import BulkActionsToolbar from "./BulkActionsToolbar";
 import type { Plan } from "@/hooks/usePlans";
+import { supabase } from "@/integrations/supabase/client";
 
 const PlansCatalogTab = () => {
-  const { plans, isLoading, updatePlan } = usePlans();
+  const { plans, isLoading, updatePlan, deletePlan } = usePlans();
   const { supplierRates } = useSupplierRates();
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
+  const [deletingPlan, setDeletingPlan] = useState<Plan | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedPlanIds, setSelectedPlanIds] = useState<string[]>([]);
   const [showLowMarginOnly, setShowLowMarginOnly] = useState(false);
@@ -24,7 +29,6 @@ const PlansCatalogTab = () => {
   const calculateMargin = (plan: Plan) => {
     const planRates = supplierRates.filter(rate => rate.plan_id === plan.id);
     if (planRates.length === 0) return 0;
-    
     const lowestCost = Math.min(...planRates.map(rate => rate.wholesale_cost));
     return ((plan.retail_price - lowestCost) / plan.retail_price) * 100;
   };
@@ -38,7 +42,7 @@ const PlansCatalogTab = () => {
   const togglePlanStatus = (plan: Plan) => {
     updatePlan({
       id: plan.id,
-      updates: { status: plan.status === 'active' ? 'inactive' : 'active' }
+      updates: { status: plan.status === "active" ? "inactive" : "active" }
     });
   };
 
@@ -58,8 +62,39 @@ const PlansCatalogTab = () => {
     }
   };
 
-  // Filter plans based on low margin setting
-  const filteredPlans = showLowMarginOnly 
+  const handleBulkDelete = async () => {
+    if (selectedPlanIds.length === 0) return;
+
+    let deleted = 0;
+    let skipped = 0;
+
+    for (const planId of selectedPlanIds) {
+      try {
+        await deletePlan(planId);
+        deleted++;
+      } catch (err: any) {
+        if (err.code === "HAS_ORDERS") {
+          skipped++;
+        }
+      }
+    }
+
+    setSelectedPlanIds([]);
+
+    if (deleted > 0 && skipped === 0) {
+      toast.success(`${deleted} plan${deleted !== 1 ? "s" : ""} deleted permanently.`);
+    } else if (deleted > 0 && skipped > 0) {
+      toast.warning(
+        `${deleted} deleted, ${skipped} skipped — ${skipped === 1 ? "it has" : "they have"} order history and cannot be removed. Deactivate them instead.`
+      );
+    } else if (skipped > 0) {
+      toast.error(
+        `No plans deleted — all ${skipped} selected plan${skipped !== 1 ? "s" : ""} ${skipped === 1 ? "has" : "have"} order history. Use Deactivate to hide them.`
+      );
+    }
+  };
+
+  const filteredPlans = showLowMarginOnly
     ? plans.filter(plan => calculateMargin(plan) < 20)
     : plans;
 
@@ -88,19 +123,17 @@ const PlansCatalogTab = () => {
               className="flex items-center gap-2"
             >
               <AlertTriangle className="h-4 w-4" />
-              {showLowMarginOnly ? 'Show All Plans' : `View ${lowMarginCount} Low Margin Plans`}
+              {showLowMarginOnly ? "Show All Plans" : `View ${lowMarginCount} Low Margin Plans`}
             </Button>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Create New Plan
-          </Button>
-        </div>
+        <Button
+          onClick={() => setIsCreateModalOpen(true)}
+          className="flex items-center gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          Create New Plan
+        </Button>
       </div>
 
       {/* Bulk Actions Toolbar */}
@@ -110,8 +143,8 @@ const PlansCatalogTab = () => {
           onActivateAll={() => {
             selectedPlanIds.forEach(planId => {
               const plan = plans.find(p => p.id === planId);
-              if (plan && plan.status !== 'active') {
-                updatePlan({ id: planId, updates: { status: 'active' } });
+              if (plan && plan.status !== "active") {
+                updatePlan({ id: planId, updates: { status: "active" } });
               }
             });
             setSelectedPlanIds([]);
@@ -119,12 +152,13 @@ const PlansCatalogTab = () => {
           onDeactivateAll={() => {
             selectedPlanIds.forEach(planId => {
               const plan = plans.find(p => p.id === planId);
-              if (plan && plan.status !== 'inactive') {
-                updatePlan({ id: planId, updates: { status: 'inactive' } });
+              if (plan && plan.status !== "inactive") {
+                updatePlan({ id: planId, updates: { status: "inactive" } });
               }
             });
             setSelectedPlanIds([]);
           }}
+          onDeleteAll={handleBulkDelete}
           onClearSelection={() => setSelectedPlanIds([])}
         />
       )}
@@ -153,16 +187,16 @@ const PlansCatalogTab = () => {
           <TableBody>
             {filteredPlans.map((plan) => {
               const planRates = supplierRates.filter(rate => rate.plan_id === plan.id);
-              const lowestCost = planRates.length > 0 
+              const lowestCost = planRates.length > 0
                 ? Math.min(...planRates.map(rate => rate.wholesale_cost))
                 : 0;
               const margin = calculateMargin(plan);
               const isLowMargin = margin < 20;
-              
+
               return (
-                <TableRow 
+                <TableRow
                   key={plan.id}
-                  className={`${isLowMargin ? 'bg-red-50 border-l-4 border-l-red-400' : ''} ${selectedPlanIds.includes(plan.id) ? 'bg-blue-50' : ''}`}
+                  className={`${isLowMargin ? "bg-red-50 border-l-4 border-l-red-400" : ""} ${selectedPlanIds.includes(plan.id) ? "bg-blue-50" : ""}`}
                 >
                   <TableCell>
                     <Checkbox
@@ -190,7 +224,7 @@ const PlansCatalogTab = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {lowestCost > 0 ? `€${lowestCost.toFixed(2)}` : 'N/A'}
+                    {lowestCost > 0 ? `€${lowestCost.toFixed(2)}` : "N/A"}
                   </TableCell>
                   <TableCell>€{plan.retail_price.toFixed(2)}</TableCell>
                   <TableCell>
@@ -228,25 +262,36 @@ const PlansCatalogTab = () => {
                   </TableCell>
                   <TableCell>
                     <Switch
-                      checked={plan.status === 'active'}
+                      checked={plan.status === "active"}
                       onCheckedChange={() => togglePlanStatus(plan)}
                     />
                   </TableCell>
                   <TableCell>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => setSelectedPlan(plan)}
+                        title="View details"
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button 
-                        variant="ghost" 
+                      <Button
+                        variant="ghost"
                         size="sm"
                         onClick={() => setEditingPlan(plan)}
+                        title="Edit plan"
                       >
                         <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDeletingPlan(plan)}
+                        title="Delete plan"
+                        className="text-red-400 hover:text-red-600 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </TableCell>
@@ -260,7 +305,7 @@ const PlansCatalogTab = () => {
       {filteredPlans.length === 0 && (
         <div className="text-center py-12 text-gray-500">
           <Package className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-          <p>{showLowMarginOnly ? 'No low margin plans found.' : 'No plans available. Add your first plan to get started.'}</p>
+          <p>{showLowMarginOnly ? "No low margin plans found." : "No plans available. Add your first plan to get started."}</p>
         </div>
       )}
 
@@ -274,6 +319,12 @@ const PlansCatalogTab = () => {
         plan={editingPlan}
         isOpen={!!editingPlan}
         onClose={() => setEditingPlan(null)}
+      />
+
+      <DeletePlanDialog
+        plan={deletingPlan}
+        isOpen={!!deletingPlan}
+        onClose={() => setDeletingPlan(null)}
       />
 
       <CreatePlanModal

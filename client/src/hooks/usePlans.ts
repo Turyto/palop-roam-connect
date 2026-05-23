@@ -113,6 +113,47 @@ export const usePlans = () => {
     },
   });
 
+  const deletePlanMutation = useMutation({
+    mutationFn: async (id: string) => {
+      // Safety check: block hard delete if orders reference this plan
+      const { count, error: countError } = await supabase
+        .from('orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('plan_id', id);
+
+      if (countError) throw countError;
+
+      if (count && count > 0) {
+        const err: any = new Error(
+          `This plan has ${count} order${count === 1 ? '' : 's'} and cannot be permanently deleted.`
+        );
+        err.code = 'HAS_ORDERS';
+        err.orderCount = count;
+        throw err;
+      }
+
+      // Cascade: remove provisioning mapping, supplier rates, then the plan
+      await supabase.from('esim_packages').delete().eq('plan_id', id);
+      await supabase.from('supplier_rates').delete().eq('plan_id', id);
+
+      const { error } = await supabase.from('plans').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['plans'] });
+      queryClient.invalidateQueries({ queryKey: ['supplier-rates'] });
+    },
+    onError: (error: any) => {
+      if (error.code !== 'HAS_ORDERS') {
+        toast({
+          title: 'Delete failed',
+          description: error.message,
+          variant: 'destructive',
+        });
+      }
+    },
+  });
+
   return {
     plans,
     isLoading,
@@ -120,8 +161,10 @@ export const usePlans = () => {
     refetch,
     updatePlan: updatePlanMutation.mutate,
     createPlan: createPlanMutation.mutate,
+    deletePlan: deletePlanMutation.mutateAsync,
     isUpdating: updatePlanMutation.isPending,
     isCreating: createPlanMutation.isPending,
+    isDeleting: deletePlanMutation.isPending,
   };
 };
 
