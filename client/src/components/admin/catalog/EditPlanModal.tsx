@@ -6,17 +6,19 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Zap } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { usePlans, useSupplierRates, type Plan } from "@/hooks/usePlans";
 import { supabase } from "@/integrations/supabase/client";
 import SupplierInfoSection from "./edit-plan-modal/SupplierInfoSection";
 import TagsSection from "./edit-plan-modal/TagsSection";
-import CountrySelectionSection, { 
-  PALOP_CORE_COUNTRIES, 
-  PALOP_REGIONAL_COUNTRIES, 
-  PALOP_DIASPORA_COUNTRIES, 
-  PALOP_CPLP_COUNTRIES 
+import CountrySelectionSection, {
+  PALOP_CORE_COUNTRIES,
+  PALOP_REGIONAL_COUNTRIES,
+  PALOP_DIASPORA_COUNTRIES,
+  PALOP_CPLP_COUNTRIES
 } from "./edit-plan-modal/CountrySelectionSection";
 
 interface EditPlanModalProps {
@@ -34,6 +36,7 @@ interface EditPlanFormData {
   margin_alert_threshold?: number;
   wholesale_cost?: number;
   supplier_name?: string;
+  esim_access_package_id?: string;
 }
 
 const PALOP_DEFAULT_COUNTRIES = [
@@ -62,8 +65,8 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
   });
 
   const watchedPrice = watch('retail_price');
+  const watchedPackageId = watch('esim_access_package_id');
 
-  // Check if plan is PALOP-focused
   const isPalopPlan = (planName: string, planTags: string[]) => {
     const nameIncludesPalop = planName.toLowerCase().includes('palop') || planName.toLowerCase().includes('essential palop');
     const tagsIncludePalop = planTags.some(tag => tag.toLowerCase().includes('palop'));
@@ -72,9 +75,19 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
 
   useEffect(() => {
     if (plan && isOpen) {
-      // Find existing supplier rate for this plan
       const existingRate = supplierRates.find(rate => rate.plan_id === plan.id);
       setCurrentSupplierRate(existingRate);
+
+      // Load existing esim_packages row for this plan
+      supabase
+        .from('esim_packages')
+        .select('esim_access_package_id')
+        .eq('plan_id', plan.id)
+        .eq('supplier', 'esim_access')
+        .maybeSingle()
+        .then(({ data }) => {
+          setValue('esim_access_package_id', data?.esim_access_package_id ?? '');
+        });
 
       reset({
         name: plan.name,
@@ -83,15 +96,15 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
         tags: plan.tags || [],
         coverage: plan.coverage || [],
         wholesale_cost: existingRate?.wholesale_cost || 0,
-        supplier_name: existingRate?.supplier_name || ''
+        supplier_name: existingRate?.supplier_name || '',
+        esim_access_package_id: ''
       });
-      
+
       setSelectedTags(plan.tags || []);
-      
-      // Smart coverage pre-population for PALOP plans
+
       const existingCoverage = plan.coverage || [];
       const shouldPrePopulate = isPalopPlan(plan.name, plan.tags || []) && existingCoverage.length === 0;
-      
+
       if (shouldPrePopulate) {
         setSelectedCountries(PALOP_DEFAULT_COUNTRIES);
         setValue('coverage', PALOP_DEFAULT_COUNTRIES);
@@ -102,13 +115,12 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
   }, [plan, isOpen, reset, setValue, supplierRates]);
 
   const handleTagToggle = (tag: string) => {
-    const newTags = selectedTags.includes(tag) 
+    const newTags = selectedTags.includes(tag)
       ? selectedTags.filter(t => t !== tag)
       : [...selectedTags, tag];
     setSelectedTags(newTags);
     setValue('tags', newTags);
 
-    // Auto-populate coverage when PALOP tag is added
     if (tag === 'PALOP' && !selectedTags.includes(tag) && selectedCountries.length === 0) {
       setSelectedCountries(PALOP_DEFAULT_COUNTRIES);
       setValue('coverage', PALOP_DEFAULT_COUNTRIES);
@@ -124,40 +136,40 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
   };
 
   const updateSupplierRate = async (planId: string, wholesaleCost: number, supplierName: string) => {
-    try {
-      if (currentSupplierRate) {
-        // Update existing supplier rate
-        const { error } = await supabase
-          .from('supplier_rates')
-          .update({
-            wholesale_cost: wholesaleCost,
-            supplier_name: supplierName || currentSupplierRate.supplier_name,
-            last_checked: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', currentSupplierRate.id);
-
-        if (error) throw error;
-      } else if (wholesaleCost > 0 && supplierName) {
-        // Create new supplier rate
-        const { error } = await supabase
-          .from('supplier_rates')
-          .insert({
-            plan_id: planId,
-            wholesale_cost: wholesaleCost,
-            supplier_name: supplierName,
-            last_checked: new Date().toISOString()
-          });
-
-        if (error) throw error;
-      }
-      
-      // Refresh supplier rates
-      await refetchSupplierRates();
-    } catch (error) {
-      console.error('Error updating supplier rate:', error);
-      throw error;
+    if (currentSupplierRate) {
+      const { error } = await supabase
+        .from('supplier_rates')
+        .update({
+          wholesale_cost: wholesaleCost,
+          supplier_name: supplierName || currentSupplierRate.supplier_name,
+          last_checked: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', currentSupplierRate.id);
+      if (error) throw error;
+    } else if (wholesaleCost > 0 && supplierName) {
+      const { error } = await supabase
+        .from('supplier_rates')
+        .insert({
+          plan_id: planId,
+          wholesale_cost: wholesaleCost,
+          supplier_name: supplierName,
+          last_checked: new Date().toISOString()
+        });
+      if (error) throw error;
     }
+    await refetchSupplierRates();
+  };
+
+  const upsertESIMPackage = async (planId: string, packageId: string) => {
+    if (!packageId.trim()) return;
+    const { error } = await supabase
+      .from('esim_packages')
+      .upsert(
+        { plan_id: planId, supplier: 'esim_access', esim_access_package_id: packageId.trim() },
+        { onConflict: 'plan_id,supplier' }
+      );
+    if (error) throw error;
   };
 
   const onSubmit = async (data: EditPlanFormData) => {
@@ -172,15 +184,17 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
         coverage: selectedCountries
       };
 
-      // Update plan first
       updatePlan({ id: plan.id, updates });
 
-      // Update supplier rate if provided
       if (data.wholesale_cost !== undefined && data.wholesale_cost >= 0) {
         await updateSupplierRate(plan.id, data.wholesale_cost, data.supplier_name || 'Manual Entry');
       }
 
-      toast.success("Plan and supplier rate updated successfully!");
+      if (data.esim_access_package_id !== undefined) {
+        await upsertESIMPackage(plan.id, data.esim_access_package_id);
+      }
+
+      toast.success("Plan updated successfully!");
       onClose();
     } catch (error) {
       toast.error("Failed to update plan. Please try again.");
@@ -210,19 +224,18 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {/* Supplier Info (Read-only) */}
+          {/* Supplier Info (Read-only summary) */}
           <SupplierInfoSection plan={plan} watchedPrice={watchedPrice} />
 
           <Separator />
 
           {/* Editable Fields */}
           <div className="grid grid-cols-2 gap-4">
-            {/* Plan Name */}
             <div className="col-span-2">
               <Label htmlFor="name">Plan Name *</Label>
               <Input
                 id="name"
-                {...register('name', { 
+                {...register('name', {
                   required: 'Plan name is required',
                   maxLength: { value: 60, message: 'Plan name must be 60 characters or less' }
                 })}
@@ -233,7 +246,6 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
               )}
             </div>
 
-            {/* Retail Price */}
             <div>
               <Label htmlFor="retail_price">Retail Price (€) *</Label>
               <Input
@@ -241,7 +253,7 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
                 type="number"
                 step="0.01"
                 min="0"
-                {...register('retail_price', { 
+                {...register('retail_price', {
                   required: 'Retail price is required',
                   min: { value: 0, message: 'Price must be 0 or greater' },
                   valueAsNumber: true
@@ -253,7 +265,6 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
               )}
             </div>
 
-            {/* Wholesale Cost */}
             <div>
               <Label htmlFor="wholesale_cost">Wholesale Cost (€)</Label>
               <Input
@@ -261,7 +272,7 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
                 type="number"
                 step="0.01"
                 min="0"
-                {...register('wholesale_cost', { 
+                {...register('wholesale_cost', {
                   min: { value: 0, message: 'Cost must be 0 or greater' },
                   valueAsNumber: true
                 })}
@@ -270,7 +281,6 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
               <p className="text-xs text-gray-500 mt-1">Update supplier wholesale cost</p>
             </div>
 
-            {/* Supplier Name */}
             <div>
               <Label htmlFor="supplier_name">Supplier Name</Label>
               <Input
@@ -281,9 +291,8 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
               <p className="text-xs text-gray-500 mt-1">Supplier providing this plan</p>
             </div>
 
-            {/* Margin Alert Override */}
             <div>
-              <Label htmlFor="margin_alert_threshold">Margin Alert Threshold (%) - Optional</Label>
+              <Label htmlFor="margin_alert_threshold">Margin Alert Threshold (%) — Optional</Label>
               <Input
                 id="margin_alert_threshold"
                 type="number"
@@ -295,6 +304,33 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
               />
               <p className="text-xs text-gray-500 mt-1">Override global threshold for this plan</p>
             </div>
+          </div>
+
+          {/* eSIM Access Package Code */}
+          <div className="border rounded-lg p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <Zap className="h-4 w-4 text-amber-500" />
+              <Label htmlFor="esim_access_package_id" className="text-sm font-medium">
+                eSIM Access Package Code
+              </Label>
+              <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
+                Required for delivery
+              </Badge>
+            </div>
+            <Input
+              id="esim_access_package_id"
+              {...register('esim_access_package_id')}
+              placeholder="e.g. ESIM_PT_1GB_30D"
+              className="font-mono text-sm"
+            />
+            <p className="text-xs text-gray-500">
+              The package code from your eSIM Access dashboard. Without this, customers who pay will not receive an eSIM.
+            </p>
+            {watchedPackageId === '' && (
+              <p className="text-xs text-amber-600 flex items-center gap-1">
+                ⚠ No package code set — this plan cannot provision eSIMs until one is added
+              </p>
+            )}
           </div>
 
           {/* Description */}
@@ -309,7 +345,7 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
           </div>
 
           {/* Tags */}
-          <TagsSection 
+          <TagsSection
             selectedTags={selectedTags}
             onTagToggle={handleTagToggle}
           />
@@ -325,8 +361,8 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
             <Button type="button" variant="outline" onClick={handleClose}>
               Cancel
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={!isValid || isUpdating}
               className="min-w-[100px]"
             >

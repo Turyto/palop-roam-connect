@@ -1,16 +1,17 @@
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Trash2, Zap } from "lucide-react";
 
 interface SupplierRate {
   supplier_name: string;
   wholesale_cost: number;
   supplier_plan_id?: string;
   supplier_link?: string;
+  esim_access_package_id?: string;
 }
 
 interface SupplierRateFieldsProps {
@@ -18,11 +19,14 @@ interface SupplierRateFieldsProps {
   onSupplierRatesChange: (rates: SupplierRate[]) => void;
 }
 
+const isESIMAccessSupplier = (name: string) =>
+  name.toLowerCase().replace(/[\s_-]/g, '').includes('esimaccess');
+
 const SupplierRateFields = ({ supplierRates, onSupplierRatesChange }: SupplierRateFieldsProps) => {
   const addSupplierRate = () => {
     onSupplierRatesChange([
       ...supplierRates,
-      { supplier_name: '', wholesale_cost: 0, supplier_plan_id: '', supplier_link: '' }
+      { supplier_name: '', wholesale_cost: 0, supplier_plan_id: '', supplier_link: '', esim_access_package_id: '' }
     ]);
   };
 
@@ -34,7 +38,7 @@ const SupplierRateFields = ({ supplierRates, onSupplierRatesChange }: SupplierRa
   };
 
   const updateSupplierRate = (index: number, field: keyof SupplierRate, value: string | number) => {
-    const newRates = supplierRates.map((rate, i) => 
+    const newRates = supplierRates.map((rate, i) =>
       i === index ? { ...rate, [field]: value } : rate
     );
     onSupplierRatesChange(newRates);
@@ -71,7 +75,7 @@ const SupplierRateFields = ({ supplierRates, onSupplierRatesChange }: SupplierRa
                 </Button>
               )}
             </div>
-            
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label htmlFor={`supplier_name_${index}`}>Supplier Name *</Label>
@@ -82,7 +86,7 @@ const SupplierRateFields = ({ supplierRates, onSupplierRatesChange }: SupplierRa
                   placeholder="Enter supplier name"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor={`wholesale_cost_${index}`}>Wholesale Cost (€) *</Label>
                 <Input
@@ -95,17 +99,17 @@ const SupplierRateFields = ({ supplierRates, onSupplierRatesChange }: SupplierRa
                   placeholder="0.00"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor={`supplier_plan_id_${index}`}>Supplier Plan ID</Label>
                 <Input
                   id={`supplier_plan_id_${index}`}
                   value={rate.supplier_plan_id || ''}
                   onChange={(e) => updateSupplierRate(index, 'supplier_plan_id', e.target.value)}
-                  placeholder="Optional supplier plan ID"
+                  placeholder="Optional reference ID"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor={`supplier_link_${index}`}>Supplier Link</Label>
                 <Input
@@ -116,6 +120,36 @@ const SupplierRateFields = ({ supplierRates, onSupplierRatesChange }: SupplierRa
                 />
               </div>
             </div>
+
+            {/* eSIM Access Package Code — shown when supplier is eSIM Access */}
+            {isESIMAccessSupplier(rate.supplier_name) && (
+              <div className="border-t pt-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Zap className="h-4 w-4 text-amber-500" />
+                  <Label htmlFor={`esim_access_package_id_${index}`} className="text-sm font-medium">
+                    eSIM Access Package Code
+                  </Label>
+                  <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
+                    Required for delivery
+                  </Badge>
+                </div>
+                <Input
+                  id={`esim_access_package_id_${index}`}
+                  value={rate.esim_access_package_id || ''}
+                  onChange={(e) => updateSupplierRate(index, 'esim_access_package_id', e.target.value)}
+                  placeholder="e.g. ESIM_PT_1GB_30D"
+                  className="font-mono text-sm"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  The package code from the eSIM Access dashboard. Without this, paid orders will not receive an eSIM.
+                </p>
+                {!rate.esim_access_package_id && (
+                  <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                    ⚠ Package code missing — purchases will fail to provision an eSIM
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         ))}
       </CardContent>
@@ -124,3 +158,4 @@ const SupplierRateFields = ({ supplierRates, onSupplierRatesChange }: SupplierRa
 };
 
 export default SupplierRateFields;
+export type { SupplierRate };

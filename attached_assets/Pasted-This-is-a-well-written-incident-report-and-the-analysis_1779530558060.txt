@@ -1,0 +1,34 @@
+This is a well-written incident report and the analysis is accurate. The provisioning gap is real, the severity is correctly called as Critical, and the remediation plan is sound. Here's where I'd sharpen it before you approve and execute:
+
+The one assumption in the report that must be verified before anything else
+Section 4.2 states: "The 28 completed orders were either placed before this gap existed or against plans that had esim_packages rows inserted manually... Those orders are not at risk."
+This is stated as fact but it's actually an assumption. Before treating those 28 orders as safe, run this query:
+sqlSELECT o.id, o.plan_name, o.esim_order_id, o.esim_status, o.created_at
+FROM orders o
+WHERE o.status = 'completed'
+AND (o.esim_order_id IS NULL OR o.esim_status = 'failed')
+ORDER BY o.created_at DESC;
+If any completed orders return with esim_order_id = null, those are real customers who paid and got nothing — and they need manual remediation before you do anything else. Don't skip this check.
+
+The build sequencing is wrong — 7.3 must move to P0
+The report prioritises: 7.1 (package code field in editor) → 7.2 (health check badge) → 7.3 (missing-package alert). I'd invert the urgency of 7.3.
+Here's why: the manual SQL fix closes the current gap, but it doesn't prevent the next one. The moment Artur edits a plan again — adjusts a price, renames something — the esim_packages row may become orphaned or stale, and the failure will be silent again. Until 7.1 ships (UI writes to esim_packages automatically), every plan edit is a potential new gap with no detection.
+7.3 is the safety net for that window. It should be built in the same session as 7.1, not after. The revised priority order:
+
+P0 — Same session: 7.1 (package code field) + 7.3 (missing-package alert) together
+P1 — Follow-up: 7.2 (health check badge in catalog)
+
+This matters because 7.3 also fixes something more fundamental than the report acknowledges: the existing notify-provisioning-failure edge function has a structural blind spot. It fires when a package row exists and the API call fails, but not when the package row is missing entirely. That's the most dangerous failure mode — it's precisely why the 28 orders went undetected. The real fix isn't just "add an alert," it's "fix the alert that already exists to cover the case it was always supposed to cover."
+
+There's a race condition the operational hold doesn't fully address
+The report says: "Do not distribute partner links until Step 4 is complete." That's correct but not sufficient. If the Chegada plan is still visible and purchasable on the customer-facing site, organic traffic can still trigger a failed purchase during the 15-minute remediation window. The operational hold should include temporarily unpublishing or disabling the affected plans in the catalog until the esim_packages rows are verified. Is there an active or published boolean on the plans table? If so, flip it to false for affected plans before starting the SQL fix, then flip it back after the test purchase in Step 4 confirms delivery.
+
+The Airalo plan needs a separate decision, not just an audit
+"Europe Travel 10GB" is flagged as medium risk, but the report doesn't address a deeper issue: Airalo is a different supplier with a different API. The get-esim-package edge function queries esim_packages for supplier = 'esim_access'. If an Airalo package code is inserted with supplier = 'airalo', it will return no result and provisioning will silently fail. This plan may not just have a missing row — it may require a different provisioning code path entirely. Either the Airalo integration is built (it probably isn't, given the platform launched with eSIM Access only) or this plan needs to be removed from the live catalog entirely until Phase 2. Don't just audit it — make an explicit decision: sell it or hide it.
+
+The Chegada plan is the one to fix first, not last
+It's the cheapest plan (€3.99), the most likely to be the first purchase for a new diaspora customer, and the one that was just edited today. If word-of-mouth is the primary acquisition channel for this sprint, a customer who pays €3.99 and gets nothing is not just a refund — it's a reputation event in a tight community. Fix Chegada first.
+
+Approvals — my recommendation
+ItemDecisionOperational hold on partner links✅ Approve immediatelyVerify the 28 completed orders aren't affected✅ Do this first, before anything elseUnpublish affected plans during manual fix✅ Add to remediation procedureManual SQL fix (Steps 1–4)✅ Approve, execute today, Chegada firstBuild 7.1 + 7.3 as one combined P0 session✅ Approve — don't split themBuild 7.2 (health check badge)✅ Approve as P1 follow-upAiralo plan — explicit sell/hide decision⚠️ Needs a separate call before catalog goes live
+The report is well-scoped and the 4-hour build estimate is realistic. The gap itself isn't a sign of bad engineering — the provisioning logic works, as the completed orders prove. It's a tooling debt that accumulated when the automated API flow replaced the manual one and the admin UI wasn't updated to match. Fixing it permanently is straightforward. The only real risk right now is the window between today and when the manual SQL fix is verified — close that first, then build.

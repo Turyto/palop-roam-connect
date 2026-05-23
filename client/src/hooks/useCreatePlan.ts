@@ -9,6 +9,7 @@ interface SupplierRate {
   wholesale_cost: number;
   supplier_plan_id?: string;
   supplier_link?: string;
+  esim_access_package_id?: string;
 }
 
 interface CreatePlanFormData {
@@ -20,11 +21,14 @@ interface CreatePlanFormData {
   supplier_rates: SupplierRate[];
 }
 
+const isESIMAccessSupplier = (name: string) =>
+  name.toLowerCase().replace(/[\s_-]/g, '').includes('esimaccess');
+
 export const useCreatePlan = (onSuccess: () => void) => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [supplierRates, setSupplierRates] = useState<SupplierRate[]>([
-    { supplier_name: '', wholesale_cost: 0, supplier_plan_id: '', supplier_link: '' }
+    { supplier_name: '', wholesale_cost: 0, supplier_plan_id: '', supplier_link: '', esim_access_package_id: '' }
   ]);
   const [isCreating, setIsCreating] = useState(false);
 
@@ -61,7 +65,6 @@ export const useCreatePlan = (onSuccess: () => void) => {
         status: 'active' as const
       };
 
-      // Create the plan first
       const { data: createdPlan, error: planError } = await supabase
         .from('plans')
         .insert([newPlan])
@@ -70,7 +73,6 @@ export const useCreatePlan = (onSuccess: () => void) => {
 
       if (planError) throw planError;
 
-      // Create supplier rates for the new plan
       const validSupplierRates = supplierRates
         .filter(rate => rate.supplier_name.trim() && rate.wholesale_cost > 0)
         .map(rate => ({
@@ -92,10 +94,30 @@ export const useCreatePlan = (onSuccess: () => void) => {
         }
       }
 
+      // Upsert esim_packages rows for any eSIM Access supplier that has a package code
+      const esimAccessRates = supplierRates.filter(
+        rate => isESIMAccessSupplier(rate.supplier_name) && rate.esim_access_package_id?.trim()
+      );
+
+      if (esimAccessRates.length > 0) {
+        const packageRows = esimAccessRates.map(rate => ({
+          plan_id: createdPlan.id,
+          supplier: 'esim_access',
+          esim_access_package_id: rate.esim_access_package_id!.trim(),
+        }));
+
+        const { error: pkgError } = await supabase
+          .from('esim_packages')
+          .upsert(packageRows, { onConflict: 'plan_id,supplier' });
+
+        if (pkgError) {
+          console.error('Error creating esim_packages row:', pkgError);
+          toast.error("Plan created but failed to save eSIM package code — provisioning will not work until this is fixed.");
+        }
+      }
+
       toast.success("Plan created successfully!");
       handleClose();
-      
-      // Refresh the plans list by invalidating the query
       window.location.reload();
     } catch (error) {
       toast.error("Failed to create plan. Please try again.");
@@ -109,20 +131,17 @@ export const useCreatePlan = (onSuccess: () => void) => {
     reset();
     setSelectedTags([]);
     setSelectedCountries([]);
-    setSupplierRates([{ supplier_name: '', wholesale_cost: 0, supplier_plan_id: '', supplier_link: '' }]);
+    setSupplierRates([{ supplier_name: '', wholesale_cost: 0, supplier_plan_id: '', supplier_link: '', esim_access_package_id: '' }]);
     onSuccess();
   };
 
   return {
-    // Form methods
     register,
     handleSubmit: handleSubmit(onSubmit),
     errors,
     isValid,
     setValue,
     retailPrice,
-    
-    // State
     selectedTags,
     setSelectedTags,
     selectedCountries,
@@ -130,8 +149,6 @@ export const useCreatePlan = (onSuccess: () => void) => {
     supplierRates,
     setSupplierRates,
     isCreating,
-    
-    // Actions
     handleClose
   };
 };
