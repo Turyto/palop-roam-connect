@@ -8,8 +8,7 @@ import AdminAnalytics from "@/components/admin/AdminAnalytics";
 import AdminSupportTickets from "@/components/admin/AdminSupportTickets";
 import AdminInventory from "@/components/admin/AdminInventory";
 import AdminLanguageToggle from "@/components/admin/AdminLanguageToggle";
-import AdminQRCodesTable from "@/components/admin/AdminQRCodesTable";
-import AdminESIMProvisioning from "@/components/admin/AdminESIMProvisioning";
+import AdminReferrals from "@/components/admin/AdminReferrals";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -39,10 +38,8 @@ const AdminDashboard = () => {
         description: "You have been signed out successfully.",
       });
       
-      // Force navigation to homepage and replace history
       navigate('/', { replace: true });
       
-      // Force a page reload to ensure clean state
       setTimeout(() => {
         window.location.href = '/';
       }, 100);
@@ -106,7 +103,6 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <main className="flex-grow">
-        {/* Header */}
         <div className="bg-white border-b border-gray-200">
           <div className="container mx-auto px-4 py-6">
             <div className="flex justify-between items-center">
@@ -132,22 +128,18 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Dashboard Content */}
         <div className="container mx-auto px-4 py-8">
-          {/* Analytics Overview */}
           <div className="mb-8">
             <AdminAnalytics />
           </div>
 
-          {/* Main Content Tabs */}
           <Tabs defaultValue="orders" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="orders">Orders</TabsTrigger>
               <TabsTrigger value="users">Users</TabsTrigger>
               <TabsTrigger value="support">Support</TabsTrigger>
-              <TabsTrigger value="inventory">Inventory</TabsTrigger>
-              <TabsTrigger value="esim">eSIM Management</TabsTrigger>
-              <TabsTrigger value="qrcodes">QR Codes (Legacy)</TabsTrigger>
+              <TabsTrigger value="catalog">Catalog</TabsTrigger>
+              <TabsTrigger value="referrals">Referrals</TabsTrigger>
             </TabsList>
 
             <TabsContent value="orders">
@@ -162,16 +154,12 @@ const AdminDashboard = () => {
               <AdminSupportTickets />
             </TabsContent>
 
-            <TabsContent value="inventory">
+            <TabsContent value="catalog">
               <AdminInventory />
             </TabsContent>
 
-            <TabsContent value="esim">
-              <AdminESIMProvisioning />
-            </TabsContent>
-
-            <TabsContent value="qrcodes">
-              <AdminQRCodesTable />
+            <TabsContent value="referrals">
+              <AdminReferrals />
             </TabsContent>
           </Tabs>
         </div>

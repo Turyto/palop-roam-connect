@@ -30,6 +30,8 @@ interface Order {
   payment_status: string;
   created_at: string;
   esim_delivered_at: string | null;
+  esim_status: string | null;
+  esim_order_id: string | null;
   customer_email: string | null;
   referral_code: string | null;
 }
@@ -167,11 +169,13 @@ const AdminOrdersTable = () => {
   };
 
   const getESIMStatusBadge = (order: Order) => {
-    if (order.esim_delivered_at && order.status === 'completed') {
+    if (order.esim_status === 'delivered' || order.esim_delivered_at) {
       return <Badge className="bg-green-100 text-green-800">Delivered</Badge>;
-    } else if (order.esim_delivered_at) {
+    }
+    if (order.esim_order_id) {
       return <Badge className="bg-blue-100 text-blue-800">Provisioned</Badge>;
-    } else if (order.status === 'failed') {
+    }
+    if (order.esim_status === 'failed' || order.status === 'failed') {
       return <Badge className="bg-red-100 text-red-800">Failed</Badge>;
     }
     return <Badge className="bg-yellow-100 text-yellow-800">Not Started</Badge>;

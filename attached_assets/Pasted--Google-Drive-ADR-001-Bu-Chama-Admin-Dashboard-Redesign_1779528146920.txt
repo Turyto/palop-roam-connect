@@ -1,0 +1,212 @@
+Google DriveADR-001: BuéChama Admin Dashboard Redesign
+Status: Proposed — Awaiting Build Approval
+Date: 23 May 2026
+Deciders: Artur Conceição (sole engineer + product owner)
+Sprint: Sprint 2 close / Sprint 3 carry-over
+Related: Product Board Report (May 2026), Replit Session 2 Audit
+
+Context
+The BuéChama admin dashboard was built during Sprint 1 to support manual eSIM provisioning. Since then, the provisioning flow was fully automated via the eSIM Access API, Stripe payments are live, and a referral system with database-level attribution was built in Sprint 2. The dashboard was never updated to reflect these changes.
+The result is a dashboard that is actively misleading in three ways:
+
+Revenue shows €0.00 — the KPI query filters by current calendar month only; all 28 completed orders were placed in April 2026.
+eSIM status shows "Not Started" for nearly all orders — the badge logic only checks esim_delivered_at (unreliably populated) and ignores esim_status and esim_order_id.
+Order detail modal shows hardcoded plan coverage — every order regardless of plan type displays identical fictional coverage data ("Coverage Cluster: PALOP + Regional 🌍", "Supplier: AirHub, eSIM Access", "Key Coverage: Angola · Cape Verde · Mozambique · Portugal").
+
+Two additional tabs (eSIM Management, QR Codes Legacy) explicitly self-describe as legacy in their own banners, creating cognitive clutter on every dashboard load.
+The referral system built in Sprint 2 writes referral_code to every order and creates referral_rewards records — but none of this data is visible anywhere in the dashboard UI.
+The dashboard is the only operational tool available to monitor the business. With Sprint 2 closing in 7 days and partner activation imminent (Praiatur referral link, ?ref=DIASPORA distribution), the accuracy gap is operationally blocking.
+
+Governing Principle
+
+Show real data, remove fake data, surface what you need to make a decision.
+
+
+Decision
+Incremental, targeted refactor in a single Replit session — not a full rewrite.
+The existing 6-tab React component structure is sound. No routing, auth, or data fetching architecture needs to change. Every fix is a surgical edit within the existing component tree. The referrals tab is the only net-new component.
+This approach is chosen over a full rewrite because:
+
+Solo engineer, 7 days to sprint close
+The underlying Supabase data model is correct; only the queries and display logic are wrong
+A rewrite would require re-testing every existing flow (orders management, user management, support, catalog) with no functional gain
+All P0 items can ship in a single Replit session (~3–4 hours)
+
+
+Architecture Options Considered
+Option A: Client-Side Multi-Query (Current Pattern, Fixed)
+Each KPI card fires its own supabase.from('orders').select(...) query from the React component on mount. The existing code does this already — the problem is not the pattern but the query logic (wrong date filter, wrong column for eSIM status).
+DimensionAssessmentComplexityLow — extends existing patternPerformanceAcceptable — ~37 orders, 8 users today; 6 sequential queries on mountScalabilityDegrades above ~5,000 orders; acceptable for Sprint 2–3 horizonDev effortLow — fix 3 queries, add 3 new KPI computationsRiskLow — no schema changes, no new infrastructure
+Pros: Stays within established patterns; Replit agent can implement without schema migration; zero deployment risk.
+Cons: At ~5,000+ orders, 6 queries on mount will slow the dashboard load. Not a Sprint 2/3 concern.
+Option B: Supabase RPC / PostgreSQL Function for KPIs
+Create a single get_admin_kpis() Supabase RPC that returns all KPI values in one database round-trip, computed server-side.
+DimensionAssessmentComplexityMedium — requires writing and deploying a migrationPerformanceExcellent — one round-trip, server-side aggregationScalabilityHandles millions of orders without UI changeDev effortMedium — SQL function + migration + React hook updateRiskMedium — requires a new Supabase migration to be applied and tested
+Pros: Correct architecture for the long term; single source of truth for business metrics.
+Cons: Introduces a migration risk in the final week of Sprint 2; overkill for current data volume (37 orders).
+Option C: Supabase Materialized Views
+Pre-compute KPI aggregations into a materialized view refreshed on a schedule or trigger.
+DimensionAssessmentComplexityHigh — requires scheduled refresh, view maintenancePerformanceExcellent for reads; staleness risk for real-time opsScalabilityVery highDev effortHighRiskHigh — new infrastructure, new failure mode
+Cons: Heavily over-engineered for a dashboard serving one user with <100 orders. Ruled out immediately.
+
+Trade-off Analysis
+The core trade-off is correctness now vs. scalability later.
+Option A fixes all the problems within the existing architecture, ships in one session, and carries zero migration risk. The scalability limitation (degradation above ~5,000 orders) will not be reached until well into Phase 2 commercial scale — at which point the entire dashboard will likely be rearchitected anyway.
+Option B is the right long-term answer but wrong for this moment. Introducing a Supabase migration in the final 7 days of Sprint 2 when the dashboard itself already has a known revenue tracking bug creates unnecessary risk. The ROI of an RPC over a fixed client query is zero at 37 orders.
+Recommendation: Option A for P0/P1 items. Revisit Option B as a Sprint 3 backlog item once the business has real query load to optimise against.
+
+Decision Details — What Gets Built and How
+D1: KPI Cards — Data Layer Fix (P0)
+Current bug: created_at >= start_of_current_month filter on revenue query.
+Fix: Replace with two separate aggregations:
+typescript// All-time revenue — never shows zero
+const { data: totalRevenue } = await supabase
+  .from('orders')
+  .select('price')
+  .eq('status', 'completed')
+
+// This month revenue — with correct period label
+const { data: monthRevenue } = await supabase
+  .from('orders')
+  .select('price, created_at')
+  .eq('status', 'completed')
+  .gte('created_at', startOfMonth.toISOString())
+New KPI layout (6 cards):
+CardData SourceBusiness PurposeTotal Revenue (all-time)SUM(price) on completed ordersNever zero; baseline metricThis Month RevenueSUM(price) current monthSprint trackingvs. Last Month (Δ%)Delta of two monthly sumsTrend signalCompleted OrdersCOUNT where status='completed'Paying customersConversion Ratecompleted ÷ total orders × 100Funnel healthPending eSIMsFixed logic (see D2)Operational health
+No schema changes required.
+
+D2: eSIM Status Badge — Logic Fix (P0)
+Current bug: Badge reads only esim_delivered_at IS NULL → "Not Started".
+Fix: 3-level priority check against existing columns:
+typescriptfunction getEsimStatus(order: Order): BadgeConfig {
+  // 1. Explicit delivered status
+  if (order.esim_status === 'delivered' || order.esim_delivered_at) {
+    return { label: 'Delivered', color: 'green' }
+  }
+  // 2. API provisioned but not yet delivered to customer
+  if (order.esim_order_id) {
+    return { label: 'Provisioned', color: 'blue' }
+  }
+  // 3. Explicit failure
+  if (order.esim_status === 'failed') {
+    return { label: 'Failed', color: 'red' }
+  }
+  // 4. Nothing yet
+  return { label: 'Not Started', color: 'amber' }
+}
+Impact: The "Pending eSIMs" KPI card will also recalculate accurately using this logic — counting completed orders where esim_status != 'delivered' AND esim_delivered_at IS NULL.
+No schema changes required.
+
+D3: Order Detail Modal — Hardcoded Data Removal (P0)
+Current bug: "Plan Pack Details" panel shows identical hardcoded strings for every order regardless of plan.
+Two-step fix:
+Step 1 — Remove the fictional panel entirely. The Plan Pack Details section with Coverage Cluster, Supplier(s), and Key Coverage fields is removed. A customer's order record is not the place to display plan marketing copy.
+Step 2 — Replace with real order data from the database. The modal already has Order Information (order ID, date, customer, plan name) and Status Overview (order status, eSIM status, delivery). These two sections contain accurate data and are kept as-is.
+If plan metadata is needed in support context (e.g. "does this plan cover Mozambique?"), the correct approach is a lookup to the plans table using the plan name from the order record. This should be deferred to Sprint 3 — it requires confirming the plans table schema and adding a join. For now, removing the false data is strictly better than leaving it.
+Dead buttons — remove Download Invoice and View Plan Details from the modal footer. Both have no onClick handler. Removing them eliminates confusion without any functional loss.
+Plan icon logic — fix emoji map to use current plan names: Arrival, Essential, Comfort, Freedom. The old map checked for regional, diaspora, neighbors which no longer exist.
+No schema changes required.
+
+D4: Tab Navigation — Remove 2 Legacy Tabs (P0)
+Remove eSIM Management and QR Codes (Legacy). Both tabs contain their own banners explicitly labelling them as legacy. The underlying data remains in Supabase and is accessible directly if ever needed.
+Result: 6 tabs → 5 tabs. New order: Orders · Users · Support · Catalog · Referrals
+Note: Inventory tab renamed to Catalog for clarity — matches the public-facing term used on the plans page.
+No schema changes required.
+
+D5: Orders Table — Referral Column + Filter (P1)
+Add referral_code column to the Orders table. The field already exists on the orders type (added in Sprint 2). This is a display change only.
+Add a filter dropdown listing all unique codes in the dataset. Supabase query:
+typescriptconst { data } = await supabase
+  .from('orders')
+  .select('referral_code')
+  .not('referral_code', 'is', null)
+Add a quick Resend eSIM button inline in each table row (currently requires opening the modal). Moves the most common support action from 3 clicks to 1.
+
+D6: Users Table Enrichment (P1)
+Add Orders count and Last Order date columns. Requires a join:
+sqlSELECT u.*, COUNT(o.id) as order_count, MAX(o.created_at) as last_order
+FROM users u
+LEFT JOIN orders o ON o.user_id = u.id
+GROUP BY u.id
+Can be done as a Supabase RPC or client-side join. Transforms the table from a contacts list into a customer health view — essential once partner activation drives new user sign-ups.
+
+D7: Support Tab — Search + Badge (P1)
+Add a text input filtering by subject, customer_name, email, or order_id. Client-side filter on already-fetched ticket data. ~30 minutes to implement.
+Add an open ticket count badge on the Support tab label:
+typescriptconst openCount = tickets.filter(t => 
+  ['open', 'in_progress'].includes(t.status)
+).length
+Displayed as a red number badge — means you don't have to click into the tab to know if something needs attention.
+
+D8: Referrals Tab (P2)
+New 5th tab: Referrals. Queries the referral_codes and referral_rewards tables created in Sprint 2.
+Component structure:
+<ReferralsTab>
+  <ReferralSummaryCards />     // Total referral orders · Pending rewards · Top code
+  <ReferralCodesTable />       // Code → Orders → Revenue → Reward status
+  <ReferralRewardsTable />     // Individual reward records with pending/paid status
+</ReferralsTab>
+Key query:
+typescriptconst { data } = await supabase
+  .from('referral_codes')
+  .select(`
+    code, uses_count, created_at,
+    referral_rewards (
+      amount, status, created_at,
+      orders ( price, status )
+    )
+  `)
+Distinction to surface in UI: Partner codes (PRAIATUR, DIASPORA — tracking only, no rewards) vs. customer personal codes (reward-eligible). The referral_codes table should have a type field or this can be inferred by comparing against a known partner list.
+
+Consequences
+What becomes easier after this redesign:
+
+Monitoring daily business health without needing to open Supabase directly
+Identifying the 24 "pending eSIM" orders — whether they are test orders or real provisioning failures
+Answering partner attribution questions ("how many sales came from Praiatur this week?") without exporting a CSV
+Onboarding a second team member or showing an investor the dashboard without explaining why revenue shows €0
+Acting on support tickets without scrolling through an unfiltered list
+
+What stays the same / is deferred:
+
+No changes to the orders table schema (referral_code already added in Sprint 2)
+No changes to auth, routing, or the Stripe/eSIM provisioning flow
+Plan detail JOIN in the order modal deferred to Sprint 3 (remove hardcoded data now; add real plan data later)
+RPC/view architecture for KPIs deferred to Sprint 3+ (revisit at ~1,000 orders or when query latency becomes noticeable)
+
+What we'll need to revisit:
+
+The 24 pending eSIM orders — after the badge logic fix, their true status will be visible. Some may require manual Supabase intervention.
+plans table schema — needed for D3 Step 2 (real plan metadata in modal) and for the referrals tab to show plan name per referral order.
+referral_codes.type field — if it doesn't exist, partner vs. customer codes need to be distinguished by a hardcoded list or a new column migration.
+
+
+Implementation Sequence & Effort Estimate
+All work is in the React frontend on Replit. No backend migrations required for P0/P1.
+#ChangePriorityEstimated EffortRisk1Remove eSIM Management + QR Legacy tabsP010 minTrivial2Fix revenue KPI — all-time + this month + trendP045 minLow3Fix conversion rate + pending eSIM KPI cardsP020 minLow4Fix eSIM status badge logic in orders tableP030 minLow5Remove hardcoded modal panel + dead buttons + fix plan icon mapP030 minLowP0 Subtotal~2.5 hours6Add referral_code column + filter to orders tableP130 minLow7Add quick Resend button in table rowP130 minLow8Add order count + last order to Users tableP145 minLow9Add search to Support tab + open badgeP130 minLowP1 Subtotal~2.5 hours10Add Referrals tab with summary + tablesP290 minMediumP2 Subtotal~1.5 hoursTotal~6.5 hours
+Recommended session split:
+
+Session A (pre-launch, this week): Items 1–5 (P0 only) — fix all misleading data before Praiatur partner activation and any external stakeholder views
+Session B (post-launch, first week of June): Items 6–9 (P1) — operational improvements once Sprint 2 close is confirmed
+Session C (Sprint 3): Item 10 (P2) — referrals tab, combined with the RPC migration if query load justifies it
+
+
+Strategic Note — Why P0 Must Ship Before Partner Activation
+Praiatur partner link (?ref=PRAIATUR) is ready to distribute. When Marvela Rodrigues at Praiatur starts sending customers to palopconnect.com, two things will happen:
+
+Orders will appear in the admin dashboard
+At some point, Artur will open the dashboard to check performance
+
+If the dashboard still shows €0.00 revenue and "Not Started" eSIM status for all orders at that moment, there is a real risk of a false negative — concluding the partner activation isn't working when it actually is, and making a wrong commercial decision (e.g. abandoning the Praiatur relationship prematurely) based on broken tooling.
+The P0 fixes are not aesthetic. They are the minimum requirement for the dashboard to function as a decision-making tool during the commercial phase of Sprint 2.
+
+Action Items
+
+ Artur — Approve this ADR and schedule Session A in Replit (target: before 26 May)
+ Artur — During Session A, check referral_codes.type field presence in Supabase — needed for Referrals tab design
+ Artur — After eSIM status badge fix, audit the 24 "pending" orders to determine how many are test vs. real provisioning gaps
+ Artur — Confirm plans table schema in Supabase for Sprint 3 plan detail JOIN in order modal
+ Sprint 3 backlog — Revisit Option B (Supabase RPC for KPIs) when orders > 1,000 or when dashboard load time becomes noticeable
+
+
+ADR prepared: 23 May 2026 · Based on Replit Session 2 product board report and codebase audit · Tech stack: React/Vite/TypeScript · Supabase (eu-west-1) · Replit hosting

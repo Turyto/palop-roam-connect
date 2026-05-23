@@ -1,0 +1,37 @@
+The plan is solid and the ADR I produced earlier already validates most of it technically. Rather than repeat that, here's where I'd specifically push back or flag issues before you hand this to Replit:
+
+---
+
+**1. There's a tab count contradiction — fix this before briefing Replit.**
+
+Section 4.1 says the result is "4 tabs: Orders · Users · Support · Catalog." Section 4.7 then adds a Referrals tab. The correct end state is **5 tabs**, not 4. This sounds minor but if you paste this plan into Replit as-is, the agent will either miss the Referrals tab or get confused about the navigation structure. Correct it to: *"6 tabs → 5 tabs: Orders · Users · Support · Catalog · Referrals (new)"*
+
+---
+
+**2. Section 4.4 makes an assumption about the `plans` table that may not hold.**
+
+"Replace with real data pulled from the plans table via the plan name on the order" assumes the plans table has coverage metadata (countries, supplier names) stored as columns. If it only stores price and name, this step can't be built as described. My recommendation from the ADR stands: **split this into two steps in your brief to Replit** — Step 1 (P0, this session): remove the hardcoded panel and dead buttons. Step 2 (Sprint 3): add real plan data once you've confirmed the schema. Conflating them risks the whole P0 session getting stuck on a join that can't be written yet.
+
+---
+
+**3. Add one explicit post-build action: audit the 24 pending eSIM orders.**
+
+Once the eSIM status badge logic is fixed, those 24 "Not Started" orders will resolve to their true state — some will correctly show "Provisioned" (API was called), others may reveal genuine delivery gaps. The plan currently treats the badge fix as purely cosmetic. It isn't — it's a diagnostic. Add a line: *"After P0 ships: review all orders now showing 'Provisioned' to confirm QR delivery was completed. Any showing 'Failed' require manual Supabase intervention."*
+
+---
+
+**4. Bundle the Stripe env var fix into the same session.**
+
+The plan doesn't mention `VITE_STRIPE_PUBLISHABLE_KEY` not being set as a Replit env var — a known P0 issue from the Replit report. Setting it is a 2-minute task in the same Replit session. Add it to the P0 list so it doesn't get forgotten.
+
+---
+
+**5. The Referrals tab needs a decision before Sprint 3 build.**
+
+The plan describes partner codes vs. customer codes as a distinction the tab should surface. But the `referral_codes` table may not have a `type` column to tell them apart. Before Replit builds the tab, you need to decide: does a `type` column get added now (trivial ALTER TABLE during the P0 session), or does the tab use a hardcoded partner list? I'd add the column now while you're already in the codebase.
+
+---
+
+**On screenshots** — not needed to approve or build from this plan. Everything here is grounded in a code-level audit. The only scenario where a screenshot would change my feedback is if the actual tab labels or modal layout differ from what the audit describes, which would be a minor wording correction. Send them across if you have them handy, but don't wait on them before proceeding.
+
+**Overall:** Approve this plan with the 5 corrections above folded in, then run the P0 session in Replit. The build is straightforward — the architectural risk is near zero because nothing in the data model or provisioning flow changes. The strategic risk (building on wrong assumptions about the plans table) is the only real thing to watch.
