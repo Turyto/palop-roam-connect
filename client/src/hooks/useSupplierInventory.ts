@@ -124,33 +124,10 @@ export const useSupplierInventory = (filters: SupplierInventoryFilters = {}) => 
   // Trigger a manual sync
   const syncMutation = useMutation({
     mutationFn: async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token;
-      // Direct fetch bypasses Supabase JS function client (avoids SDK header issues)
-      const FUNCTION_URL = 'https://btallyhejhqfpqwaboee.supabase.co/functions/v1/sync-supplier-inventory';
-      const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ0YWxseWhlamhxZnBxd2Fib2VlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2Nzc4MjksImV4cCI6MjA4OTI1MzgyOX0.CB7TXgFgRx_CdaUmegCUl9woUFjk7x05CCYs4VNtL5Y';
-
-      const res = await fetch(FUNCTION_URL, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token ?? ANON_KEY}`,
-          'apikey': ANON_KEY,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({}),
+      const { data, error } = await supabase.functions.invoke('sync-supplier-inventory', {
+        body: {},
       });
-
-      const responseText = await res.text();
-
-      let data: any;
-      try { data = JSON.parse(responseText); } catch { data = { error: responseText }; }
-
-      if (!res.ok) {
-        const reason = data?.error
-          ? `${data.error}${data.detail ? ` (${data.detail})` : ''}`
-          : `HTTP ${res.status}`;
-        throw new Error(reason);
-      }
+      if (error) throw new Error(error.message ?? 'Sync failed');
       if (!data?.success) throw new Error(data?.error ?? 'Sync returned failure');
       return data;
     },

@@ -111,11 +111,11 @@ const ConfirmationView = ({ plan, orderId, guestEmail, onBackToPlans }: Confirma
           <Mail className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
           <div className="text-sm text-blue-700">
             <p className="font-semibold mb-1">{c.guestInboxTitle}</p>
-            <p
-              dangerouslySetInnerHTML={{
-                __html: c.guestInboxDesc.replace('{email}', `<strong>${guestEmail}</strong>`),
-              }}
-            />
+            <p>
+              {c.guestInboxDesc.split('{email}').map((part, i, arr) => (
+                <span key={i}>{part}{i < arr.length - 1 && <strong>{guestEmail}</strong>}</span>
+              ))}
+            </p>
             <p className="mt-2 font-medium">{c.guestInboxSave}</p>
           </div>
         </div>
@@ -217,12 +217,11 @@ const ConfirmationView = ({ plan, orderId, guestEmail, onBackToPlans }: Confirma
             <Lock className="h-4 w-4 text-gray-500" />
             <h3 className="font-semibold text-gray-800">{c.createAccountTitle}</h3>
           </div>
-          <p
-            className="text-sm text-gray-500 mb-4"
-            dangerouslySetInnerHTML={{
-              __html: c.createAccountDesc.replace('{email}', `<strong>${guestEmail}</strong>`),
-            }}
-          />
+          <p className="text-sm text-gray-500 mb-4">
+            {c.createAccountDesc.split('{email}').map((part, i, arr) => (
+              <span key={i}>{part}{i < arr.length - 1 && <strong>{guestEmail}</strong>}</span>
+            ))}
+          </p>
           <div className="space-y-3">
             <div>
               <Label htmlFor="create-password" className="text-sm">{c.passwordLabel}</Label>

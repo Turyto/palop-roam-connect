@@ -3,7 +3,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const ADMIN_EMAIL = 'turyto@gmail.com';
+const ADMIN_EMAIL = Deno.env.get('NOTIFY_ADMIN_EMAIL') ?? 'turyto@gmail.com';
 const FROM_EMAIL = 'PALOP Connect Alertas <alertas@palopconnect.com>';
 
 Deno.serve(async (req: Request): Promise<Response> => {
