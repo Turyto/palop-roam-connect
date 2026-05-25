@@ -83,7 +83,6 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
         .from('esim_packages')
         .select('esim_access_package_id')
         .eq('plan_id', plan.id)
-        .eq('supplier', 'esim_access')
         .maybeSingle()
         .then(({ data }) => {
           setValue('esim_access_package_id', data?.esim_access_package_id ?? '');
@@ -161,13 +160,13 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
     await refetchSupplierRates();
   };
 
-  const upsertESIMPackage = async (planId: string, packageId: string) => {
+  const upsertESIMPackage = async (planId: string, packageId: string, planName: string) => {
     if (!packageId.trim()) return;
     const { error } = await supabase
       .from('esim_packages')
       .upsert(
-        { plan_id: planId, supplier: 'esim_access', esim_access_package_id: packageId.trim() },
-        { onConflict: 'plan_id,supplier' }
+        { plan_id: planId, plan_name: planName, esim_access_package_id: packageId.trim() },
+        { onConflict: 'plan_id' }
       );
     if (error) throw error;
   };
@@ -191,7 +190,7 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
       }
 
       if (data.esim_access_package_id !== undefined) {
-        await upsertESIMPackage(plan.id, data.esim_access_package_id);
+        await upsertESIMPackage(plan.id, data.esim_access_package_id, data.name);
       }
 
       toast.success("Plan updated successfully!");
