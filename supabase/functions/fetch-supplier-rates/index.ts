@@ -74,7 +74,7 @@ async function fetchAllPackages(
   const pageSize = 100;
 
   while (true) {
-    const body = JSON.stringify({ locationCode: '', type: 0, pageNum, pageSize });
+    const body = JSON.stringify({ locationCode: '', pageNum, pageSize });
     const headers = await buildESIMHeaders(accessCode, secretKey);
     const res = await fetch(`${ESIM_ACCESS_BASE_URL}/package/list`, {
       method: 'POST',
