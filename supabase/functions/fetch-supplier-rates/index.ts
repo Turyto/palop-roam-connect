@@ -107,11 +107,13 @@ async function fetchAllPackages(
     for (const pkg of rawList) {
       const code: string = pkg.packageCode ?? pkg.code ?? pkg.id ?? '';
       if (!code) continue;
-      // eSIM Access uses price / retailPrice / suggestedRetailPrice
-      const price: number =
+      // eSIM Access returns prices in 10,000ths of USD (e.g. 16400 = $1.64).
+      // Divide by 10,000 to get the actual USD wholesale cost.
+      const rawPrice: number =
         typeof pkg.price === 'number' ? pkg.price :
         typeof pkg.retailPrice === 'number' ? pkg.retailPrice :
         parseFloat(pkg.price ?? pkg.retailPrice ?? '0') || 0;
+      const price: number = rawPrice / 10000;
       const currency: string = pkg.currencyCode ?? pkg.currency ?? 'USD';
       const name: string = pkg.name ?? pkg.packageName ?? code;
       map.set(code, { price, currency, name });

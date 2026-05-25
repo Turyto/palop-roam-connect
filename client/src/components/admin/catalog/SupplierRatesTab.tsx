@@ -12,6 +12,17 @@ import { useToast } from "@/hooks/use-toast";
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+// eSIM Access invoices in USD. Use a fixed EUR/USD rate for comparison.
+// Update this when the rate drifts significantly.
+const USD_TO_EUR = 0.92;
+
+function toEur(price: number, currency: string | null): number {
+  if (!currency || currency === 'EUR') return price;
+  if (currency === 'USD') return price * USD_TO_EUR;
+  return price; // fallback — show as-is
+}
+
 function buildComparisonRows(
   supplierRates: any[],
   liveRates: any[],
@@ -27,6 +38,8 @@ function buildComparisonRows(
     const stored = storedMap.get(lr.plan_id);
     const storedCost = stored?.cost ?? null;
     const livePrice = lr.live_price;
+    // Convert live price to EUR for an apples-to-apples delta
+    const livePriceEur = livePrice !== null ? toEur(livePrice, lr.live_currency) : null;
 
     let status: ComparisonRow['status'] = 'no_package';
     let delta: number | null = null;
@@ -38,7 +51,7 @@ function buildComparisonRows(
     } else if (storedCost === null) {
       status = 'no_data';
     } else {
-      delta = livePrice - storedCost;
+      delta = livePriceEur! - storedCost;
       if (Math.abs(delta) < 0.005) status = 'same';
       else if (delta > 0) status = 'up';
       else status = 'down';
@@ -49,8 +62,8 @@ function buildComparisonRows(
       plan_name: lr.plan_name,
       package_code: lr.package_code,
       stored_cost: storedCost,
-      live_price: livePrice,
-      live_currency: lr.live_currency,
+      live_price: livePriceEur,   // store the EUR-converted price for display
+      live_currency: 'EUR',
       delta,
       status,
     };
