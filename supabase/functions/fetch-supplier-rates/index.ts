@@ -174,16 +174,26 @@ Deno.serve(async (req: Request): Promise<Response> => {
       });
     }
 
-    // Load our active-plan → package-code mappings
-    const { data: packages, error: pkgError } = await db
+    // Load active plan IDs first (two queries — plan_id is TEXT, no FK defined)
+    const { data: activePlans, error: plansError } = await db
+      .from('plans')
+      .select('id, name')
+      .eq('status', 'active');
+
+    if (plansError) {
+      console.error(`[fetch-rates] plans query failed — ${plansError.message}`);
+      return new Response(JSON.stringify({ success: false, error: plansError.message }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const activePlanIds = new Set((activePlans ?? []).map((p: any) => p.id as string));
+    console.log(`[fetch-rates] active plans: ${activePlanIds.size}`);
+
+    // Load all esim_packages rows
+    const { data: allPackages, error: pkgError } = await db
       .from('esim_packages')
-      .select(`
-        plan_id,
-        plan_name,
-        esim_access_package_id,
-        plans!inner ( id, name, status )
-      `)
-      .eq('plans.status', 'active');
+      .select('plan_id, plan_name, esim_access_package_id');
 
     if (pkgError) {
       console.error(`[fetch-rates] esim_packages query failed — ${pkgError.message}`);
@@ -192,7 +202,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
       });
     }
 
-    console.log(`[fetch-rates] found ${packages?.length ?? 0} active plan–package mappings`);
+    // Keep only rows whose plan is active
+    const packages = (allPackages ?? []).filter((row: any) => activePlanIds.has(row.plan_id));
+    console.log(`[fetch-rates] found ${packages.length} active plan–package mappings`);
 
     // Fetch all live packages from supplier
     const liveMap = await fetchAllPackages(accessCode, secretKey);
