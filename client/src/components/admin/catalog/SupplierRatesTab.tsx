@@ -1,53 +1,171 @@
 
-import { useSupplierRates } from "@/hooks/usePlans";
+import { useSupplierRates, useLiveSupplierRates, ComparisonRow } from "@/hooks/usePlans";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, ExternalLink, TrendingDown, Clock } from "lucide-react";
-import { useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { RefreshCw, TrendingDown, TrendingUp, Minus, AlertCircle, CheckCheck, Clock } from "lucide-react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
 
-const SupplierRatesTab = () => {
-  const { supplierRates, isLoading, refetch } = useSupplierRates();
-  const [sortBy, setSortBy] = useState<'cost' | 'updated' | 'supplier'>('cost');
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+function buildComparisonRows(
+  supplierRates: any[],
+  liveRates: any[],
+): ComparisonRow[] {
+  // Build a map of plan_id → stored cost from supplier_rates
+  const storedMap = new Map<string, { cost: number; supplier_name: string }>();
+  for (const r of supplierRates) {
+    storedMap.set(r.plan_id, { cost: r.wholesale_cost, supplier_name: r.supplier_name });
+  }
 
-  // Group rates by plan and find lowest cost
-  const ratesByPlan = supplierRates.reduce((acc: any, rate) => {
-    const planName = rate.plans?.name || 'Unknown Plan';
-    if (!acc[planName]) {
-      acc[planName] = [];
+  // Build rows from live rates (which only contain active plans with package codes)
+  const rows: ComparisonRow[] = liveRates.map((lr) => {
+    const stored = storedMap.get(lr.plan_id);
+    const storedCost = stored?.cost ?? null;
+    const livePrice = lr.live_price;
+
+    let status: ComparisonRow['status'] = 'no_package';
+    let delta: number | null = null;
+
+    if (!lr.package_code) {
+      status = 'no_package';
+    } else if (!lr.live_price_found || livePrice === null) {
+      status = 'no_data';
+    } else if (storedCost === null) {
+      status = 'no_data';
+    } else {
+      delta = livePrice - storedCost;
+      if (Math.abs(delta) < 0.005) status = 'same';
+      else if (delta > 0) status = 'up';
+      else status = 'down';
     }
-    acc[planName].push(rate);
-    return acc;
-  }, {});
 
-  const findLowestCost = (rates: any[]) => {
-    return Math.min(...rates.map(rate => rate.wholesale_cost));
+    return {
+      plan_id: lr.plan_id,
+      plan_name: lr.plan_name,
+      package_code: lr.package_code,
+      stored_cost: storedCost,
+      live_price: livePrice,
+      live_currency: lr.live_currency,
+      delta,
+      status,
+    };
+  });
+
+  // Also add any stored-rate rows that aren't in the live fetch (inactive plans, etc.)
+  const liveIds = new Set(liveRates.map(lr => lr.plan_id));
+  for (const r of supplierRates) {
+    if (!liveIds.has(r.plan_id)) {
+      rows.push({
+        plan_id: r.plan_id,
+        plan_name: r.plans?.name ?? 'Unknown',
+        package_code: null,
+        stored_cost: r.wholesale_cost,
+        live_price: null,
+        live_currency: null,
+        delta: null,
+        status: 'no_package',
+      });
+    }
+  }
+
+  return rows;
+}
+
+function DeltaBadge({ status, delta }: { status: ComparisonRow['status']; delta: number | null }) {
+  if (status === 'no_package') {
+    return <span className="text-xs text-gray-400 italic">No package linked</span>;
+  }
+  if (status === 'no_data') {
+    return <Badge variant="outline" className="text-xs text-gray-400">No live data</Badge>;
+  }
+  if (status === 'same') {
+    return (
+      <Badge className="bg-gray-100 text-gray-600 text-xs gap-1">
+        <Minus className="h-3 w-3" /> Unchanged
+      </Badge>
+    );
+  }
+  if (status === 'up' && delta !== null) {
+    return (
+      <Badge className="bg-red-100 text-red-700 text-xs gap-1">
+        <TrendingUp className="h-3 w-3" /> +€{delta.toFixed(2)}
+      </Badge>
+    );
+  }
+  if (status === 'down' && delta !== null) {
+    return (
+      <Badge className="bg-green-100 text-green-700 text-xs gap-1">
+        <TrendingDown className="h-3 w-3" /> −€{Math.abs(delta).toFixed(2)}
+      </Badge>
+    );
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Main component
+// ---------------------------------------------------------------------------
+const SupplierRatesTab = () => {
+  const { supplierRates, isLoading, refetch, acceptRate, isAccepting } = useSupplierRates();
+  const { liveRates, isFetching, lastFetched, fetchError, fetchLive } = useLiveSupplierRates();
+  const { toast } = useToast();
+  const [acceptingId, setAcceptingId] = useState<string | null>(null);
+  const [acceptingAll, setAcceptingAll] = useState(false);
+
+  const hasLiveData = liveRates.length > 0;
+
+  const comparisonRows = useMemo(
+    () => buildComparisonRows(supplierRates, hasLiveData ? liveRates : []),
+    [supplierRates, liveRates, hasLiveData],
+  );
+
+  const changedRows = comparisonRows.filter(r => r.status === 'up' || r.status === 'down');
+
+  // Summary stats
+  const totalSuppliers = new Set(supplierRates.map(r => r.supplier_name)).size;
+  const avgCost = supplierRates.length > 0
+    ? supplierRates.reduce((s, r) => s + r.wholesale_cost, 0) / supplierRates.length
+    : 0;
+  const oldestUpdate = supplierRates.length > 0
+    ? Math.min(...supplierRates.map(r => new Date(r.last_checked).getTime()))
+    : 0;
+
+  const handleRefresh = async () => {
+    refetch();
+    await fetchLive();
   };
 
-  // Calculate summary stats
-  const totalSuppliers = new Set(supplierRates.map(rate => rate.supplier_name)).size;
-  const avgCost = supplierRates.length > 0 
-    ? supplierRates.reduce((sum, rate) => sum + rate.wholesale_cost, 0) / supplierRates.length 
-    : 0;
-  const oldestUpdate = supplierRates.length > 0 
-    ? Math.min(...supplierRates.map(rate => new Date(rate.last_checked).getTime()))
-    : 0;
+  const handleAccept = async (row: ComparisonRow) => {
+    if (row.live_price === null) return;
+    setAcceptingId(row.plan_id);
+    try {
+      await acceptRate({ planId: row.plan_id, livePrice: row.live_price, supplierName: 'eSIM Access' });
+      toast({ title: 'Rate updated', description: `${row.plan_name} → €${row.live_price.toFixed(2)}` });
+    } catch (e: any) {
+      toast({ title: 'Failed to update rate', description: e.message, variant: 'destructive' });
+    } finally {
+      setAcceptingId(null);
+    }
+  };
 
-  // Sort rates within each plan
-  const sortRates = (rates: any[]) => {
-    return [...rates].sort((a, b) => {
-      switch (sortBy) {
-        case 'cost':
-          return a.wholesale_cost - b.wholesale_cost;
-        case 'updated':
-          return new Date(b.last_checked).getTime() - new Date(a.last_checked).getTime();
-        case 'supplier':
-          return a.supplier_name.localeCompare(b.supplier_name);
-        default:
-          return 0;
-      }
-    });
+  const handleAcceptAll = async () => {
+    if (changedRows.length === 0) return;
+    setAcceptingAll(true);
+    let updated = 0;
+    for (const row of changedRows) {
+      if (row.live_price === null) continue;
+      try {
+        await acceptRate({ planId: row.plan_id, livePrice: row.live_price, supplierName: 'eSIM Access' });
+        updated++;
+      } catch { /* continue with others */ }
+    }
+    setAcceptingAll(false);
+    toast({ title: `${updated} rate${updated !== 1 ? 's' : ''} updated`, description: 'Stored costs now match live supplier prices.' });
   };
 
   if (isLoading) {
@@ -58,6 +176,19 @@ const SupplierRatesTab = () => {
       </div>
     );
   }
+
+  // Display rows: if we have live data use comparison rows, otherwise fall back to stored only
+  const displayRows: Array<{ planName: string; rate: any; compRow: ComparisonRow | null }> = hasLiveData
+    ? comparisonRows.map(cr => ({
+        planName: cr.plan_name,
+        rate: supplierRates.find(r => r.plan_id === cr.plan_id),
+        compRow: cr,
+      }))
+    : supplierRates.map(r => ({
+        planName: r.plans?.name ?? 'Unknown',
+        rate: r,
+        compRow: null,
+      }));
 
   return (
     <div className="space-y-6">
@@ -70,12 +201,9 @@ const SupplierRatesTab = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalSuppliers}</div>
-            <p className="text-xs text-muted-foreground">
-              {supplierRates.length} total rates
-            </p>
+            <p className="text-xs text-muted-foreground">{supplierRates.length} total rates</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Avg. Wholesale Cost</CardTitle>
@@ -83,12 +211,9 @@ const SupplierRatesTab = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">€{avgCost.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground">
-              across all plans
-            </p>
+            <p className="text-xs text-muted-foreground">across all plans</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Data Freshness</CardTitle>
@@ -98,140 +223,175 @@ const SupplierRatesTab = () => {
             <div className="text-2xl font-bold">
               {oldestUpdate ? Math.ceil((Date.now() - oldestUpdate) / (1000 * 60 * 60 * 24)) : 0}d
             </div>
-            <p className="text-xs text-muted-foreground">
-              oldest rate update
-            </p>
+            <p className="text-xs text-muted-foreground">oldest rate update</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Controls */}
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-wrap justify-between items-center gap-3">
+        <div className="flex items-center gap-3">
           <h3 className="text-lg font-semibold">Supplier Rates Comparison</h3>
-          <div className="flex gap-2">
-            <Button 
-              variant={sortBy === 'cost' ? 'default' : 'outline'} 
-              size="sm"
-              onClick={() => setSortBy('cost')}
-            >
-              Sort by Cost
-            </Button>
-            <Button 
-              variant={sortBy === 'updated' ? 'default' : 'outline'} 
-              size="sm"
-              onClick={() => setSortBy('updated')}
-            >
-              Sort by Updated
-            </Button>
-            <Button 
-              variant={sortBy === 'supplier' ? 'default' : 'outline'} 
-              size="sm"
-              onClick={() => setSortBy('supplier')}
-            >
-              Sort by Supplier
-            </Button>
-          </div>
+          {lastFetched && (
+            <span className="text-xs text-gray-400">
+              Live data from {lastFetched.toLocaleTimeString()}
+            </span>
+          )}
+          {changedRows.length > 0 && (
+            <Badge className="bg-amber-100 text-amber-700 text-xs">
+              {changedRows.length} price change{changedRows.length !== 1 ? 's' : ''}
+            </Badge>
+          )}
         </div>
-        <Button variant="outline" onClick={() => refetch()}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh Rates
-        </Button>
+        <div className="flex gap-2">
+          {changedRows.length > 0 && (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleAcceptAll}
+              disabled={acceptingAll}
+              data-testid="button-accept-all-rates"
+            >
+              {acceptingAll
+                ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                : <CheckCheck className="h-4 w-4 mr-2" />
+              }
+              Accept All Changes
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            onClick={handleRefresh}
+            disabled={isFetching}
+            data-testid="button-refresh-rates"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+            {isFetching ? 'Fetching live prices…' : hasLiveData ? 'Refresh Rates' : 'Fetch Live Prices'}
+          </Button>
+        </div>
       </div>
 
+      {/* Error banner */}
+      {fetchError && (
+        <div className="flex items-center gap-2 p-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span>Live fetch failed: {fetchError}</span>
+        </div>
+      )}
+
+      {/* Hint when no live data yet */}
+      {!hasLiveData && !isFetching && (
+        <div className="rounded-md bg-blue-50 border border-blue-200 text-blue-700 text-sm p-3">
+          Click <strong>Fetch Live Prices</strong> to compare your stored costs against the current eSIM Access catalogue.
+        </div>
+      )}
+
+      {/* Table */}
       <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Plan Name</TableHead>
               <TableHead>Supplier</TableHead>
-              <TableHead>Wholesale Cost</TableHead>
-              <TableHead>Supplier Plan ID</TableHead>
+              <TableHead>Stored Cost</TableHead>
+              {hasLiveData && <TableHead>Live Price</TableHead>}
+              {hasLiveData && <TableHead>Change</TableHead>}
+              <TableHead>Package Code</TableHead>
               <TableHead>Last Updated</TableHead>
-              <TableHead>Actions</TableHead>
+              {hasLiveData && <TableHead>Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
-            {Object.entries(ratesByPlan).map(([planName, rates]: [string, any]) => {
-              const lowestCost = findLowestCost(rates);
-              const sortedRates = sortRates(rates);
-              
-              return sortedRates.map((rate: any, index: number) => (
-                <TableRow key={rate.id}>
-                  {index === 0 && (
-                    <TableCell rowSpan={rates.length} className="font-medium border-r">
-                      <div className="flex flex-col">
-                        <span>{planName}</span>
-                        <span className="text-xs text-gray-500 mt-1">
-                          {rates.length} supplier{rates.length !== 1 ? 's' : ''}
+            {displayRows.map(({ planName, rate, compRow }) => {
+              const isChanged = compRow?.status === 'up' || compRow?.status === 'down';
+              return (
+                <TableRow key={compRow?.plan_id ?? rate?.id} className={isChanged ? 'bg-amber-50/40' : ''}>
+                  <TableCell className="font-medium">{planName}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{rate?.supplier_name ?? 'eSIM Access'}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    {rate ? (
+                      <span className="font-semibold">€{rate.wholesale_cost.toFixed(2)}</span>
+                    ) : (
+                      <span className="text-gray-400 italic text-sm">Not set</span>
+                    )}
+                  </TableCell>
+
+                  {hasLiveData && (
+                    <TableCell>
+                      {isFetching ? (
+                        <Skeleton className="h-5 w-16" />
+                      ) : compRow?.live_price !== null && compRow?.live_price !== undefined ? (
+                        <span className="font-semibold">
+                          €{compRow.live_price.toFixed(2)}
+                          {compRow.live_currency && compRow.live_currency !== 'EUR' && (
+                            <span className="text-xs text-gray-400 ml-1">{compRow.live_currency}</span>
+                          )}
                         </span>
-                      </div>
+                      ) : (
+                        <span className="text-gray-400 italic text-sm">—</span>
+                      )}
                     </TableCell>
                   )}
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">{rate.supplier_name}</Badge>
-                      {Date.now() - new Date(rate.last_checked).getTime() > 7 * 24 * 60 * 60 * 1000 && (
-                        <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800">
-                          Stale
-                        </Badge>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <span className={rate.wholesale_cost === lowestCost ? 'text-green-600 font-semibold' : ''}>
-                        €{rate.wholesale_cost.toFixed(2)}
-                      </span>
-                      {rate.wholesale_cost === lowestCost && (
-                        <Badge className="bg-green-100 text-green-800 text-xs">Best Price</Badge>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-mono text-sm">
-                    {rate.supplier_plan_id || (
+
+                  {hasLiveData && (
+                    <TableCell>
+                      {isFetching
+                        ? <Skeleton className="h-5 w-20" />
+                        : compRow
+                          ? <DeltaBadge status={compRow.status} delta={compRow.delta} />
+                          : null
+                      }
+                    </TableCell>
+                  )}
+
+                  <TableCell className="font-mono text-xs text-gray-500">
+                    {compRow?.package_code ?? rate?.supplier_plan_id ?? (
                       <span className="text-gray-400 italic">Not specified</span>
                     )}
                   </TableCell>
+
                   <TableCell>
-                    <div className="flex flex-col">
-                      <span className="text-sm">
-                        {new Date(rate.last_checked).toLocaleDateString()}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {Math.ceil((Date.now() - new Date(rate.last_checked).getTime()) / (1000 * 60 * 60 * 24))} days ago
-                      </span>
-                    </div>
+                    {rate ? (
+                      <div className="flex flex-col">
+                        <span className="text-sm">{new Date(rate.last_checked).toLocaleDateString()}</span>
+                        <span className="text-xs text-gray-400">
+                          {Math.ceil((Date.now() - new Date(rate.last_checked).getTime()) / (1000 * 60 * 60 * 24))}d ago
+                        </span>
+                      </div>
+                    ) : <span className="text-gray-400">—</span>}
                   </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      {rate.supplier_link && (
+
+                  {hasLiveData && (
+                    <TableCell>
+                      {isChanged && compRow?.live_price !== null ? (
                         <Button
-                          variant="ghost"
                           size="sm"
-                          onClick={() => window.open(rate.supplier_link, '_blank')}
-                          title="Open supplier portal"
+                          variant="outline"
+                          onClick={() => compRow && handleAccept(compRow)}
+                          disabled={acceptingId === compRow?.plan_id || isAccepting}
+                          data-testid={`button-accept-rate-${compRow?.plan_id}`}
                         >
-                          <ExternalLink className="h-4 w-4" />
+                          {acceptingId === compRow?.plan_id
+                            ? <RefreshCw className="h-3 w-3 animate-spin" />
+                            : 'Accept'
+                          }
                         </Button>
-                      )}
-                    </div>
-                  </TableCell>
+                      ) : null}
+                    </TableCell>
+                  )}
                 </TableRow>
-              ));
+              );
             })}
           </TableBody>
         </Table>
       </div>
 
-      {supplierRates.length === 0 && (
+      {supplierRates.length === 0 && !hasLiveData && (
         <div className="text-center py-12 text-gray-500">
           <RefreshCw className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-          <p>No supplier rates available. Import rates to get started.</p>
-          <Button className="mt-4" onClick={() => refetch()}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Load Sample Data
-          </Button>
+          <p>No supplier rates yet. Add rates via the Plans Catalog tab.</p>
         </div>
       )}
     </div>

@@ -1,5 +1,6 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -169,7 +170,7 @@ export const usePlans = () => {
 };
 
 export const useSupplierRates = () => {
-  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const {
     data: supplierRates = [],
@@ -193,11 +194,83 @@ export const useSupplierRates = () => {
     },
   });
 
+  const acceptRateMutation = useMutation({
+    mutationFn: async ({ planId, livePrice, supplierName }: { planId: string; livePrice: number; supplierName: string }) => {
+      const now = new Date().toISOString();
+      const existing = supplierRates.find(r => r.plan_id === planId);
+      if (existing) {
+        const { error } = await supabase
+          .from('supplier_rates')
+          .update({ wholesale_cost: livePrice, last_checked: now, updated_at: now })
+          .eq('plan_id', planId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('supplier_rates')
+          .insert({ plan_id: planId, wholesale_cost: livePrice, supplier_name: supplierName, last_checked: now });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['supplier-rates'] });
+    },
+  });
+
   return {
     supplierRates,
     isLoading,
     refetch,
+    acceptRate: acceptRateMutation.mutateAsync,
+    isAccepting: acceptRateMutation.isPending,
   };
+};
+
+// ---------------------------------------------------------------------------
+// Live supplier rates — fetches real-time prices from eSIM Access API
+// ---------------------------------------------------------------------------
+export type LiveRate = {
+  plan_id: string;
+  plan_name: string;
+  package_code: string | null;
+  live_price: number | null;
+  live_currency: string | null;
+  live_price_found: boolean;
+};
+
+export type ComparisonRow = {
+  plan_id: string;
+  plan_name: string;
+  package_code: string | null;
+  stored_cost: number | null;
+  live_price: number | null;
+  live_currency: string | null;
+  delta: number | null;
+  status: 'up' | 'down' | 'same' | 'no_data' | 'no_package';
+};
+
+export const useLiveSupplierRates = () => {
+  const [liveRates, setLiveRates] = useState<LiveRate[]>([]);
+  const [isFetching, setIsFetching] = useState(false);
+  const [lastFetched, setLastFetched] = useState<Date | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  const fetchLive = useCallback(async () => {
+    setIsFetching(true);
+    setFetchError(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('fetch-supplier-rates');
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error ?? 'Unknown error from edge function');
+      setLiveRates(data.rates ?? []);
+      setLastFetched(new Date());
+    } catch (e: any) {
+      setFetchError(e.message ?? 'Failed to fetch live rates');
+    } finally {
+      setIsFetching(false);
+    }
+  }, []);
+
+  return { liveRates, isFetching, lastFetched, fetchError, fetchLive };
 };
 
 export const usePricingRules = () => {
