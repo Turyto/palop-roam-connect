@@ -23,8 +23,13 @@ const AdminDashboard = () => {
   const handleSignOut = async () => {
     console.log('AdminDashboard: Starting sign out process');
     const { error } = await signOut();
-    
-    if (error) {
+
+    const isSessionMissing =
+      !error ||
+      error.message === 'Auth session missing!' ||
+      (error as any)?.name === 'AuthSessionMissingError';
+
+    if (error && !isSessionMissing) {
       console.error('Admin sign out error:', error);
       toast({
         title: "Error",
@@ -37,13 +42,14 @@ const AdminDashboard = () => {
         title: "Signed out",
         description: "You have been signed out successfully.",
       });
-      
-      navigate('/', { replace: true });
-      
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 100);
     }
+
+    // Always navigate away — with scope:'local' the local session is always
+    // cleared, even if the server-side session had already expired.
+    navigate('/', { replace: true });
+    setTimeout(() => {
+      window.location.href = '/';
+    }, 100);
   };
 
   useEffect(() => {

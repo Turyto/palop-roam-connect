@@ -59,9 +59,12 @@ export const signIn = async (email: string, password: string) => {
 
 export const signOut = async () => {
   try {
-    const { error } = await supabase.auth.signOut();
+    // scope:'local' clears only the local session without a server round-trip.
+    // This avoids AuthSessionMissingError when the server-side session has
+    // already expired — the user is still effectively signed out locally.
+    const { error } = await supabase.auth.signOut({ scope: 'local' });
     return { error };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Auth utils: Sign out error:', error);
     return { error };
   }
