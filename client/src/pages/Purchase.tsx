@@ -40,12 +40,12 @@ const Purchase = () => {
       id: "arrival",
       name: "Arrival",
       data: "3 GB",
-      days: 7,
+      days: 15,
       price: PLAN_PRICES['arrival'],
       currency: "EUR",
       features: [
         "3 GB of Internet",
-        "Valid for 7 days",
+        "Valid for 15 days",
         "Portugal + Europe coverage",
         "Instant QR delivery",
         "No contract required"
