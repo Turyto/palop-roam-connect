@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePlans, useSupplierRates } from "@/hooks/usePlans";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,8 @@ import BulkActionsToolbar from "./BulkActionsToolbar";
 import type { Plan } from "@/hooks/usePlans";
 import { supabase } from "@/integrations/supabase/client";
 
+const CHECKOUT_PLAN_IDS = ['arrival', 'essential', 'comfort', 'freedom'];
+
 const PlansCatalogTab = () => {
   const { plans, isLoading, updatePlan, deletePlan } = usePlans();
   const { supplierRates } = useSupplierRates();
@@ -25,6 +27,19 @@ const PlansCatalogTab = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedPlanIds, setSelectedPlanIds] = useState<string[]>([]);
   const [showLowMarginOnly, setShowLowMarginOnly] = useState(false);
+  const [unconfiguredPackagePlans, setUnconfiguredPackagePlans] = useState<string[]>([]);
+
+  useEffect(() => {
+    supabase
+      .from('esim_packages')
+      .select('plan_id')
+      .in('plan_id', CHECKOUT_PLAN_IDS)
+      .not('esim_access_package_id', 'is', null)
+      .then(({ data }) => {
+        const configured = new Set((data ?? []).map((r: any) => r.plan_id));
+        setUnconfiguredPackagePlans(CHECKOUT_PLAN_IDS.filter(id => !configured.has(id)));
+      });
+  }, []);
 
   const calculateMargin = (plan: Plan) => {
     const planRates = supplierRates.filter(rate => rate.plan_id === plan.id);
@@ -111,6 +126,18 @@ const PlansCatalogTab = () => {
 
   return (
     <div className="space-y-4">
+      {/* Package code warning banner */}
+      {unconfiguredPackagePlans.length > 0 && (
+        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-800">
+          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-500" />
+          <div>
+            <span className="font-semibold">Missing supplier package codes: </span>
+            {unconfiguredPackagePlans.join(', ')} — customers cannot purchase these plans until codes are set.
+            Run <code className="bg-amber-100 px-1 rounded text-xs">supabase/migrations/20260526_seed_esim_packages.sql</code> in the Supabase SQL editor.
+          </div>
+        </div>
+      )}
+
       {/* Action Bar */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-4">

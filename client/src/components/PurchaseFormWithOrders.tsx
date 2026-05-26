@@ -106,6 +106,19 @@ const PurchaseFormWithOrders = ({
     // Always capture the email from the form so it's available at payment success time
     collectedEmailRef.current = emailForOrder;
 
+    // Pre-flight: verify a supplier package is configured before taking any payment
+    const { data: pkgResp, error: pkgError } = await supabase.functions.invoke('get-esim-package', {
+      body: { plan_id: plan.id },
+    });
+    if (pkgError || !pkgResp?.data) {
+      toast({
+        title: "Plano temporariamente indisponível",
+        description: "Este plano não está disponível para compra de momento. Por favor contacta o suporte.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!user) {
       // Guest path: sign in anonymously so the order can be saved with a valid user_id
       setIsGuestCheckout(true);
