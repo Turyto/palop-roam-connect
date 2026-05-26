@@ -21,17 +21,17 @@ export interface PlanCard {
 // ---------------------------------------------------------------------------
 
 export const PLAN_PRICES: Record<string, number> = {
-  'arrival':    3.99,
-  'essential':  9.99,
-  'comfort':   14.99,
-  'freedom':   19.99,
+  'arrival':    4.90,
+  'essential':  9.90,
+  'comfort':   14.90,
+  'freedom':   22.90,
 };
 
 export const PLAN_PRICES_DISPLAY: Record<string, string> = {
-  'arrival':   '€3,99',
-  'essential': '€9,99',
-  'comfort':  '€14,99',
-  'freedom':  '€19,99',
+  'arrival':   '€4,90',
+  'essential': '€9,90',
+  'comfort':  '€14,90',
+  'freedom':  '€22,90',
 };
 
 export const planCards: PlanCard[] = [
@@ -40,7 +40,7 @@ export const planCards: PlanCard[] = [
     coverage: 'europe',
     name: { pt: 'Chegada', en: 'Arrival' },
     subtitle: { pt: 'Ideal para chegada, mensagens e mapas', en: 'Great for arrival, messages and maps' },
-    data: '2 GB',
+    data: '3 GB',
     validityDays: '7',
     validity: { pt: '7 dias', en: '7 days' },
     price: PLAN_PRICES_DISPLAY['arrival'],
@@ -93,7 +93,7 @@ export const comparisonRows = [
   {
     id: 'arrival',
     name: { pt: 'Chegada', en: 'Arrival' },
-    data: '2 GB',
+    data: '3 GB',
     duration: { pt: '7 dias', en: '7 days' },
     coverage: { pt: 'Portugal + Europa', en: 'Portugal + Europe' },
     price: PLAN_PRICES_DISPLAY['arrival'],
