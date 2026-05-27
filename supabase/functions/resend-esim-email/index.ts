@@ -3,6 +3,22 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+/** Returns the caller's user ID from their JWT, or null if unauthenticated. */
+async function getCallerUserId(supabaseUrl: string, serviceKey: string, authHeader: string | null): Promise<string | null> {
+  if (!authHeader) return null;
+  const token = authHeader.replace('Bearer ', '');
+  try {
+    const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${token}` },
+    });
+    if (!userRes.ok) return null;
+    const user = await userRes.json();
+    return user?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 async function verifyAdminUser(supabaseUrl: string, serviceKey: string, authHeader: string | null): Promise<boolean> {
   if (!authHeader) return false;
   const token = authHeader.replace('Bearer ', '');
@@ -213,12 +229,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Verify the calling user is an authenticated admin
+    // Verify the caller is authenticated
     const authHeader = req.headers.get('authorization');
-    const isAdmin = await verifyAdminUser(supabaseUrl, serviceRoleKey, authHeader);
-    if (!isAdmin) {
-      return new Response(JSON.stringify({ error: 'Forbidden: admin access required' }), {
-        status: 403,
+    const callerUserId = await getCallerUserId(supabaseUrl, serviceRoleKey, authHeader);
+    if (!callerUserId) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -250,6 +266,18 @@ Deno.serve(async (req) => {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    // Allow access if: caller owns the order OR caller is admin
+    const isOwner = order.user_id === callerUserId;
+    if (!isOwner) {
+      const isAdmin = await verifyAdminUser(supabaseUrl, serviceRoleKey, authHeader);
+      if (!isAdmin) {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     const customerEmail = order.customer_email;
@@ -303,15 +331,10 @@ Deno.serve(async (req) => {
 
     // --- Primary path: Resend transactional email with magic link + eSIM details ---
     if (resendApiKey) {
-      // Generate magic link URL without sending an email
-      const magicLink = await generateMagicLink(supabaseUrl, serviceRoleKey, customerEmail, redirectTo);
-
-      if (!magicLink) {
-        return new Response(
-          JSON.stringify({ error: 'Failed to generate magic link. Please try again.' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
+      // Generate magic link URL — fall back to plain orders URL if generation fails
+      const magicLink =
+        (await generateMagicLink(supabaseUrl, serviceRoleKey, customerEmail, redirectTo)) ??
+        redirectTo;
 
       const emailResult = await sendESIMEmail({
         resendApiKey,

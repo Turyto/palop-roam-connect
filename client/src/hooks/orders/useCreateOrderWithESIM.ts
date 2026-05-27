@@ -236,6 +236,22 @@ export const useCreateOrderWithESIM = () => {
         if (qrError) {
           console.error('Error creating QR code record:', qrError);
         }
+
+        // --- SEND CUSTOMER EMAIL (observable, non-blocking) ---
+        // Call resend-esim-email explicitly so failures are logged and visible,
+        // replacing the silent fire-and-forget inside esim-access.
+        supabase.functions.invoke('resend-esim-email', {
+          body: { orderId: orderResult.id },
+        }).then(({ data, error }) => {
+          if (error || !data?.success) {
+            console.error('[useCreateOrderWithESIM] Customer email failed:', error?.message ?? data?.error ?? 'unknown');
+          } else {
+            console.log('[useCreateOrderWithESIM] Customer email sent to', customerEmail);
+          }
+        }).catch((e: any) => {
+          console.error('[useCreateOrderWithESIM] Customer email invoke error:', e?.message);
+        });
+
       } else if (esimError) {
         // Record the failure for debugging / retry — covers BOTH:
         //   • missing package mapping (packageData === null) — 7.3 fix
