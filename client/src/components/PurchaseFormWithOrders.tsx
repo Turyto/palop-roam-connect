@@ -36,6 +36,7 @@ const PurchaseFormWithOrders = ({
   const { toast } = useToast();
   const { user } = useAuth();
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const c = t.checkout;
   const { createOrderAsync, isCreatingOrder } = useCreateOrderWithESIM();
 
