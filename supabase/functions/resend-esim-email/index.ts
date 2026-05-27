@@ -323,9 +323,15 @@ Deno.serve(async (req) => {
     const planName = order.plan_name ?? '';
     const dataAmount = order.data_amount ?? '';
 
-    // Build the redirect URL for the magic link
-    const origin = req.headers.get('origin') ?? '';
-    const redirectTo = origin ? `${origin}/orders` : `${supabaseUrl}/orders`;
+    // Build the redirect URL for the magic link.
+    // Prefer an explicit SITE_URL secret (set to https://palopconnect.com in Supabase secrets),
+    // then fall back to the request origin only if it looks like the production domain,
+    // otherwise default to the known production URL.
+    const siteUrlSecret = Deno.env.get('SITE_URL') ?? '';
+    const requestOrigin = req.headers.get('origin') ?? '';
+    const isProdOrigin = requestOrigin.includes('palopconnect.com');
+    const baseUrl = siteUrlSecret || (isProdOrigin ? requestOrigin : 'https://palopconnect.com');
+    const redirectTo = `${baseUrl}/orders`;
 
     const esimDetails = { planName, dataAmount, iccid, lpaCode, webUrl, qrImageUrl };
 
