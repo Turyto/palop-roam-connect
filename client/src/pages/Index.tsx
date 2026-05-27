@@ -20,8 +20,13 @@ const Index = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && user && userRole === 'admin') {
-      navigate('/admin/dashboard', { replace: true });
+    if (!loading && user) {
+      if (userRole === 'admin') {
+        navigate('/admin/dashboard', { replace: true });
+      } else if (window.location.hash.includes('access_token')) {
+        // Arrived here via a magic link — send customers straight to their orders
+        navigate('/orders', { replace: true });
+      }
     }
   }, [user, userRole, loading, navigate]);
 

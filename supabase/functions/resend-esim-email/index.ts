@@ -331,7 +331,10 @@ Deno.serve(async (req) => {
     const requestOrigin = req.headers.get('origin') ?? '';
     const isProdOrigin = requestOrigin.includes('palopconnect.com');
     const baseUrl = siteUrlSecret || (isProdOrigin ? requestOrigin : 'https://palopconnect.com');
-    const redirectTo = `${baseUrl}/orders`;
+    // Redirect to /auth so the existing Auth page handles the session and sends
+    // customers to /orders — more reliable than redirecting to /orders directly
+    // since Supabase sometimes strips the /orders suffix from redirect_to.
+    const redirectTo = `${baseUrl}/auth`;
 
     const esimDetails = { planName, dataAmount, iccid, lpaCode, webUrl, qrImageUrl };
 
