@@ -43,9 +43,6 @@ const PurchaseFormWithOrders = ({
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
-  const [guestEmail, setGuestEmail] = useState<string>("");
-  // True only when checkout was completed by an unauthenticated (anonymous) user
-  const [isGuestCheckout, setIsGuestCheckout] = useState(false);
   // Email captured at checkout — used for both guests and authenticated users
   const collectedEmailRef = useRef<string>("");
 
@@ -121,9 +118,6 @@ const PurchaseFormWithOrders = ({
 
     if (!user) {
       // Guest path: sign in anonymously so the order can be saved with a valid user_id
-      setIsGuestCheckout(true);
-      setGuestEmail(emailForOrder);
-
       const { error: anonError } = await supabase.auth.signInAnonymously({
         options: { data: { email: emailForOrder } },
       });
@@ -161,26 +155,6 @@ const PurchaseFormWithOrders = ({
         customerEmail: emailForOrder,
         referral_code: referralCode,
       });
-
-      // Send a magic-link sign-in email so guests can re-access their order later.
-      if (isGuestCheckout && emailForOrder) {
-        const { error: otpError } = await supabase.auth.signInWithOtp({
-          email: emailForOrder,
-          options: {
-            shouldCreateUser: true,
-            emailRedirectTo: `${window.location.origin}/orders`,
-          },
-        });
-        if (otpError) {
-          // Non-fatal: order is created and eSIM details are on screen.
-          console.error("Failed to send access link email:", otpError);
-          toast({
-            title: c.orderComplete,
-            description: c.orderCompleteDesc,
-            variant: "destructive",
-          });
-        }
-      }
 
       // Clear referral code from localStorage once the order is attributed
       localStorage.removeItem("palop_ref");
