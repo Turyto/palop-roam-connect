@@ -159,7 +159,7 @@ async function sendESIMEmail(opts: {
                style="display:inline-block;background:#1d4ed8;color:#ffffff;font-size:14px;font-weight:600;padding:12px 28px;border-radius:8px;text-decoration:none;">
               View My Orders →
             </a>
-            <p style="margin:12px 0 0;font-size:11px;color:#6b7280;">This link expires in 1 hour. Request a new one from the orders page.</p>
+            <p style="margin:12px 0 0;font-size:11px;color:#6b7280;">This link expires in 1 hour. After that, <a href="https://palopconnect.com/auth" style="color:#6b7280;">sign in at palopconnect.com/auth</a> to get a new one — no password needed.</p>
           </div>
         </td></tr>
 

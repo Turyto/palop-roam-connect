@@ -1,17 +1,22 @@
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/auth';
 import AuthForm from '@/components/AuthForm';
 
+function getHashError() {
+  const hash = window.location.hash;
+  if (!hash || !hash.includes('error=')) return null;
+  const params = new URLSearchParams(hash.replace(/^#/, ''));
+  return params.get('error') ?? '';
+}
+
 const Auth = () => {
   const { user, userRole, roleError, loading } = useAuth();
   const navigate = useNavigate();
+  const [hashError] = useState(getHashError);
 
   useEffect(() => {
-    // Only redirect once we have the user AND the role has been resolved without error.
-    // userRole starts as null and is set asynchronously; waiting for it (and for no roleError)
-    // prevents admin users from being silently downgraded to customer on redirect.
     if (!loading && user && userRole !== null && !roleError) {
       setTimeout(() => {
         if (userRole === 'admin') {
@@ -26,12 +31,11 @@ const Auth = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
+        <div className="text-lg">A carregar...</div>
       </div>
     );
   }
 
-  // Role resolution failed — show safe message, do not redirect.
   if (user && roleError) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -53,16 +57,17 @@ const Auth = () => {
     );
   }
 
-  // User is authenticated and role is pending — show redirect holding state.
   if (user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Redirecting...</div>
+        <div className="text-lg">A redirecionar...</div>
       </div>
     );
   }
 
-  return <AuthForm />;
+  const expiredLink = hashError === 'access_denied';
+
+  return <AuthForm expiredLink={expiredLink} defaultTab="magic" />;
 };
 
 export default Auth;
