@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, useSearchParams } from "react-router-dom"
 import { AuthProvider } from "@/contexts/auth";
 import { LanguageProvider } from "@/contexts/language";
 import { lazy, Suspense, useEffect } from "react";
+import { useTawk } from "@/hooks/useTawk";
 
 // Eagerly loaded — active customer funnel pages
 import Index from "./pages/Index";
@@ -59,6 +60,8 @@ const LoadingFallback = () => (
   </div>
 );
 
+const TawkManager = () => { useTawk(); return null; };
+
 // Captures ?ref=CODE from the URL on any page load and persists it in localStorage
 // so it survives navigation to /purchase and gets attached to the order.
 const RefCapture = () => {
@@ -98,6 +101,7 @@ const App = () => {
         <BrowserRouter>
           <RefCapture />
           <AuthProvider>
+            <TawkManager />
             <LanguageProvider>
               <TooltipProvider>
                 <Suspense fallback={<LoadingFallback />}>
