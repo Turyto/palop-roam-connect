@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { LifeBuoy, Wifi, Smartphone, ExternalLink } from 'lucide-react';
+import { LifeBuoy, Wifi, Smartphone, ExternalLink, MessageCircle } from 'lucide-react';
 
 interface SupportCardLabels {
   title: string;
@@ -38,6 +38,16 @@ const SupportCard = ({ labels: l }: SupportCardProps) => {
       </ul>
 
       <div className="flex flex-col gap-2">
+        <Button
+          asChild
+          className="w-full bg-[#25D366] hover:bg-[#25D366]/90 text-white"
+          data-testid="button-whatsapp-support"
+        >
+          <a href="https://wa.me/351911186695" target="_blank" rel="noopener noreferrer">
+            <MessageCircle className="h-4 w-4 mr-1.5" />
+            WhatsApp · resposta em 20 min
+          </a>
+        </Button>
         <Button
           asChild
           className="w-full bg-palop-green hover:bg-palop-green/90 text-white"

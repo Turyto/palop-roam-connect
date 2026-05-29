@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { LifeBuoy } from 'lucide-react';
+import { LifeBuoy, MessageCircle } from 'lucide-react';
 import { useLanguage } from '@/contexts/language';
 
 const SupportSection = () => {
@@ -41,6 +41,17 @@ const SupportSection = () => {
               <Link to="/support">{t.support.secondaryCta}</Link>
             </Button>
           </div>
+
+          <a
+            href="https://wa.me/351911186695"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-sm font-medium text-[#25D366] hover:underline"
+            data-testid="link-whatsapp-home-support"
+          >
+            <MessageCircle className="w-4 h-4" />
+            WhatsApp +351 911 186 695 · 8h–20h · resposta em 20 min
+          </a>
         </div>
       </div>
     </section>

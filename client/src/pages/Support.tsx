@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import HomeHeader from '@/components/home/HomeHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Mail, Ticket, LifeBuoy, CheckCircle2 } from 'lucide-react';
+import { Mail, Ticket, LifeBuoy, CheckCircle2, MessageCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/auth';
 
@@ -88,6 +88,29 @@ export default function Support() {
           <div className="grid md:grid-cols-5 gap-8">
             {/* Contact info sidebar */}
             <div className="md:col-span-2 space-y-6">
+              <Card className="border-none shadow-lg shadow-gray-200/50">
+                <CardContent className="p-6 flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-[#25D366]/10 flex items-center justify-center shrink-0">
+                    <MessageCircle className="w-6 h-6 text-[#25D366]" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg mb-1">WhatsApp</h3>
+                    <p className="text-sm text-gray-600 mb-2">
+                      Respondemos em até 20 minutos, das 8h às 20h.
+                    </p>
+                    <a
+                      href="https://wa.me/351911186695"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#25D366] font-semibold hover:underline"
+                      data-testid="link-whatsapp-support"
+                    >
+                      +351 911 186 695
+                    </a>
+                  </div>
+                </CardContent>
+              </Card>
+
               <Card className="border-none shadow-lg shadow-gray-200/50">
                 <CardContent className="p-6 flex items-start gap-4">
                   <div className="w-12 h-12 rounded-xl bg-palop-green/10 flex items-center justify-center shrink-0">
