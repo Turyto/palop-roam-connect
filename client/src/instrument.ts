@@ -7,6 +7,11 @@ Sentry.init({
   sendDefaultPii: false,
   integrations: [Sentry.browserTracingIntegration()],
   tracesSampleRate: 0.2,
+  tracePropagationTargets: [
+    'localhost',
+    /^https:\/\/palopconnect\.com/,
+    /^https:\/\/[a-z]+\.supabase\.co/,
+  ],
   beforeSend(event) {
     const host = window.location.hostname;
     if (host === "localhost" || host.endsWith(".replit.dev")) return null;
