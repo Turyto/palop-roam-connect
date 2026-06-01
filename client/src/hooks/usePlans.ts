@@ -258,12 +258,21 @@ export const useLiveSupplierRates = () => {
     setIsFetching(true);
     setFetchError(null);
     try {
+      // Ensure session is fresh before calling the edge function
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw new Error(`Session error: ${sessionError.message}`);
+      if (!sessionData.session) throw new Error('Not authenticated — please log out and log back in');
+
       const { data, error } = await supabase.functions.invoke('fetch-supplier-rates');
-      if (error) throw error;
+      if (error) {
+        const detail = (error as any)?.context?.error ?? (error as any)?.message ?? String(error);
+        throw new Error(`Edge function error: ${detail}`);
+      }
       if (!data?.success) throw new Error(data?.error ?? 'Unknown error from edge function');
       setLiveRates(data.rates ?? []);
       setLastFetched(new Date());
     } catch (e: any) {
+      console.error('[useLiveSupplierRates]', e);
       setFetchError(e.message ?? 'Failed to fetch live rates');
     } finally {
       setIsFetching(false);
