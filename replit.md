@@ -4,15 +4,26 @@
 BuéChama eSIM is a comprehensive eSIM platform designed for PALOP (Portuguese-speaking African countries) communities. The platform provides affordable data and voice roaming plans specifically for travelers and communities from Angola, Cape Verde, Guinea-Bissau, Mozambique, and São Tomé and Príncipe.
 
 ## Current State
-**Status:** ✅ Running — Stripe payment integration in progress (requires API key setup)
+**Status:** ✅ LIVE — Stripe LIVE mode active, eSIM provisioning confirmed, chat support active
 
-The application has been successfully migrated from Lovable's environment to Replit:
-- Frontend running on Vite + React with full CSS styling
-- Supabase integration for authentication and database (project: btallyhejhqfpqwaboee, eu-west-1)
-- Admin dashboard for managing eSIM plans, orders, and inventory
-- Customer portal for browsing plans and managing orders
-- Integration with eSIM Access API for provisioning
-- **Stripe payment processing** wired up (Stripe Elements, PaymentElement)
+### June 2026 — Sprint 2 Stable Version (published palopconnect.com)
+- Stripe **LIVE mode** payments processing real money
+- eSIM Access provisioning end-to-end confirmed working (purchase → QR code → email)
+- Admin live supplier rate fetching working (`fetch-supplier-rates` edge function)
+- Tawk.to live chat active (widget `1jpng5feu`, property `6a18529e6034501c34c0b384`)
+- Sentry error monitoring active in production (20% trace sample, EU only)
+- Bilingual PT/EN throughout (translations in `client/src/lib/translations.ts`)
+- WhatsApp support: +351 911 186 695 (8h–20h)
+- Social icons centered in footer (clear of Tawk.to bubble)
+- CORS + Sentry tracePropagationTargets resolved for edge functions
+
+### Key Fix (Jun 2026): Sentry + Edge Function CORS
+Sentry's `tracePropagationTargets` includes `*.supabase.co` (required for Tawk.to init).
+Edge functions must allow `sentry-trace` and `baggage` in their CORS `Access-Control-Allow-Headers`.
+Any new edge function must include these headers or its preflight will fail.
+
+### Pre-Launch Blocker
+- **GDPR cookie consent banner** — not yet implemented; required before EU public marketing push
 
 ## Required Environment Variables
 - `VITE_STRIPE_PUBLISHABLE_KEY` — Stripe publishable key (from Stripe dashboard, set in Replit secrets)
