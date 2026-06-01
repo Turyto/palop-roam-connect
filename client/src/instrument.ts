@@ -10,6 +10,7 @@ Sentry.init({
   tracePropagationTargets: [
     'localhost',
     /^https:\/\/palopconnect\.com/,
+    /^https:\/\/[a-z]+\.supabase\.co/,
   ],
   beforeSend(event) {
     const host = window.location.hostname;
