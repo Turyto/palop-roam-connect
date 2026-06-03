@@ -1,0 +1,83 @@
+Bug Brief: ICCID Write-Back Failure — Supplier Inventory Not Linked to Orders
+Priority: High — fix before public launch
+Affects: 12 orders from April 20 batch (and potentially future real customer orders)
+
+What's Happening
+When an eSIM is provisioned through the supplier API, the supplier returns an ICCID (the unique eSIM identifier). This ICCID should be written back to the esim_activations table, linking the supplier inventory item to its order.
+For 12 orders from the April 20 test batch, the supplier provisioned the eSIM successfully (confirmed — the items exist in supplier_inventory_items with esim_status = GOT_RESOURCE and valid ICCIDs), but the ICCID was never written back to esim_activations. As a result:
+
+supplier_inventory_items.order_id = NULL for these 12 items
+orders.esim_status = 'failed' even though the supplier completed provisioning
+The customer never received a QR code
+The eSIM stock is allocated at supplier side but orphaned in our DB
+
+
+Evidence in the Database
+Run this query to see the affected items:
+sqlSELECT 
+  sii.package_name,
+  sii.iccid,
+  sii.esim_status,
+  sii.order_no,
+  sii.expires_at,
+  sii.last_synced_at
+FROM public.supplier_inventory_items sii
+WHERE sii.order_id IS NULL
+  AND sii.esim_status = 'GOT_RESOURCE'
+  AND sii.expires_at > NOW()
+ORDER BY sii.expires_at ASC;
+This returns 12+ active supplier items with valid ICCIDs, no order linkage, and expiry dates ranging from Sept–Nov 2026 — meaning real stock is sitting idle.
+
+What to Investigate
+1. Where does ICCID write-back happen in the code?
+The provision-esim or esim-access edge function should receive the ICCID from the supplier API response and write it to esim_activations.iccid. Find this write step and check:
+
+Is it inside a try/catch that silently swallows errors?
+Is there a race condition where the order record doesn't exist yet when the write fires?
+Did the supplier API response structure change between March and April (check if the ICCID field name/path in the response matches what the code expects)?
+
+2. Check the provisioning_log JSONB column
+sqlSELECT 
+  ea.order_id,
+  ea.provisioning_status,
+  ea.iccid,
+  ea.provisioning_log
+FROM public.esim_activations ea
+WHERE ea.provisioning_status = 'failed'
+  AND ea.iccid IS NULL
+LIMIT 10;
+The provisioning_log field may contain the raw supplier response — check if the ICCID is present in the log but was never extracted and saved.
+3. Check if the supplier order_no can be used to recover the ICCIDs
+The supplier_inventory_items table has order_no values (e.g. B26042020560001) for all 12 orphaned items. The provision-esim function likely generated these order numbers when calling the supplier. If the function stored the order_no but failed before writing the ICCID back, the mapping can be reconstructed:
+sql-- Find esim_activations records that have a matching supplier order_no
+-- but no ICCID linked
+SELECT 
+  ea.id as activation_id,
+  ea.order_id,
+  ea.provisioning_status,
+  sii.iccid,
+  sii.order_no,
+  sii.esim_status
+FROM public.esim_activations ea
+JOIN public.supplier_inventory_items sii 
+  ON sii.order_no LIKE '%' || RIGHT(ea.order_id::text, 8) || '%'
+WHERE ea.iccid IS NULL
+  AND ea.provisioning_status IN ('completed', 'failed');
+
+Expected Fix
+
+Identify the silent failure point in the provisioning function where the ICCID write-back is being dropped
+Add explicit error handling — if ICCID write-back fails, the order should be marked esim_status = 'provisioning_failed' (not silently left as failed with no log)
+Add a Sentry alert specifically for iccid IS NULL after provisioning completes — this should never happen silently in production
+One-time data fix: For the 12 orphaned items, manually match supplier_inventory_items.order_no back to the correct esim_activations records and write the ICCIDs — this recovers the stock
+
+
+Why This Matters for Launch
+If this bug is still present in the live code, any real customer whose provisioning hits the same failure path will:
+
+Have their payment succeed ✅
+Have the supplier create their eSIM ✅
+Never receive their QR code ❌
+See no error, no retry prompt, no support trigger ❌
+
+That's a silent fulfilment failure on a paid order. It needs to be fixed or explicitly caught before real customer traffic comes in.
