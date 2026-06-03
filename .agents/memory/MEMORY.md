@@ -1,1 +1,1 @@
-- [Sentry + Supabase Edge Function CORS](sentry-edge-function-cors.md) — *.supabase.co must stay in tracePropagationTargets; edge functions need sentry-trace/baggage in CORS headers.
+- [Sentry CORS edge functions](sentry-cors-edge-functions.md) — ALL edge functions need sentry-trace/baggage in CORS headers; Sentry is prod-only so missing headers are invisible in dev testing.
