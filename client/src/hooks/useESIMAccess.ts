@@ -9,6 +9,10 @@ interface ESIMAccessOrder {
   referenceId?: string;
   planName?: string;
   dataAmount?: string;
+  // Passed so the edge function can persist eSIM credentials server-side
+  // (eliminates the silent data-loss window if the client drops mid-flow).
+  orderId?: string;
+  userId?: string;
 }
 
 interface ESIMAccessResponse {

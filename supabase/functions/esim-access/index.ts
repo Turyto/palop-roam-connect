@@ -18,6 +18,12 @@ interface ESIMOrderRequest {
   referenceId?: string;
   planName?: string;
   dataAmount?: string;
+  // When provided, the edge function persists the resolved eSIM credentials
+  // server-side (esim_activations, qr_codes, orders) BEFORE returning to the
+  // client. This eliminates the silent data-loss window where a client drop
+  // after provisioning would lose the ICCID forever.
+  orderId?: string;
+  userId?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -522,6 +528,111 @@ async function createOrder(orderData: ESIMOrderRequest, creds: ESIMAccessCredent
 }
 
 // ---------------------------------------------------------------------------
+// SERVER-SIDE PERSISTENCE — write resolved eSIM credentials before returning.
+// This is the authoritative write. The client performs the same writes as a
+// fallback (existence-checked), so a client drop after this point cannot lose
+// the ICCID: it is already committed here via the service role.
+// ---------------------------------------------------------------------------
+async function persistESIMRecords(opts: {
+  supabaseUrl: string;
+  serviceKey: string;
+  orderId: string;
+  userId: string;
+  esimTranNo: string | null;
+  iccid: string | null;
+  activationCode: string | null;
+  qrCodeUrl: string | null;
+  shortUrl: string | null;
+  packageCode: string;
+}): Promise<void> {
+  const {
+    supabaseUrl, serviceKey, orderId, userId,
+    esimTranNo, iccid, activationCode, qrCodeUrl, shortUrl, packageCode,
+  } = opts;
+
+  const restHeaders = {
+    'apikey': serviceKey,
+    'Authorization': `Bearer ${serviceKey}`,
+    'Content-Type': 'application/json',
+  };
+
+  // 1. esim_activations — insert only if none exists yet for this order.
+  const actCheck = await fetch(
+    `${supabaseUrl}/rest/v1/esim_activations?order_id=eq.${orderId}&select=id&limit=1`,
+    { headers: restHeaders },
+  );
+  const actExisting = await actCheck.json().catch(() => []);
+  if (!Array.isArray(actExisting) || actExisting.length === 0) {
+    const res = await fetch(`${supabaseUrl}/rest/v1/esim_activations`, {
+      method: 'POST',
+      headers: restHeaders,
+      body: JSON.stringify({
+        order_id: orderId,
+        user_id: userId,
+        status: 'pending',
+        provisioning_status: 'completed',
+        activation_url: shortUrl,
+        iccid,
+        activation_code: activationCode,
+        qr_code_data: activationCode,
+        provisioning_log: {
+          esim_order_id: esimTranNo,
+          created_at: new Date().toISOString(),
+          package_code: packageCode,
+          iccid,
+          qr_code_url: qrCodeUrl,
+          short_url: shortUrl,
+          lpa_code: activationCode,
+          written_by: 'esim-access-edge',
+        },
+      }),
+    });
+    if (!res.ok) {
+      console.error(`[persist] esim_activations insert failed — status=${res.status} body=${await res.text()}`);
+    }
+  }
+
+  // 2. qr_codes — insert only if none exists yet for this order.
+  const qrCheck = await fetch(
+    `${supabaseUrl}/rest/v1/qr_codes?order_id=eq.${orderId}&select=id&limit=1`,
+    { headers: restHeaders },
+  );
+  const qrExisting = await qrCheck.json().catch(() => []);
+  if (!Array.isArray(qrExisting) || qrExisting.length === 0) {
+    const res = await fetch(`${supabaseUrl}/rest/v1/qr_codes`, {
+      method: 'POST',
+      headers: restHeaders,
+      body: JSON.stringify({
+        order_id: orderId,
+        user_id: userId,
+        esim_id: null,
+        qr_image_url: qrCodeUrl ?? null,
+        activation_url: activationCode ?? shortUrl ?? null,
+        status: 'active',
+      }),
+    });
+    if (!res.ok) {
+      console.error(`[persist] qr_codes insert failed — status=${res.status} body=${await res.text()}`);
+    }
+  }
+
+  // 3. orders — mark provisioned with the resolved credentials reference.
+  const res = await fetch(`${supabaseUrl}/rest/v1/orders?id=eq.${orderId}`, {
+    method: 'PATCH',
+    headers: restHeaders,
+    body: JSON.stringify({
+      esim_status: 'provisioned',
+      esim_order_id: esimTranNo,
+      esim_package_id: packageCode,
+      esim_delivered_at: new Date().toISOString(),
+    }),
+  });
+  if (!res.ok) {
+    console.error(`[persist] orders patch failed — status=${res.status} body=${await res.text()}`);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // STATUS MAPPING — eSIM Access activeType → internal status
 // ---------------------------------------------------------------------------
 // This is the single authoritative mapping. It is used by:
@@ -697,14 +808,39 @@ Deno.serve(async (req: Request): Promise<Response> => {
       case 'create-order': {
         response = await createOrder(body as ESIMOrderRequest, creds);
 
+        // Server-side persistence of resolved eSIM credentials — authoritative write.
+        // Runs only when the client supplied orderId+userId AND credentials resolved.
+        // Wrapped so a persistence failure never breaks the response (client falls back).
+        if (response.success && response.iccid && body.orderId && body.userId) {
+          try {
+            await persistESIMRecords({
+              supabaseUrl,
+              serviceKey,
+              orderId: body.orderId,
+              userId: body.userId,
+              esimTranNo: response.esimTranNo ?? null,
+              iccid: response.iccid ?? null,
+              activationCode: response.activationCode ?? null,
+              qrCodeUrl: response.qrCodeUrl ?? null,
+              shortUrl: response.shortUrl ?? null,
+              packageCode: body.packageId,
+            });
+            console.log(`[create-order] server-side eSIM records persisted for order=${body.orderId}`);
+          } catch (e: any) {
+            console.error(`[create-order] server-side persist failed (non-fatal, client will retry): ${e?.message}`);
+          }
+        }
+
         // Fire-and-forget provisioning email — does not block or affect the response
         if (response.success && body.customerEmail && resendApiKey) {
-          const obj = response.data?.obj;
-          const esimEntry = obj?.packageInfoList?.[0]?.esimList?.[0];
-          const iccid = esimEntry?.iccid ?? null;
-          const lpaCode = esimEntry?.ac ?? esimEntry?.activationCode ?? null;
-          const qrImageUrl = esimEntry?.qrCodeUrl ?? null;
-          const webUrl = esimEntry?.shortUrl ?? esimEntry?.downloadUrl ?? esimEntry?.url ?? null;
+          // createOrder() returns the resolved eSIM credentials at the top level
+          // (populated by fetchESIMDetails). The raw API order response (response.data.obj)
+          // does NOT contain credentials — provisioning is async — so we must read them
+          // from the top-level fields, not the nested packageInfoList path.
+          const iccid = response.iccid ?? null;
+          const lpaCode = response.activationCode ?? null;
+          const qrImageUrl = response.qrCodeUrl ?? null;
+          const webUrl = response.shortUrl ?? null;
 
           sendProvisioningEmail({
             customerEmail: body.customerEmail,
