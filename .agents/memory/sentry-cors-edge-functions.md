@@ -1,6 +1,6 @@
 ---
 name: Sentry CORS edge functions
-description: Every Supabase edge function must allow sentry-trace and baggage headers or checkout breaks in production — Sentry is prod-only so this is invisible in dev testing.
+description: Every Supabase edge function must allow sentry-trace and baggage headers (and *.supabase.co must stay in Sentry tracePropagationTargets) or checkout/Tawk.to break in production only.
 ---
 
 # Sentry CORS — Edge Function Rule
@@ -16,17 +16,22 @@ const corsHeaders = {
 };
 ```
 
-**Why:** Sentry's `browserTracingIntegration` injects `sentry-trace` and `baggage` headers into all requests matching `tracePropagationTargets` (which includes `*.supabase.co`). The browser sends an OPTIONS preflight listing these headers. If the function doesn't declare them in `Access-Control-Allow-Headers`, the preflight fails with CORS error and `supabase.functions.invoke()` returns an error — silently blocking the entire call.
+And `client/src/instrument.ts` must keep `*.supabase.co` in `tracePropagationTargets`:
 
-**How to apply:** Any time a new edge function is created, or an existing one is edited, check that `corsHeaders` includes both `sentry-trace` and `baggage`. Do not copy the old 4-header pattern.
+```ts
+tracePropagationTargets: [
+  'localhost',
+  /^https:\/\/palopconnect\.com/,
+  /^https:\/\/[a-z]+\.supabase\.co/,
+],
+```
+
+**Why:** Sentry's `browserTracingIntegration` injects `sentry-trace` + `baggage` headers into every fetch matching `tracePropagationTargets` (which includes `*.supabase.co`). The browser then sends an OPTIONS preflight listing those headers. If a function doesn't declare them in `Access-Control-Allow-Headers`, the preflight fails with a CORS error and `supabase.functions.invoke()` returns `FunctionsFetchError` — silently blocking the entire call (this caused a ~24h, 100% checkout outage). Removing `*.supabase.co` from the targets instead breaks Tawk.to widget init (it depends on the fetch instrumentation). PostgREST (`/rest/v1/`) is unaffected because it returns `Access-Control-Allow-Headers: *`.
+
+**How to apply:** Whenever you create OR edit any edge function, verify `corsHeaders` includes both `sentry-trace` and `baggage`. Never copy the old 4-header pattern. After deploying, verify the preflight returns 200 with those headers echoed.
 
 ## Why this is invisible in dev testing
-`instrument.ts` has `enabled: import.meta.env.PROD` — Sentry is completely disabled on `localhost` and `*.replit.dev`. The CORS preflight never carries Sentry headers in dev, so missing headers only manifest in production.
+`instrument.ts` has `enabled: import.meta.env.PROD` — Sentry is fully disabled on `localhost` and `*.replit.dev`. Dev preflights never carry Sentry headers, so missing headers only manifest in production. Always verify against the deployed function, not dev.
 
-## History
-- 1 Jun 2026: fix applied only to `fetch-supplier-rates` (the function being tested). Four checkout-critical functions missed.
-- 3 Jun 2026: production deployment → 100% checkout failure for ~24 hours.
-- 3 Jun 2026: all 4 functions fixed and redeployed; preflight verified 200.
-
-## Structural fix still needed
-All functions define their own `corsHeaders` independently. A shared `supabase/functions/_shared/cors.ts` would prevent this class of bug entirely.
+## Structural fix still worth doing
+Each function defines its own `corsHeaders`. A shared `supabase/functions/_shared/cors.ts` would prevent this whole class of bug.

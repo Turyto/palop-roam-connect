@@ -556,6 +556,19 @@ async function persistESIMRecords(opts: {
     'Content-Type': 'application/json',
   };
 
+  // 0. Ownership check — the order must exist AND belong to userId before any
+  // service-role write. This prevents a caller from persisting credentials onto
+  // an order they do not own (orderId/userId arrive in the request body).
+  const ownerCheck = await fetch(
+    `${supabaseUrl}/rest/v1/orders?id=eq.${orderId}&user_id=eq.${userId}&select=id&limit=1`,
+    { headers: restHeaders },
+  );
+  const ownerRows = await ownerCheck.json().catch(() => []);
+  if (!Array.isArray(ownerRows) || ownerRows.length === 0) {
+    console.error(`[persist] ownership check failed — order=${orderId} does not belong to user=${userId}; skipping write`);
+    return;
+  }
+
   // 1. esim_activations — insert only if none exists yet for this order.
   const actCheck = await fetch(
     `${supabaseUrl}/rest/v1/esim_activations?order_id=eq.${orderId}&select=id&limit=1`,
@@ -809,15 +822,17 @@ Deno.serve(async (req: Request): Promise<Response> => {
         response = await createOrder(body as ESIMOrderRequest, creds);
 
         // Server-side persistence of resolved eSIM credentials — authoritative write.
-        // Runs only when the client supplied orderId+userId AND credentials resolved.
+        // Runs only when the client supplied orderId AND credentials resolved.
+        // userId comes from the verified token (not the body); persistESIMRecords
+        // also verifies the order belongs to that user before writing.
         // Wrapped so a persistence failure never breaks the response (client falls back).
-        if (response.success && response.iccid && body.orderId && body.userId) {
+        if (response.success && response.iccid && body.orderId) {
           try {
             await persistESIMRecords({
               supabaseUrl,
               serviceKey,
               orderId: body.orderId,
-              userId: body.userId,
+              userId: user.id,
               esimTranNo: response.esimTranNo ?? null,
               iccid: response.iccid ?? null,
               activationCode: response.activationCode ?? null,

@@ -1,1 +1,2 @@
 - [Sentry CORS edge functions](sentry-cors-edge-functions.md) — ALL edge functions need sentry-trace/baggage in CORS headers; Sentry is prod-only so missing headers are invisible in dev testing.
+- [eSIM provisioning recovery](esim-provisioning-recovery.md) — match orphaned orders to supplier eSIMs via raw_payload transactionId = orders.payment_intent_id; provisioning writes must be server-side + ownership-checked.
