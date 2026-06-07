@@ -2,6 +2,13 @@ export type Lang = 'pt' | 'en';
 
 const translations = {
   pt: {
+    cookieConsent: {
+      title: 'Respeitamos a tua privacidade',
+      message: 'Usamos cookies essenciais para o funcionamento do site e da compra. Com a tua autorização, usamos também cookies não essenciais (análise, chat de apoio e monitorização de erros) para melhorar o serviço. Podes recusar e continuar a comprar normalmente.',
+      accept: 'Aceitar tudo',
+      reject: 'Recusar não essenciais',
+      privacyLink: 'Política de Privacidade',
+    },
     nav: {
       home: 'Início',
       plans: 'Planos',
@@ -648,6 +655,13 @@ const translations = {
     },
   },
   en: {
+    cookieConsent: {
+      title: 'We respect your privacy',
+      message: 'We use essential cookies to run the site and your purchase. With your permission, we also use non-essential cookies (analytics, support chat, and error monitoring) to improve the service. You can decline and still buy as normal.',
+      accept: 'Accept all',
+      reject: 'Reject non-essential',
+      privacyLink: 'Privacy Policy',
+    },
     nav: {
       home: 'Home',
       plans: 'Plans',

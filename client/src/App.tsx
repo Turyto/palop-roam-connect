@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/auth";
 import { LanguageProvider } from "@/contexts/language";
 import { lazy, Suspense, useEffect } from "react";
 import { useTawk } from "@/hooks/useTawk";
+import CookieConsent from "@/components/CookieConsent";
 
 // Eagerly loaded — active customer funnel pages
 import Index from "./pages/Index";
@@ -107,6 +108,7 @@ const App = () => {
                 <Suspense fallback={<LoadingFallback />}>
                   <AppRoutes />
                 </Suspense>
+                <CookieConsent />
                 <Toaster />
                 <Sonner />
               </TooltipProvider>
