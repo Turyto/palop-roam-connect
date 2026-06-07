@@ -1,4 +1,5 @@
 import { useLanguage } from '@/contexts/language';
+const praiaturLogo = '/praiatur-logo.png';
 
 export default function PartnersSection() {
   const { t } = useLanguage();
@@ -23,9 +24,12 @@ export default function PartnersSection() {
         >
           {/* Left — Logo + credentials */}
           <div className="flex flex-col items-center md:items-start gap-3 md:w-48 shrink-0">
-            <div className="flex items-center justify-center rounded-lg bg-gray-100 w-32 h-16 md:w-36 md:h-20">
-              <span className="text-xl font-black tracking-wider text-gray-800">PRAIATUR</span>
-            </div>
+            <img
+              src={praiaturLogo}
+              alt="Praiatur — Agência de Viagens e Turismo"
+              className="w-44 md:w-48 object-contain"
+              data-testid="img-partner-praiatur-logo"
+            />
 
             <span
               className="text-xs font-semibold rounded-full px-3 py-1 text-center"
