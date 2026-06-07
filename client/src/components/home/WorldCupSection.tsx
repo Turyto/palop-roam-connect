@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/language';
 import type { Lang } from '@/lib/translations';
 
-const SHOW_START = new Date('2026-06-11T00:00:00');
+const SHOW_START = new Date('2026-06-07T00:00:00');
 const SHOW_END = new Date('2026-07-20T00:00:00');
 
 type MatchRow = [string, string, string];

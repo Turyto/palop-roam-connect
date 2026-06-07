@@ -3,7 +3,7 @@ import { X } from 'lucide-react';
 import { useLanguage } from '@/contexts/language';
 
 const DISMISS_KEY = 'palop-wc2026-bar-dismissed';
-const SHOW_START = new Date('2026-06-11T00:00:00');
+const SHOW_START = new Date('2026-06-07T00:00:00');
 const SHOW_END = new Date('2026-07-20T00:00:00');
 
 export default function AnnouncementBar() {
