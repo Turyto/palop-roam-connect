@@ -2,11 +2,14 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/auth";
 import HomeHeader from "@/components/home/HomeHeader";
+import AnnouncementBar from "@/components/home/AnnouncementBar";
 import HeroSection from "@/components/home/HeroSection";
 import AudienceSection from "@/components/home/AudienceSection";
 import HowItWorksSection from "@/components/home/HowItWorksSection";
 import BenefitsSection from "@/components/home/BenefitsSection";
+import WorldCupSection from "@/components/home/WorldCupSection";
 import PlansSection from "@/components/home/PlansSection";
+import PartnersSection from "@/components/home/PartnersSection";
 import CompatibilitySection from "@/components/home/CompatibilitySection";
 import UseCasesSection from "@/components/home/UseCasesSection";
 import SupportSection from "@/components/home/SupportSection";
@@ -40,13 +43,16 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <AnnouncementBar />
       <HomeHeader />
       <main className="flex-grow">
         <HeroSection />
         <AudienceSection />
         <HowItWorksSection />
         <BenefitsSection />
+        <WorldCupSection />
         <PlansSection />
+        <PartnersSection />
         <CompatibilitySection />
         <UseCasesSection />
         <SupportSection />

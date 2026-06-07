@@ -1,0 +1,230 @@
+Dev Brief — palopconnect.com · World Cup 2026 Updates
+For: Lead Developer (Replit)
+From: Artur Conceição, PALOP Connect
+Date: June 2026
+Priority: Ship before June 15 (first Cape Verde match)
+
+Overview
+Three additions to the homepage. All are time-sensitive — they must go live before June 15 and should auto-hide after July 19 (end of tournament). All content is bilingual: PT (default) / EN, following the existing language toggle already on the site.
+
+Feature 1 — Announcement Bar
+What it is
+A full-width bar that sits above the existing navbar. One line of text + CTA link. Dismissable with an X button. Persists across pages (or at minimum shows on homepage).
+Behaviour
+
+Appears above the navbar at the very top of the page
+Dismissable: clicking X hides it and stores the preference in localStorage so it doesn't reappear on the same session/device
+Auto-show dates: render only between 2026-06-11 and 2026-07-19 (inclusive). Outside those dates, do not render the component at all.
+On mobile: truncate text gracefully, keep CTA link visible
+
+Design
+Background:  #1A1A1A
+Text color:  #F5F5F0
+Font size:   13px
+Padding:     9px 20px
+CTA color:   #2DB84B (brand green)
+X button:    #888888, right-aligned
+Copy
+PT (default):
+🏆 FIFA World Cup 2026 · A viajar para os EUA para os jogos?
+1 eSIM cobre USA + Canadá + México — activa antes de embarcar.
+[Ver planos →]
+EN:
+🏆 FIFA World Cup 2026 · Travelling to the USA for the matches?
+1 eSIM covers USA + Canada + Mexico — activate before you fly.
+[See plans →]
+CTA link: scroll to the World Cup section on the homepage (#worldcup-2026), or link to /plans if on another page.
+
+Feature 2 — World Cup Section (Homepage)
+What it is
+A new full-width section inserted between the existing "Why choose our eSIM" section and the existing "Choose the right plan for you" section on the homepage.
+Give it the id worldcup-2026 so the announcement bar CTA can scroll to it.
+Behaviour
+
+Auto-show dates: render only between 2026-06-11 and 2026-07-19 (inclusive)
+Respects the existing PT/EN language toggle
+On mobile: stack the two corridor cards vertically (single column)
+
+Design
+Background:           #1A1A1A  (dark, contrasts with the surrounding light sections)
+Section padding:      48px 24px (desktop) · 32px 16px (mobile)
+Border-radius:        0  (full-width, edge-to-edge — no card wrapper)
+Card background:      #242424
+Card border:          0.5px solid #333333
+Card border-radius:   10px
+Card padding:         20px
+Grid layout:          2 columns, equal width, 16px gap (desktop) · 1 column (mobile)
+Structure
+[Section — dark background #1A1A1A]
+  [Section heading — centred]
+  [Section subheading — centred]
+  [2-column grid]
+    [Card Left — PT Corridor]
+    [Card Right — NA Corridor]
+Section heading & subheading
+PT:
+Heading:     FIFA World Cup 2026 — Fica ligado desde a aterragem
+Subheading:  Cabo Verde joga os 3 jogos nos EUA · Portugal joga em Houston e Miami · 15 Jun – 19 Jul
+EN:
+Heading:     FIFA World Cup 2026 — Get connected before you land
+Subheading:  Cape Verde plays all 3 matches in the USA · Portugal plays in Houston and Miami · Jun 15 – Jul 19
+
+Card Left — PT Corridor
+Corridor label (small caps, brand green #2DB84B):
+
+PT: Corredor PT · Portugal / Europa
+EN: PT Corridor · Portugal / Europe
+
+Card title:
+
+PT: A viajar para Portugal ou em escala em Lisboa
+EN: Travelling to or through Portugal
+
+Card subtitle:
+
+PT: Compras antes de embarcar · activa quando aterrares em Lisboa
+EN: Buy before you board · activates on landing in Lisbon
+
+Match schedule (small, colour #888888, dates in #2DB84B):
+PT:
+15 Jun · Espanha vs Cabo Verde · Atlanta
+17 Jun · Portugal vs DR Congo · Houston
+21 Jun · Uruguai vs Cabo Verde · Miami
+23 Jun · Portugal vs Uzbequistão · Houston
+26–27 Jun · Última jornada dos grupos
+EN:
+Jun 15 · Spain vs Cape Verde · Atlanta
+Jun 17 · Portugal vs DR Congo · Houston
+Jun 21 · Uruguay vs Cape Verde · Miami
+Jun 23 · Portugal vs Uzbekistan · Houston
+Jun 26–27 · Final group stage matchday
+Plan rows (3 rows, each: plan name left · price right):
+Nome PTNome ENDadosDuraçãoPreçoChegada PTArrival PT3GB15 dias / days€4,90Essencial PT (badge: "Mais popular" / "Most popular")Essential PT5GB30 dias / days€9,90Conforto PTComfort PT10GB30 dias / days€14,90
+CTA button (solid green #2DB84B, white text, full width):
+
+PT: Encontrar o meu plano →
+EN: Find my plan →
+
+Link: /plans (existing plans page)
+
+Card Right — NA Corridor
+Corridor label:
+
+PT: Corredor América do Norte · EUA / Canadá / México
+EN: NA Corridor · USA / Canada / Mexico
+
+Card title:
+
+PT: A viajar aos EUA para os jogos
+EN: Travelling to the USA for the matches
+
+Card subtitle:
+
+PT: Os 3 jogos de Cabo Verde são nos EUA
+EN: All 3 Cape Verde matches are on US soil
+
+eSIM badge (small pill, green tint background):
+
+PT: 🇺🇸🇨🇦🇲🇽  1 eSIM · 3 países
+EN: 🇺🇸🇨🇦🇲🇽  1 eSIM · 3 countries
+
+Match schedule:
+PT:
+15 Jun · CV vs Espanha · Atlanta
+21 Jun · CV vs Uruguai · Miami  (+ Portugal 27 Jun)
+26 Jun · CV vs Arábia Saudita · Houston  (+ Portugal 17 e 23 Jun)
+EN:
+Jun 15 · CV vs Spain · Atlanta
+Jun 21 · CV vs Uruguay · Miami  (+ Portugal Jun 27)
+Jun 26 · CV vs Saudi Arabia · Houston  (+ Portugal Jun 17 & 23)
+Plan rows (4 rows + highlighted row):
+Nome PTNome ENDadosDuraçãoPreçoBadgeChegadaArrival1GB7 dias / days€4,50—GruposGroup Stage3GB15 dias / days€11,50—EliminatóriasKnockouts5GB30 dias / days€17,40—Mundial CompletoFull Tournament20GB90 dias / days€53,40⭐ badge: "Torneio inteiro" / "Full tournament"
+
+The "Mundial Completo / Full Tournament" row should be visually highlighted — slightly lighter background or left green border accent — to draw the eye.
+
+CTA button (outlined, green border #2DB84B, green text, full width):
+
+PT: Ver planos América do Norte →
+EN: Get my USA plan →
+
+Link: /plans (filter to NA plans if possible, otherwise just /plans)
+Note below button (small, #666666):
+
+PT: A fazer escala em Lisboa? Adiciona Chegada PT (€4,90) para cobrir o trânsito.
+EN: Travelling via Lisbon? Add Arrival PT (€4,90) for transit coverage.
+
+
+Feature 3 — Official Partners Section
+What it is
+A new section inserted after the "Choose the right plan for you" section and before the "Frequently asked questions" section on the homepage.
+Behaviour
+
+Permanent (no date restriction — shows always)
+Respects PT/EN toggle
+On mobile: stack partner logo and quote card vertically
+
+Design
+Background:         var(--background-secondary) or light grey — matches the existing page sections
+Section padding:    48px 24px (desktop) · 32px 16px (mobile)
+Partner card:       white background, 0.5px border, border-radius 12px, padding 24px
+Section heading
+PT: Parceiros Oficiais
+EN: Official Partners
+Section subheading:
+PT: Empresas de confiança que recomendam a BuéChama aos seus clientes
+EN: Trusted businesses that recommend BuéChama to their customers
+
+Partner Card — Praiatur
+The card has two columns (desktop): logo column (left) · quote + info column (right). Stack on mobile.
+Left column — Logo block:
+Logo: use Praiatur logo image (see praiaturcaboverde.com for asset — or use text "PRAIATUR" in bold if image not yet available)
+Below logo:
+  - Badge: "Parceiro Oficial · Cabo Verde" / "Official Partner · Cape Verde"
+    Background: light green tint, green text
+  - Credential pills (small tags):
+      "IATA"
+      "30+ anos" / "30+ years"
+      "Official Air Senegal Rep"
+Right column — Quote + info:
+Quote text:
+PT:
+
+"Com 30 anos a organizar viagens para a nossa comunidade, sabemos o que os clientes precisam quando chegam ao destino. A BuéChama resolve o problema dos dados de forma simples e sem surpresas."
+
+EN:
+
+"With 30 years organising travel for our community, we know what clients need when they arrive at their destination. BuéChama solves the data problem simply and without surprises."
+
+Attribution:
+
+PT: — Anabela Costa, Praiatur · Agência de Viagens & Operador Turístico, Praia, Cabo Verde
+EN: — Anabela Costa, Praiatur · Travel Agency & Tour Operator, Praia, Cape Verde
+
+Link (text link, brand green):
+
+PT: Planear viagem com Praiatur →  → https://www.praiaturcaboverde.com
+EN: Plan your trip with Praiatur →  → https://www.praiaturcaboverde.com
+
+
+Note for dev: The quote above is illustrative. Artur will confirm the final approved quote from Anabela before this section goes live. Build the component now with a placeholder quote; swap the text when confirmed.
+
+
+Summary — What To Build
+FeaturePlacementDate logicPriorityAnnouncement barAbove navbar, all pagesShow Jun 11–Jul 19 only🔴 Ship firstWorld Cup sectionHomepage, between "Why choose" and "Plans"Show Jun 11–Jul 19 only🔴 Ship before Jun 15Partners sectionHomepage, between "Plans" and "FAQ"Always visible🟠 Can follow
+
+Language Toggle Integration
+The site already has a PT/EN toggle in the navbar. All three new components must hook into the same language state the rest of the site uses. Do not build a separate language system — just use whatever i18n/state mechanism the existing toggle controls.
+If the site uses a context, store, or URL-based locale (e.g. /en/, /pt/), follow the same pattern. All copy above is provided in both languages; label the strings clearly in the code so they're easy to update.
+
+Assets Needed
+
+ Praiatur logo (PNG, transparent background) — request from Artur or pull from praiaturcaboverde.com
+ Confirmed quote text from Anabela Costa (Artur to provide)
+
+
+What NOT to Build
+
+No scrolling ticker/marquee — the announcement bar replaces this need
+No separate USA plans page (link to existing /plans for now)
+No waitlist form (the plans are already available — link directly to /plans)
+Do not remove or modify any existing sections
