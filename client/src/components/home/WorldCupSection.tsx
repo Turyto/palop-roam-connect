@@ -211,14 +211,16 @@ export default function WorldCupSection() {
               ))}
             </div>
 
-            <Link
-              to="/plans"
+            <a
+              href="https://wa.me/351911186695"
+              target="_blank"
+              rel="noopener noreferrer"
               className="mt-auto block text-center py-2.5 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90 border"
               style={{ borderColor: '#2DB84B', color: '#2DB84B' }}
               data-testid="button-wc-na-cta"
             >
               {wc.getUsaPlan}
-            </Link>
+            </a>
             <p className="text-xs text-center" style={{ color: '#666666' }}>
               {wc.lisboaNote}
             </p>
