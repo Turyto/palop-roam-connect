@@ -1,6 +1,7 @@
 import { initAnalytics } from '@/analytics';
 import { initSentry } from '@/instrument';
 import { loadTawk } from '@/lib/tawk';
+import { loadHubspot } from '@/lib/hubspot';
 
 export type ConsentValue = 'accepted' | 'rejected';
 
@@ -34,7 +35,8 @@ let servicesLoaded = false;
 
 /**
  * Initialise non-essential third-party services (Sentry browser tracing, GA4,
- * Tawk.to live chat) — but ONLY if the user has actively accepted cookies.
+ * Tawk.to live chat, HubSpot tracking) — but ONLY if the user has actively
+ * accepted cookies.
  * Idempotent: safe to call on app start and again the moment the user accepts.
  * Essential services (Stripe, Supabase) are never gated, so checkout works
  * regardless of the consent choice.
@@ -46,4 +48,5 @@ export function loadConsentedServices(): void {
   initSentry();
   initAnalytics();
   loadTawk();
+  loadHubspot();
 }
