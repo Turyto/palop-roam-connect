@@ -9,7 +9,7 @@ const corsHeaders = {
 // even if the DB rows are missing. Update here when package codes change.
 const FALLBACK_PACKAGES: Record<string, string> = {
   'arrival':   'PRC8B6GK2',
-  'essential': 'PV006PZ7G',
+  'essential': 'PV0Q6PZ7G',
   'comfort':   'P29FDU5TL',
   'freedom':   'P6PBYX5G4',
 };

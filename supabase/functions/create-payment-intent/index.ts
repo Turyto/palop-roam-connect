@@ -8,7 +8,7 @@ const corsHeaders = {
 // pending order always carries an esim_package_id even if the DB row is missing.
 const FALLBACK_PACKAGES: Record<string, string> = {
   'arrival':   'PRC8B6GK2',
-  'essential': 'PV006PZ7G',
+  'essential': 'PV0Q6PZ7G',
   'comfort':   'P29FDU5TL',
   'freedom':   'P6PBYX5G4',
 };
