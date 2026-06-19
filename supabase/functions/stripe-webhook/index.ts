@@ -115,14 +115,29 @@ async function handlePaymentSucceeded(
       console.error(`[stripe-webhook] failed to mark order paid — order=${order.id} error=${updateError.message}`)
       throw updateError
     }
-    console.log(`[stripe-webhook] order=${order.id} marked paid — status=processing customer=${order.customer_email}`)
+    console.log(`[stripe-webhook] order=${order.id} marked paid — status=processing`)
   } else {
     console.log(`[stripe-webhook] order=${order.id} already paid — continuing to provisioning check`)
   }
 
   // --- 2. Provisioning idempotency guard ---
   if (order.esim_status === 'provisioned') {
-    console.log(`[stripe-webhook] order=${order.id} already provisioned — nothing to do`)
+    // Defensive: an order can be provisioned by the client-invoked esim-access path
+    // before this webhook fires. Make sure its status still reaches 'completed' so it
+    // never lingers as 'processing' in the customer's order history.
+    if (order.status !== 'completed') {
+      const { error: completeError } = await supabase
+        .from('orders')
+        .update({ status: 'completed', completed_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .eq('id', order.id)
+      if (completeError) {
+        console.error(`[stripe-webhook] order=${order.id} already provisioned but failed to flip status to completed — ${completeError.message}`)
+        throw completeError
+      }
+      console.log(`[stripe-webhook] order=${order.id} already provisioned — flipped status to completed`)
+    } else {
+      console.log(`[stripe-webhook] order=${order.id} already provisioned and completed — nothing to do`)
+    }
     return
   }
   const { data: activation } = await supabase

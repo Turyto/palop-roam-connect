@@ -1,1 +1,1 @@
-- [Orphaned trigger after DROP TABLE CASCADE](postgres-orphaned-trigger.md) — dropping a table leaves triggers/functions on OTHER tables referencing it as latent runtime errors.
+- [Order provisioning paths](order-provisioning-paths.md) — TWO paths provision eSIMs; any order-status logic must be mirrored in both or orders get stuck.

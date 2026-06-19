@@ -421,9 +421,9 @@ async function sendProvisioningEmail(opts: {
   });
   if (!sendRes.ok) {
     const err = await sendRes.json().catch(() => ({}));
-    console.error(`[provision/email] Resend failed — status=${sendRes.status} error=${err?.message ?? '(unknown)'} to=${customerEmail}`);
+    console.error(`[provision/email] Resend failed — status=${sendRes.status} error=${err?.message ?? '(unknown)'}`);
   } else {
-    console.log(`[provision/email] sent — to=${customerEmail} plan=${planName}`);
+    console.log(`[provision/email] sent — plan=${planName}`);
   }
 }
 

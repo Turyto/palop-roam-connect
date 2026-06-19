@@ -173,9 +173,9 @@ async function sendProvisioningEmail(opts: {
 
   if (!sendRes.ok) {
     const err = await sendRes.json().catch(() => ({}));
-    console.error(`[esim-access] Resend delivery failed — status=${sendRes.status} error=${err?.message ?? '(unknown)'} to=${customerEmail}`);
+    console.error(`[esim-access] Resend delivery failed — status=${sendRes.status} error=${err?.message ?? '(unknown)'}`);
   } else {
-    console.log(`[esim-access] provisioning email sent — to=${customerEmail} plan=${planName}`);
+    console.log(`[esim-access] provisioning email sent — plan=${planName}`);
   }
 }
 
@@ -214,8 +214,7 @@ async function verifyUser(supabaseUrl: string, serviceKey: string, token: string
       },
     });
     const text = await res.text();
-    // Diagnostic logging — token prefix helps identify type (anon key vs user JWT) without leaking secrets
-    console.log(`[verifyUser] status=${res.status} tokenPrefix=${token.slice(0, 30)} bodySnippet=${text.slice(0, 200)}`);
+    console.log(`[verifyUser] status=${res.status}`);
     if (!res.ok) {
       console.error(`[verifyUser] auth check failed — status=${res.status} body=${text.slice(0, 300)}`);
       return null;
@@ -447,12 +446,8 @@ async function createOrder(orderData: ESIMOrderRequest, creds: ESIMAccessCredent
     transactionId: outOrder,
   };
 
-  // Log request payload (no secrets — credentials are in signed headers only)
-  console.log(`[create-order] sending to supplier — payload=${JSON.stringify({
-    packageCode: orderData.packageId,
-    userEmail: orderData.customerEmail,
-    outOrder: payload.outOrder,
-  })}`);
+  // Log request payload (no secrets, no PII — credentials are in signed headers only)
+  console.log(`[create-order] sending to supplier — packageCode=${orderData.packageId} outOrder=${payload.outOrder}`);
 
   try {
     const body = JSON.stringify(payload);
@@ -629,12 +624,15 @@ async function persistESIMRecords(opts: {
     }
   }
 
-  // 3. orders — mark provisioned with the resolved credentials reference.
+  // 3. orders — mark provisioned AND completed (P1: order status must reach 'completed'
+  // so it stops displaying as 'processing' forever once the eSIM is delivered).
   const res = await fetch(`${supabaseUrl}/rest/v1/orders?id=eq.${orderId}`, {
     method: 'PATCH',
     headers: restHeaders,
     body: JSON.stringify({
       esim_status: 'provisioned',
+      status: 'completed',
+      completed_at: new Date().toISOString(),
       esim_order_id: esimTranNo,
       esim_package_id: packageCode,
       esim_delivered_at: new Date().toISOString(),
@@ -808,7 +806,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     const creds: ESIMAccessCredentials = { accessCode, secretKey };
     const { action, ...body } = await req.json();
-    console.log(`[esim-access] action=${action} user=${user.email} userId=${user.id}`);
+    console.log(`[esim-access] action=${action} userId=${user.id}`);
 
     let response: any;
     switch (action) {
@@ -892,7 +890,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         );
         break;
       default:
-        console.error(`[esim-access] unknown action="${action}" from user=${user.email}`);
+        console.error(`[esim-access] unknown action="${action}" from userId=${user.id}`);
         response = { success: false, error: `Unknown action: ${action}` };
     }
 
@@ -902,7 +900,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         `[esim-access] action=${action} failed — ` +
         `error=${response.error} ` +
         `errorCode=${response.errorCode ?? 'n/a'} ` +
-        `user=${user.email}`
+        `userId=${user.id}`
       );
     }
 

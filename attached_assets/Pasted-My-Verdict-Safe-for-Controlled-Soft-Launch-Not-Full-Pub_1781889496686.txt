@@ -1,0 +1,27 @@
+My Verdict: Safe for Controlled Soft Launch — Not Full Public Launch Yet
+The critical path is clean. Replit has confirmed with code references that only 4 plan IDs reach customers (essential, arrival, comfort, freedom), all 4 have validated package codes, and the DB has a unique constraint on plan_id so there's no ambiguity in resolution. The checkout is isolated from the catalog system entirely. This is the bit that matters most — money in, eSIM out — and that path works.
+
+What's confirmed safe ✅
+
+All 4 customer-facing plans have correct, validated eSIM Access codes
+RLS on all 18 tables — no data exposure
+Broken inventory trigger removed
+Stripe webhook returning 200, provisioning working
+No outstanding paid-but-not-provisioned orders (Anabela and Salomé both recovered)
+palop-essential-5gb and europe-weekly unreachable from storefront
+
+
+What still needs fixing before full public launch 🟡
+Tell Replit to do these in Build mode, in order:
+
+Delete or deactivate palop-essential-5gb — Replit agreed it's a landmine. 10-minute fix. Do it now.
+Fix order status not flipping to completed after esim_status → provisioned — right now your test order (d87e73fd) shows processing permanently. Every real order will have this same display problem. Customers checking their order history will see "processing" forever. This erodes trust.
+Handle payment_intent.canceled to auto-cancel ghost/abandoned orders — your dashboard currently shows a phantom pending order from today. Cosmetic now, but will accumulate.
+Fix vite preview deployment — recurring 500s and cold starts are not acceptable for a payment platform serving real customers. This is the one thing I'd want resolved before any significant volume. Ask Replit to switch to a Reserved VM on Replit or a static host (Vercel/Netlify) for the frontend.
+Strip JWT prefix and customer email debug logging — GDPR exposure, straightforward cleanup.
+
+
+What to do right now
+Green-light Replit to switch to Build mode for items 1–3. Those are low-risk DB writes and webhook logic changes. Items 4 and 5 can follow.
+For sales: open to invited/referred customers only (Praiatur's network, people you know) while items 1–4 are being resolved. Do not blast a public link or run paid ads until the vite preview stability issue is fixed. A stranger hitting a cold-start 500 during checkout and losing trust is not a recoverable first impression.
+Once items 1–4 are done, you're clear for full public launch.

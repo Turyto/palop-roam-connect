@@ -22,6 +22,16 @@ Sentry's `tracePropagationTargets` includes `*.supabase.co` (required for Tawk.t
 Edge functions must allow `sentry-trace` and `baggage` in their CORS `Access-Control-Allow-Headers`.
 Any new edge function must include these headers or its preflight will fail.
 
+### June 2026 — CTO Soft-Launch Punch-List
+Done (deployed to `btallyhejhqfpqwaboee`):
+- **Item 1** — deleted placeholder `esim_packages` row `palop-essential-5gb` (`ESIM_PALOP_5GB`). It was unreachable from the storefront (checkout only sells `arrival/essential/comfort/freedom`) but was a landmine.
+- **Item 2** — order `status` now reaches `completed` after provisioning. Two provisioning paths exist and BOTH now set `status='completed'`: the client-invoked `esim-access` persist, and `_shared/esim-provision.ts` (stripe-webhook). The webhook's "already provisioned" guard now also flips a stuck `processing` order to `completed`. Existing stuck orders backfilled.
+- **Item 3** — `payment_intent.canceled` handler is live (cancels ghost/abandoned orders, never overrides paid). Existing stale `pending` orders (>1h) cancelled.
+- **Item 5** — GDPR: stripped JWT token-prefix and customer-email from all edge-function logs (`esim-access`, `sync-supplier-inventory`, `_shared/esim-provision.ts`, `stripe-webhook`); logs now use `userId`/`order id` only.
+
+Deferred to user:
+- **Item 4** — frontend deploy is `autoscale` running `vite preview` (cold-start 500s). App is a frontend-only Vite SPA (Supabase backend) → recommend switching the published deployment to **Replit Static Hosting** (build → `dist`, CDN-served, no cold starts). Publish-time change initiated by the user.
+
 ### Pre-Launch Blocker
 - **GDPR cookie consent banner** — not yet implemented; required before EU public marketing push
 

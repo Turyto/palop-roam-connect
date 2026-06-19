@@ -200,7 +200,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     // -----------------------------------------------------------------------
     const authHeader = req.headers.get('authorization') ?? '';
     const headerOk = authHeader.startsWith('Bearer ');
-    console.log(`[sync] auth header present=${headerOk} rawValue=${authHeader.slice(0, 30)}`);
+    console.log(`[sync] auth header present=${headerOk}`);
     if (!headerOk) {
       console.error('[sync] BRANCH: missing_auth_header — returning 401');
       return new Response(JSON.stringify({ success: false, error: 'missing_auth_header' }), {
@@ -208,9 +208,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
       });
     }
     const token = authHeader.replace('Bearer ', '');
-    console.log(`[sync] token prefix=${token.slice(0, 40)}`);
     const user = await verifyUser(supabaseUrl, serviceKey, token);
-    console.log(`[sync] user verified=${!!user} id=${user?.id ?? 'null'} email=${user?.email ?? 'null'}`);
+    console.log(`[sync] user verified=${!!user} id=${user?.id ?? 'null'}`);
     if (!user) {
       console.error('[sync] BRANCH: user_verification_failed — returning 401');
       return new Response(JSON.stringify({ success: false, error: 'user_verification_failed' }), {
@@ -253,7 +252,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }
 
     const supplierName = 'esim_access';
-    console.log(`[sync] starting sync — supplier=${supplierName} user=${user.email}`);
+    console.log(`[sync] starting sync — supplier=${supplierName} user=${user.id}`);
 
     // -----------------------------------------------------------------------
     // Create sync run record
