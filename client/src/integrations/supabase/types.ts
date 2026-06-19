@@ -396,6 +396,8 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean
+          label: string | null
+          type: string
           updated_at: string
           user_id: string
           uses_count: number
@@ -405,6 +407,8 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          label?: string | null
+          type?: string
           updated_at?: string
           user_id: string
           uses_count?: number
@@ -414,6 +418,8 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          label?: string | null
+          type?: string
           updated_at?: string
           user_id?: string
           uses_count?: number
