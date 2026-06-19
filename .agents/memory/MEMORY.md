@@ -1,1 +1,1 @@
-- [Paid order & provisioning](paid-order-provisioning.md) — create paid orders server-side before the charge (RLS blocks client INSERT); Stripe webhook is the authoritative eSIM provisioner with an atomic claim.
+- [Orphaned trigger after DROP TABLE CASCADE](postgres-orphaned-trigger.md) — dropping a table leaves triggers/functions on OTHER tables referencing it as latent runtime errors.
