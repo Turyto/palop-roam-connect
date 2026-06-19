@@ -94,21 +94,23 @@ export const useCreatePlan = (onSuccess: () => void) => {
         }
       }
 
-      // Upsert esim_packages rows for any eSIM Access supplier that has a package code
-      const esimAccessRates = supplierRates.filter(
+      // Upsert esim_packages row for the first eSIM Access supplier that has a package code.
+      // esim_packages uses plan_id as the unique key (no supplier column).
+      const esimAccessRate = supplierRates.find(
         rate => isESIMAccessSupplier(rate.supplier_name) && rate.esim_access_package_id?.trim()
       );
 
-      if (esimAccessRates.length > 0) {
-        const packageRows = esimAccessRates.map(rate => ({
-          plan_id: createdPlan.id,
-          supplier: 'esim_access',
-          esim_access_package_id: rate.esim_access_package_id!.trim(),
-        }));
-
+      if (esimAccessRate) {
         const { error: pkgError } = await supabase
           .from('esim_packages')
-          .upsert(packageRows, { onConflict: 'plan_id,supplier' });
+          .upsert(
+            {
+              plan_id: createdPlan.id,
+              plan_name: data.name,
+              esim_access_package_id: esimAccessRate.esim_access_package_id!.trim(),
+            },
+            { onConflict: 'plan_id' }
+          );
 
         if (pkgError) {
           console.error('Error creating esim_packages row:', pkgError);

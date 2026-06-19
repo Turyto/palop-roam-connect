@@ -28,6 +28,7 @@ const PlansCatalogTab = () => {
   const [selectedPlanIds, setSelectedPlanIds] = useState<string[]>([]);
   const [showLowMarginOnly, setShowLowMarginOnly] = useState(false);
   const [unconfiguredPackagePlans, setUnconfiguredPackagePlans] = useState<string[]>([]);
+  const [packageCheckKey, setPackageCheckKey] = useState(0);
 
   useEffect(() => {
     supabase
@@ -39,7 +40,7 @@ const PlansCatalogTab = () => {
         const configured = new Set((data ?? []).map((r: any) => r.plan_id));
         setUnconfiguredPackagePlans(CHECKOUT_PLAN_IDS.filter(id => !configured.has(id)));
       });
-  }, []);
+  }, [packageCheckKey]);
 
   const calculateMargin = (plan: Plan) => {
     const planRates = supplierRates.filter(rate => rate.plan_id === plan.id);
@@ -132,8 +133,9 @@ const PlansCatalogTab = () => {
           <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-500" />
           <div>
             <span className="font-semibold">Missing supplier package codes: </span>
-            {unconfiguredPackagePlans.join(', ')} — customers cannot purchase these plans until codes are set.
-            Run <code className="bg-amber-100 px-1 rounded text-xs">supabase/migrations/20260526_seed_esim_packages.sql</code> in the Supabase SQL editor.
+            <span className="font-mono">{unconfiguredPackagePlans.join(', ')}</span>
+            {' '}— customers cannot purchase these plans until a code is set.
+            Click the <span className="font-semibold">Edit</span> button on each plan and fill in the "eSIM Access Package Code" field.
           </div>
         </div>
       )}
@@ -345,7 +347,7 @@ const PlansCatalogTab = () => {
       <EditPlanModal
         plan={editingPlan}
         isOpen={!!editingPlan}
-        onClose={() => setEditingPlan(null)}
+        onClose={() => { setEditingPlan(null); setPackageCheckKey(k => k + 1); }}
       />
 
       <DeletePlanDialog
@@ -356,7 +358,7 @@ const PlansCatalogTab = () => {
 
       <CreatePlanModal
         isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
+        onClose={() => { setIsCreateModalOpen(false); setPackageCheckKey(k => k + 1); }}
       />
     </div>
   );
