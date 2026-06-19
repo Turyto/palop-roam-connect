@@ -113,6 +113,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
       'metadata[plan_id]': plan_id ?? '',
       'metadata[user_id]': userId,
     });
+    // P2: referral attribution must be auditable from the Stripe dashboard.
+    if (referral_code) body.append('metadata[referral_code]', referral_code);
     const response = await fetch('https://api.stripe.com/v1/payment_intents', {
       method: 'POST',
       headers: {
@@ -188,6 +190,27 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const orderRows = await orderRes.json().catch(() => []);
     const orderId: string | undefined = Array.isArray(orderRows) ? orderRows[0]?.id : orderRows?.id;
     console.log(`[create-payment-intent] pending order created — orderId=${orderId} intentId=${paymentIntentId} user=${userId}`);
+
+    // --- 2b. Attach order_id to the PI metadata now that it's known (P2, best-effort) ---
+    // Lets referral/order attribution be audited entirely from the Stripe dashboard.
+    // Non-fatal: the order already exists and the webhook matches by payment_intent_id.
+    if (orderId) {
+      try {
+        const metaRes = await fetch(`https://api.stripe.com/v1/payment_intents/${paymentIntentId}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${stripeKey}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({ 'metadata[order_id]': orderId }).toString(),
+        });
+        if (!metaRes.ok) {
+          console.error(`[create-payment-intent] PI metadata order_id update failed (non-fatal) — intent=${paymentIntentId} status=${metaRes.status}`);
+        }
+      } catch (e: any) {
+        console.error(`[create-payment-intent] PI metadata order_id update threw (non-fatal) — intent=${paymentIntentId} msg=${e?.message}`);
+      }
+    }
 
     // --- 3. Order item (best-effort — non-fatal; matches the catalog row) ---
     if (orderId) {

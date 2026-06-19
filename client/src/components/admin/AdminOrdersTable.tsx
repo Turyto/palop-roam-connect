@@ -75,6 +75,8 @@ const AdminOrdersTable = () => {
       return;
     }
 
+    const THIRTY_MIN_MS = 30 * 60 * 1000;
+
     const filtered = orders.filter((order) => {
       const email = order.customer_email || '';
       const planName = order.plan_name || '';
@@ -89,7 +91,14 @@ const AdminOrdersTable = () => {
       const matchesStatus = statusFilter === "all" || order.status === statusFilter;
       const matchesPayment = paymentFilter === "all" || order.payment_status === paymentFilter;
 
-      return matchesSearch && matchesStatus && matchesPayment;
+      // P2: hide stale abandoned checkouts (pending > 30 min) from the default view.
+      // Still visible when the admin explicitly filters by "pending".
+      const isStalePending =
+        order.status === 'pending' &&
+        Date.now() - new Date(order.created_at).getTime() > THIRTY_MIN_MS;
+      const hideStale = statusFilter === 'all' && isStalePending;
+
+      return matchesSearch && matchesStatus && matchesPayment && !hideStale;
     });
 
     setFilteredOrders(filtered);

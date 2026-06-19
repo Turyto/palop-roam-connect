@@ -49,6 +49,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
       case 'payment_intent.payment_failed':
         await handlePaymentFailed(event.data.object as Stripe.PaymentIntent, supabase)
         break
+      case 'payment_intent.canceled':
+        await handlePaymentCanceled(event.data.object as Stripe.PaymentIntent, supabase)
+        break
       case 'charge.dispute.created':
         await handleDisputeCreated(event.data.object as Stripe.Dispute)
         break
@@ -257,6 +260,33 @@ async function handlePaymentFailed(
   }
 
   console.log(`[stripe-webhook] order marked failed — paymentIntentId=${paymentIntent.id} reason=${failureCode}: ${failureMessage}`)
+}
+
+// P2: abandoned/canceled checkouts. Stripe fires payment_intent.canceled when an
+// intent is canceled (manually or after expiry). Mark the matching order 'cancelled'
+// so it stops lingering as 'pending' — but never override an order that already paid.
+async function handlePaymentCanceled(
+  paymentIntent: Stripe.PaymentIntent,
+  supabase: ReturnType<typeof createClient>,
+): Promise<void> {
+  console.log(`[stripe-webhook] handlePaymentCanceled — paymentIntentId=${paymentIntent.id}`)
+
+  const { error } = await supabase
+    .from('orders')
+    .update({
+      payment_status: 'cancelled',
+      status: 'cancelled',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('payment_intent_id', paymentIntent.id)
+    .neq('payment_status', 'succeeded')
+
+  if (error) {
+    console.error(`[stripe-webhook] failed to mark order cancelled — paymentIntentId=${paymentIntent.id} error=${error.message}`)
+    throw error
+  }
+
+  console.log(`[stripe-webhook] order marked cancelled — paymentIntentId=${paymentIntent.id}`)
 }
 
 async function handleDisputeCreated(dispute: Stripe.Dispute): Promise<void> {

@@ -283,11 +283,14 @@ async function persistESIMRecords(opts: {
     if (!res.ok) console.error(`[provision/persist] qr_codes insert failed — status=${res.status} body=${await res.text()}`);
   }
 
-  // orders — mark provisioned
+  // orders — mark provisioned AND completed (P1: order status must reach 'completed').
+  // Idempotent: re-running with the same values does not regress an already-completed order.
   const res = await fetch(`${supabaseUrl}/rest/v1/orders?id=eq.${orderId}`, {
     method: 'PATCH', headers: restHeaders,
     body: JSON.stringify({
       esim_status: 'provisioned',
+      status: 'completed',
+      completed_at: new Date().toISOString(),
       esim_order_id: esimTranNo,
       esim_package_id: packageCode,
       esim_delivered_at: new Date().toISOString(),
