@@ -1,0 +1,36 @@
+The hotfix code is complete in Replit but hasn't been pushed to Supabase yet. Everything is blocked until deployment.
+
+Action plan — in order
+Step 1 — Deploy (developer does this from Replit):
+Tell the developer to run from the Replit shell:
+bashsupabase functions deploy create-payment-intent --project-ref btallyhejhqfpqwaboee
+supabase functions deploy stripe-webhook --project-ref btallyhejhqfpqwaboee
+The _shared/esim-provision.ts module is bundled automatically (developer confirmed this). No separate deploy needed for it.
+Step 2 — Verify secrets (you do this now in Supabase dashboard):
+Go to supabase.com → project btallyhejhqfpqwaboee → Edge Functions → Manage secrets and confirm these are all present:
+SecretPurposeSTRIPE_SECRET_KEYAlready set — confirm still thereSTRIPE_WEBHOOK_SECRETCheck this one specifically — this is what the new webhook verifies against. If it's missing, the webhook will reject every Stripe event.ESIM_ACCESS_SECRETeSIM provisioning signing keyACCESS_CODEeSIM Access account codeRESEND_API_KEYEmail delivery
+STRIPE_WEBHOOK_SECRET is the one most likely to be missing — it's a separate value from STRIPE_SECRET_KEY and needs to be copied from the Stripe dashboard under Developers → Webhooks → your webhook endpoint → Signing secret.
+Step 3 — End-to-end test (you do this after deploy):
+Buy one real Arrival €4.90 with a real card. Immediately after payment, run this in Supabase SQL editor to confirm the pending→provisioned flow worked:
+sqlSELECT id, customer_email, status, payment_status, esim_status, created_at
+FROM public.orders
+ORDER BY created_at DESC
+LIMIT 3;
+You should see: a row appear with status: pending before you complete payment, then flip to completed + esim_status: provisioned within ~30 seconds.
+
+Customer recovery — Salomé Delgado (do this today)
+I can see her auth record (salomedelgado1963@gmail.com, registered 18 Jun 19:13) with zero order rows. To recover her:
+
+Go to Stripe dashboard → live mode → Payments → search salomedelgado1963@gmail.com
+Copy the pi_xxx payment intent ID
+Send it to the developer and they'll create the order row + provision the eSIM manually
+Also check anabela.c@palopconnect.com (registered 19 Jun 10:37, no order) — if that was a real purchase, recover the same way
+
+Once you have both PI IDs, send them across and the developer can recover both in one pass.
+
+Code review gate question
+Leave the hotfix as-is. The developer is right. The P0 fix is architecturally correct and has passed review. Reverting correct code to satisfy a scope gate for an unrelated task (the hero subtitle) would be irresponsible — you'd be knowingly re-exposing a live payment bug. The gate can be re-pointed at the hero subtitle task separately once the hotfix is deployed and confirmed. That's a 2-minute Replit config change and it shouldn't block this.
+
+Summary of who does what:
+ActionWhoWhenDeploy the 2 edge functionsDeveloper (Replit shell)NowVerify STRIPE_WEBHOOK_SECRET is setYou (Supabase dashboard)NowGet Salomé's PI ID from StripeYouNowSend PI ID to developer for recoveryYouTodayEnd-to-end purchase testYouAfter deploy confirmed
+Sales should stay paused until the test passes cleanly.
