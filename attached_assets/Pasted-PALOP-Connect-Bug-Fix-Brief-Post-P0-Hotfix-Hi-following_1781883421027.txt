@@ -1,0 +1,26 @@
+PALOP Connect — Bug Fix Brief (Post P0 Hotfix)
+Hi, following the P0 payment fix there are several follow-up issues that need addressing before we open full sales. In priority order:
+
+🔴 P1 — Broken trigger blocking all order completions
+There is a trigger called trigger_decrease_plan_inventory on the public.orders table that fires on every UPDATE. It calls a function decrease_plan_inventory_on_order() which references a table public.plan_inventory that does not exist. This causes every order UPDATE to throw an error and must be disabled or fixed before the stripe-webhook can reliably complete orders.
+Action: Either drop this trigger (DROP TRIGGER trigger_decrease_plan_inventory ON public.orders;) if plan inventory tracking is not being used, or create the missing plan_inventory table with the correct schema. Do not leave it in its current broken state — it silently blocks the order completion flow for every future customer.
+
+🔴 P1 — Order status not updating to "completed" after provisioning
+After the stripe-webhook successfully provisions an eSIM (esim_status → provisioned), the order status field stays as processing rather than updating to completed. The admin dashboard shows "processing" indefinitely.
+Action: In the stripe-webhook handler, after a successful eSIM provisioning call, also update status = 'completed' and set completed_at = NOW() on the order row. This should happen in the same DB update where esim_status is set to provisioned.
+
+🟡 P2 — Ghost/abandoned orders appearing in admin dashboard
+The create-payment-intent edge function creates a pending order row server-side before payment is confirmed. If the customer abandons checkout, the order row stays in the DB as status: pending / payment_status: pending and pollutes the admin dashboard.
+Action: Handle the payment_intent.canceled Stripe webhook event. When received, update the corresponding order to status: cancelled (match by payment_intent_id). Optionally filter the admin dashboard Orders view to exclude status: pending rows older than 30 minutes, or add a separate "Abandoned" tab.
+
+🟡 P2 — Referral code not stored in Stripe payment intent metadata
+When a customer checks out via a referral link (e.g. ?ref=PRAIATUR), the referral code is not being stored in the Stripe PI metadata. This means we cannot retroactively verify referral attribution from Stripe logs.
+Action: In create-payment-intent, when creating the Stripe PaymentIntent, include the referral code in the metadata if present:
+jsmetadata: {
+  order_id: order.id,
+  referral_code: referralCode ?? null,
+}
+This ensures every PI carries the attribution and makes auditing straightforward.
+
+🟠 P3 — Portugal tab package codes not validated
+The Portugal plans (Chegada / Liberdade) have package codes in the DB that have not been confirmed against the eSIM Access supplier. Do not enable Portugal plan sales until the codes are validated end-to-end with a test order. Known unvalidated codes: CKH1003 (Chegada), CKH1011 (Liberdade).
