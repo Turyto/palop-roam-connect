@@ -74,7 +74,7 @@ async function generateMagicLink(
   }
 }
 
-/** Send a rich HTML email via Resend containing the magic link + eSIM details. */
+/** Send a bilingual (PT/EN) HTML email via Resend containing the magic link + eSIM details. */
 async function sendESIMEmail(opts: {
   resendApiKey: string;
   to: string;
@@ -90,7 +90,7 @@ async function sendESIMEmail(opts: {
 
   const lpaSection = lpaCode
     ? `<div style="background:#f4f4f5;border-radius:8px;padding:16px;margin:16px 0;">
-        <p style="margin:0 0 6px;font-size:12px;color:#71717a;font-weight:600;text-transform:uppercase;letter-spacing:.05em">LPA Activation Code</p>
+        <p style="margin:0 0 4px;font-size:12px;color:#71717a;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Código de Ativação LPA <span style="font-weight:400;color:#a1a1aa;">/ LPA Activation Code</span></p>
         <code style="font-size:13px;color:#18181b;word-break:break-all;line-height:1.6">${lpaCode}</code>
       </div>`
     : '';
@@ -102,13 +102,14 @@ async function sendESIMEmail(opts: {
   const qrSection = qrImageUrl
     ? `<div style="text-align:center;margin:20px 0;">
         <img src="${qrImageUrl}" alt="eSIM QR Code" width="180" height="180" style="border:3px solid #16a34a;border-radius:8px;padding:6px;" />
-        <p style="font-size:12px;color:#71717a;margin:8px 0 0">Scan this QR code on your device to install the eSIM</p>
+        <p style="font-size:13px;color:#374151;margin:10px 0 2px;font-weight:600;">Lê este QR Code para instalar o teu eSIM</p>
+        <p style="font-size:12px;color:#71717a;margin:0;">Scan this QR code to install your eSIM</p>
       </div>`
     : '';
 
   const webUrlSection = webUrl
     ? `<div style="text-align:center;margin:16px 0;">
-        <a href="${webUrl}" style="color:#2563eb;font-size:13px;">Or tap here to activate on your device</a>
+        <a href="${webUrl}" style="color:#2563eb;font-size:13px;">Ou toca aqui para ativar no teu dispositivo / Or tap here to activate on your device</a>
       </div>`
     : '';
 
@@ -122,14 +123,22 @@ async function sendESIMEmail(opts: {
 
         <!-- Header -->
         <tr><td style="background:linear-gradient(135deg,#16a34a,#1d4ed8);padding:32px 40px;text-align:center;">
-          <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;">Your eSIM is Ready! 🌍</h1>
-          <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:15px;">BuéChama · PALOP Roam Connect</p>
+          <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;">O teu eSIM está pronto! 🌍</h1>
+          <p style="margin:6px 0 2px;color:rgba(255,255,255,0.75);font-size:13px;font-style:italic;">Your eSIM is ready!</p>
+          <p style="margin:10px 0 0;color:rgba(255,255,255,0.85);font-size:15px;">BuéChama · PALOP Roam Connect</p>
         </td></tr>
 
         <!-- Body -->
         <tr><td style="padding:32px 40px;">
-          <p style="margin:0 0 20px;font-size:15px;color:#374151;">
-            Your <strong>${planName || 'eSIM'}</strong>${dataAmount ? ` (${dataAmount})` : ''} is provisioned and ready to install.
+
+          <!-- Portuguese intro -->
+          <p style="margin:0 0 8px;font-size:15px;color:#374151;">
+            O teu <strong>${planName || 'eSIM'}</strong>${dataAmount ? ` (${dataAmount})` : ''} está pronto para instalar.
+            Aqui estão os teus detalhes de ativação:
+          </p>
+          <!-- English intro -->
+          <p style="margin:0 0 20px;font-size:13px;color:#71717a;">
+            Your <strong>${planName || 'eSIM'}</strong>${dataAmount ? ` (${dataAmount})` : ''} is ready to install.
             Here are your activation details:
           </p>
 
@@ -140,26 +149,38 @@ async function sendESIMEmail(opts: {
 
           <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
 
-          <h2 style="margin:0 0 12px;font-size:16px;color:#18181b;">How to install</h2>
-          <ol style="margin:0;padding:0 0 0 20px;font-size:14px;color:#52525b;line-height:2;">
-            <li>Go to <strong>Settings → Cellular / Mobile Data</strong> on your device</li>
-            <li>Tap <strong>"Add eSIM"</strong> or <strong>"Add Data Plan"</strong></li>
-            <li>Scan the QR code above, or enter the LPA code manually</li>
+          <!-- Installation instructions — Portuguese -->
+          <h2 style="margin:0 0 4px;font-size:16px;color:#18181b;">Como instalar</h2>
+          <p style="margin:0 0 10px;font-size:12px;color:#71717a;">How to install</p>
+          <ol style="margin:0;padding:0 0 0 20px;font-size:14px;color:#374151;line-height:2.2;">
+            <li>Vai a <strong>Definições → Dados móveis / Rede móvel</strong>
+              <br><span style="font-size:12px;color:#71717a;">Go to <em>Settings → Cellular / Mobile Data</em></span>
+            </li>
+            <li>Seleciona <strong>"Adicionar eSIM"</strong>
+              <br><span style="font-size:12px;color:#71717a;">Tap <em>"Add eSIM"</em> or <em>"Add Data Plan"</em></span>
+            </li>
+            <li>Lê o QR Code acima ou introduz o código LPA manualmente
+              <br><span style="font-size:12px;color:#71717a;">Scan the QR code above, or enter the LPA code manually</span>
+            </li>
           </ol>
 
           <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
 
           <!-- Magic link CTA -->
           <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:20px;text-align:center;">
-            <p style="margin:0 0 12px;font-size:14px;color:#1e40af;">
-              <strong>Access your order history anytime</strong><br>
-              Click below to sign in instantly and view all your eSIMs — no password needed.
+            <p style="margin:0 0 4px;font-size:14px;color:#1e40af;">
+              <strong>Acede às tuas encomendas a qualquer momento</strong>
+            </p>
+            <p style="margin:0 0 12px;font-size:12px;color:#3b82f6;">
+              Clica abaixo para entrar instantaneamente — sem senha necessária.<br>
+              <span style="color:#93c5fd;">Click below to sign in instantly — no password needed.</span>
             </p>
             <a href="${magicLink}"
                style="display:inline-block;background:#1d4ed8;color:#ffffff;font-size:14px;font-weight:600;padding:12px 28px;border-radius:8px;text-decoration:none;">
-              View My Orders →
+              Ver as minhas encomendas →
             </a>
-            <p style="margin:12px 0 0;font-size:11px;color:#6b7280;">This link expires in 1 hour. After that, <a href="https://palopconnect.com/auth" style="color:#6b7280;">sign in at palopconnect.com/auth</a> to get a new one — no password needed.</p>
+            <p style="margin:10px 0 2px;font-size:11px;color:#6b7280;">Este link expira em 1 hora. Pede um novo em <a href="https://palopconnect.com/auth" style="color:#6b7280;">palopconnect.com/auth</a>.</p>
+            <p style="margin:0;font-size:11px;color:#9ca3af;">This link expires in 1 hour. After that, <a href="https://palopconnect.com/auth" style="color:#9ca3af;">sign in at palopconnect.com/auth</a> to get a new one — no password needed.</p>
           </div>
         </td></tr>
 
@@ -175,19 +196,19 @@ async function sendESIMEmail(opts: {
 </html>`;
 
   const textBody = [
-    `Your eSIM is ready — BuéChama`,
-    `Plan: ${planName || 'eSIM'}${dataAmount ? ` (${dataAmount})` : ''}`,
+    `O teu eSIM está pronto — BuéChama / Your eSIM is ready — BuéChama`,
+    `Plano / Plan: ${planName || 'eSIM'}${dataAmount ? ` (${dataAmount})` : ''}`,
     iccid ? `ICCID: ${iccid}` : '',
-    lpaCode ? `LPA Activation Code: ${lpaCode}` : '',
-    webUrl ? `Activation URL: ${webUrl}` : '',
+    lpaCode ? `Código de Ativação LPA / LPA Activation Code: ${lpaCode}` : '',
+    webUrl ? `URL de ativação / Activation URL: ${webUrl}` : '',
     ``,
-    `How to install:`,
-    `1. Go to Settings → Cellular / Mobile Data`,
-    `2. Tap "Add eSIM" or "Add Data Plan"`,
-    `3. Scan the QR code or enter the LPA code manually`,
+    `Como instalar / How to install:`,
+    `1. Vai a Definições → Dados móveis / Go to Settings → Cellular / Mobile Data`,
+    `2. Seleciona "Adicionar eSIM" / Tap "Add eSIM" or "Add Data Plan"`,
+    `3. Lê o QR Code ou introduz o código LPA / Scan the QR code or enter the LPA code manually`,
     ``,
-    `View your orders: ${magicLink}`,
-    `(Link expires in 1 hour)`,
+    `Ver as minhas encomendas / View your orders: ${magicLink}`,
+    `(Link expira em 1 hora / Link expires in 1 hour)`,
   ].filter(Boolean).join('\n');
 
   const res = await fetch('https://api.resend.com/emails', {
@@ -199,7 +220,7 @@ async function sendESIMEmail(opts: {
     body: JSON.stringify({
       from: 'BuéChama <noreply@palopconnect.com>',
       to: [to],
-      subject: `Your eSIM is ready — ${planName || 'BuéChama'}`,
+      subject: `O teu eSIM está pronto — ${planName || 'BuéChama'} | Your eSIM is ready`,
       html,
       text: textBody,
     }),
