@@ -1,17 +1,22 @@
 ---
 name: Order provisioning paths
-description: There are two independent eSIM provisioning code paths; order-status changes must be applied to both.
+description: This eSIM platform has two independent provisioning paths; order-lifecycle writes must be mirrored across both.
 ---
 
-# Two provisioning paths (esim platform)
+# Two provisioning paths
 
-A paid order can be provisioned by EITHER of two paths, and they run independently:
+A paid order can be provisioned by EITHER of two independent paths: a client-invoked
+edge function, or the authoritative Stripe webhook. They do not share persistence code.
 
-1. **Client-invoked**: frontend calls the `esim-access` edge function (its own `persistESIMRecords`).
-2. **Authoritative webhook**: `stripe-webhook` → `_shared/esim-provision.ts` `persistESIMRecords`.
+**Rule:** any change to how an order's lifecycle fields are written (`status`,
+`completed_at`, `esim_status`) must be applied to BOTH paths, and the webhook's
+"already provisioned" early-return must still guarantee the final status.
 
-**Rule:** any change to how an order's lifecycle fields are written (e.g. `status`, `completed_at`, `esim_status`) MUST be applied in BOTH persist functions, and the `stripe-webhook` "already provisioned" early-return guard must not skip the status flip.
+**Why:** an order's `status` got stuck on `processing` forever because one path marked
+the eSIM provisioned without completing the order, and the other path then short-circuited
+on the "already provisioned" check and never completed it. Customers saw "processing"
+permanently. A fix in only one path leaves the other broken.
 
-**Why:** order `status` was stuck on `processing` forever because the `esim-access` path set only `esim_status='provisioned'` (never `status='completed'`), and when the webhook later fired it hit the `esim_status === 'provisioned'` guard and returned early without completing the order. Customers saw "processing" permanently.
-
-**How to apply:** when editing provisioning/order-status logic, grep for `persistESIMRecords` (appears in `esim-access/index.ts` and `_shared/esim-provision.ts`) and update both; also re-check the webhook guard branch. Redeploy with `supabase functions deploy <fn> --project-ref btallyhejhqfpqwaboee --use-api` (Docker bundler fails on the esm.sh Stripe import, so `--use-api` is required).
+**How to apply:** when touching provisioning/order-status logic, search for every place
+that persists order status (more than one exists) and update them together; re-check the
+webhook's idempotency guard so it never returns without ensuring the terminal status.
