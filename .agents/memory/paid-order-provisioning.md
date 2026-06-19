@@ -35,9 +35,29 @@ run exactly once from a reliable server context.
 `esim_status` from `pending|failed|null` → `provisioning` and check that a row was
 actually returned. Zero rows means another invocation (or a Stripe retry) already
 owns it → skip. On supplier failure: set `esim_status='failed'`, fire
-`notify-provisioning-failure`, and return HTTP 200 (returning 5xx makes Stripe
-retry forever and re-hit the supplier). Only `order not found` should throw so
-Stripe retries (the row should always exist by then).
+`notify-provisioning-failure`, and return HTTP 200.
+
+# Stripe webhook must return 2xx on every NON-transient path
+
+**Rule:** The webhook returns HTTP 200 (acknowledge) for any condition a retry
+cannot fix — including order-not-found, provisioning failure, duplicate/idempotent
+events, and unhandled event types. Reserve non-2xx (500) ONLY for genuinely
+transient infra errors worth a retry (e.g. a momentary DB write failure).
+Signature-verification failure stays 400 (never 200 — that would acknowledge
+forged events).
+
+**Why:** Stripe auto-disables an endpoint after ~9 consecutive non-2xx responses.
+This happened in production (~9 Jun 2026): the old webhook threw 500 on
+order-not-found, and because orders were created client-side after payment (and
+often never, due to the RLS bug), nearly every `payment_intent.succeeded` had no
+matching order → 500 → endpoint disabled → all subsequent purchases silently
+received nothing. A disabled endpoint also means re-enabling it is a MANUAL click
+in the Stripe dashboard (Developers → Webhooks → Enable); it cannot be done via API.
+
+**How to apply:** Treat order-not-found as anomalous-but-acknowledged: log it, fire
+an admin alert, and return 200. The pending order is always committed before the
+charge now, so a missing order means a historical/stray/test PI that a retry will
+never resolve.
 
 # Shared provisioning logic
 

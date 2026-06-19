@@ -79,10 +79,27 @@ async function handlePaymentSucceeded(
     .single()
 
   if (fetchError || !order) {
-    // With the server-side pending-order fix this should never happen. Throw so
-    // Stripe retries — by the time it retries, the order row will exist.
-    console.error(`[stripe-webhook] order not found for paymentIntentId=${paymentIntent.id} error=${fetchError?.message ?? 'no row returned'}`)
-    throw new Error(`Order not found for payment_intent: ${paymentIntent.id}`)
+    // ACK with 200 (return normally) so Stripe does NOT retry into a re-disable.
+    // With the server-side pending-order fix the order row is committed before the
+    // client confirms payment, so a missing order here is anomalous — a historical
+    // event from before the fix, a stray/test PaymentIntent, or a manual charge.
+    // Retrying cannot conjure the row, so we acknowledge, log loudly, and alert an
+    // admin instead of returning 500 (which is what got the endpoint disabled before).
+    console.error(`[stripe-webhook] order not found for paymentIntentId=${paymentIntent.id} error=${fetchError?.message ?? 'no row returned'} — acknowledging (200) to protect endpoint health`)
+    try {
+      await supabase.functions.invoke('notify-provisioning-failure', {
+        body: {
+          order_id: null,
+          customer_email: (paymentIntent.receipt_email as string | null) ?? null,
+          payment_intent_id: paymentIntent.id,
+          error_message: `Webhook received payment_intent.succeeded but no order row matches payment_intent_id=${paymentIntent.id}. Manual recovery required.`,
+          error_type: 'webhook_order_not_found',
+        },
+      })
+    } catch (e: any) {
+      console.error(`[stripe-webhook] failed to alert on order-not-found for paymentIntentId=${paymentIntent.id}: ${e?.message}`)
+    }
+    return
   }
 
   // --- 1. Mark the order paid (idempotent) ---

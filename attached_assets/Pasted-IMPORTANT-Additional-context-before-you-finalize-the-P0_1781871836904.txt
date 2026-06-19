@@ -1,0 +1,29 @@
+IMPORTANT — Additional context before you finalize the P0 hotfix deployment
+We received a Stripe notification email (dated 18 June, 21:58) that changes the deployment picture. Here's what it reveals and what needs to be confirmed or adjusted in the fix:
+What the email says:
+
+Stripe has been failing to deliver webhook events to https://btallyhejhqfpqwaboee.supabase.co/functions/v1/stripe-webhook for the last 9 days (since approximately 9 June). After 9 consecutive non-200 responses, Stripe automatically disabled the endpoint. It is currently inactive — Stripe is sending no events to it.
+What this means for the hotfix:
+The new architecture (hotfix) relies entirely on the Stripe webhook to flip the pending order to paid and trigger eSIM provisioning. If the webhook endpoint remains disabled in Stripe's dashboard, the hotfix deploys correctly but Stripe sends nothing to it — every purchase will sit as a pending order with no eSIM provisioned and no email sent.
+What we need you to confirm:
+
+Why was the webhook returning errors before the hotfix? The email says 9 failures over 9 days starting ~June 9. This predates the RLS/client-side INSERT issue you identified. Was the old stripe-webhook function returning non-200 responses due to a separate bug (e.g. signature verification failure, missing secret, unhandled exception)? Understanding this confirms the hotfix actually resolves it — not just the order creation side.
+Does the new stripe-webhook correctly return HTTP 200 in all failure paths? Including: signature verification failure, order not found, provisioning failure, duplicate event. Stripe requires a 200 even on errors that you handle gracefully — anything non-2xx triggers another retry and eventually re-disables the endpoint.
+Is STRIPE_WEBHOOK_SECRET set as a Supabase project secret? The new webhook verifies the Stripe-Signature header. If STRIPE_WEBHOOK_SECRET is missing or wrong, every incoming event will fail signature verification and return a non-200 — and Stripe will disable the endpoint again within days.
+
+Additional deployment step required (not in your original plan):
+After deploying and confirming the webhook returns 200 on a test purchase, the endpoint must be manually re-enabled in the Stripe dashboard (Developers → Webhooks → the endpoint URL → Enable/Reactivate). This cannot be done programmatically — it requires a manual click in Stripe. Without this step, the hotfix is deployed but Stripe still sends no events.
+Regarding the 9 failed historical events:
+
+Stripe will not automatically retry those 9 old events after re-enabling. The affected customers (salomedelgado1963@gmail.com and any others) must still be manually recovered by matching their Stripe pi_xxx IDs to manually-created order rows. We will provide the live PI IDs from the Stripe dashboard once you confirm the hotfix is deployed and the endpoint is re-enabled.
+Summary of what's new vs your original plan:
+
+Step 1 (deploy functions) — unchanged ✅
+Step 2 (verify secrets) — add STRIPE_WEBHOOK_SECRET explicitly to the checklist ✅
+Step 3 (end-to-end test) — unchanged, but now also verify webhook logs show HTTP 200 ✅
+Step 4 (NEW) — manually re-enable the webhook endpoint in Stripe dashboard after test passes
+Step 5 (customer recovery) — unchanged, PI IDs coming from us ✅
+
+Please confirm: does the new stripe-webhook implementation return HTTP 200 on all code paths including error cases, and do you see any reason the original webhook was returning errors? Happy to look at the old function code together if useful.
+
+That covers everything. The key thing he needs to act on is confirming the webhook returns 200 on all paths (including errors) and knowing that the Stripe endpoint re-activation is a manual step that falls on you, not him.
