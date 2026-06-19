@@ -28,3 +28,7 @@ verify_jwt = false
 
 [functions.get-esim-package]
 verify_jwt = true
+
+# Stripe calls this with its own signature (verified in-code), not a Supabase JWT.
+[functions.stripe-webhook]
+verify_jwt = false

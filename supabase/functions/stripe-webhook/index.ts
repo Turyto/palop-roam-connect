@@ -1,5 +1,6 @@
 import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { provisionOrder } from '../_shared/esim-provision.ts'
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
   apiVersion: '2024-04-10',
@@ -73,52 +74,145 @@ async function handlePaymentSucceeded(
 
   const { data: order, error: fetchError } = await supabase
     .from('orders')
-    .select('id, status, payment_status, esim_package_id, customer_email, user_id, plan_name, data_amount')
+    .select('id, status, payment_status, esim_status, esim_package_id, customer_email, user_id, plan_id, plan_name, data_amount')
     .eq('payment_intent_id', paymentIntent.id)
     .single()
 
   if (fetchError || !order) {
+    // With the server-side pending-order fix this should never happen. Throw so
+    // Stripe retries — by the time it retries, the order row will exist.
     console.error(`[stripe-webhook] order not found for paymentIntentId=${paymentIntent.id} error=${fetchError?.message ?? 'no row returned'}`)
     throw new Error(`Order not found for payment_intent: ${paymentIntent.id}`)
   }
 
-  if (order.payment_status === 'succeeded') {
-    console.log(`[stripe-webhook] order=${order.id} already has payment_status=succeeded — skipping (idempotent)`)
+  // --- 1. Mark the order paid (idempotent) ---
+  if (order.payment_status !== 'succeeded') {
+    const { error: updateError } = await supabase
+      .from('orders')
+      .update({ payment_status: 'succeeded', status: 'processing', updated_at: new Date().toISOString() })
+      .eq('id', order.id)
+    if (updateError) {
+      console.error(`[stripe-webhook] failed to mark order paid — order=${order.id} error=${updateError.message}`)
+      throw updateError
+    }
+    console.log(`[stripe-webhook] order=${order.id} marked paid — status=processing customer=${order.customer_email}`)
+  } else {
+    console.log(`[stripe-webhook] order=${order.id} already paid — continuing to provisioning check`)
+  }
+
+  // --- 2. Provisioning idempotency guard ---
+  if (order.esim_status === 'provisioned') {
+    console.log(`[stripe-webhook] order=${order.id} already provisioned — nothing to do`)
     return
   }
-
-  const { error: updateError } = await supabase
-    .from('orders')
-    .update({
-      payment_status: 'succeeded',
-      status: 'processing',
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', order.id)
-
-  if (updateError) {
-    console.error(`[stripe-webhook] failed to update order=${order.id} error=${updateError.message}`)
-    throw updateError
-  }
-
-  console.log(`[stripe-webhook] order=${order.id} updated — payment_status=succeeded status=processing customer=${order.customer_email}`)
-
   const { data: activation } = await supabase
     .from('esim_activations')
     .select('id, provisioning_status')
     .eq('order_id', order.id)
     .maybeSingle()
-
   if (activation?.provisioning_status === 'completed') {
-    console.log(`[stripe-webhook] eSIM already provisioned for order=${order.id} — all good`)
+    console.log(`[stripe-webhook] order=${order.id} eSIM already provisioned (activation completed) — nothing to do`)
     return
   }
 
-  console.warn(
-    `[stripe-webhook] eSIM not yet provisioned for order=${order.id} ` +
-    `customer=${order.customer_email} package=${order.esim_package_id} ` +
-    `— client-side esim-access flow should complete this`
+  // --- 3. Atomic claim — only one invocation may provision ---
+  // Flip esim_status pending|failed|null → provisioning. If another concurrent
+  // invocation (or a Stripe retry) already claimed it, this returns 0 rows and
+  // we back off, preventing a duplicate supplier order (real money).
+  const { data: claimed, error: claimError } = await supabase
+    .from('orders')
+    .update({ esim_status: 'provisioning', updated_at: new Date().toISOString() })
+    .eq('id', order.id)
+    .or('esim_status.eq.pending,esim_status.eq.failed,esim_status.is.null')
+    .select('id')
+  if (claimError) {
+    console.error(`[stripe-webhook] provisioning claim failed — order=${order.id} error=${claimError.message}`)
+    throw claimError
+  }
+  if (!claimed || claimed.length === 0) {
+    console.log(`[stripe-webhook] order=${order.id} provisioning already claimed elsewhere — skipping`)
+    return
+  }
+
+  // --- 4. Provision ---
+  const accessCode = Deno.env.get('ESIM_ACCESS_ACCESS_CODE') ?? ''
+  const secretKey = Deno.env.get('ESIM_ACCESS_SECRET_KEY') ?? ''
+  const resendApiKey = Deno.env.get('RESEND_API_KEY') ?? ''
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+
+  if (!accessCode || !secretKey) {
+    console.error(`[stripe-webhook] eSIM Access credentials not configured — cannot provision order=${order.id}`)
+    await markProvisioningFailed(supabase, order, 'eSIM Access credentials not configured')
+    return
+  }
+  if (!order.esim_package_id) {
+    console.error(`[stripe-webhook] order=${order.id} has no esim_package_id — cannot provision`)
+    await markProvisioningFailed(supabase, order, 'No eSIM package mapping on order')
+    return
+  }
+
+  console.log(`[stripe-webhook] provisioning order=${order.id} package=${order.esim_package_id}`)
+  const result = await provisionOrder(
+    {
+      orderId: order.id as string,
+      userId: order.user_id as string,
+      packageCode: order.esim_package_id as string,
+      customerEmail: (order.customer_email as string | null) ?? null,
+      planName: (order.plan_name as string | null) ?? null,
+      dataAmount: (order.data_amount as string | null) ?? null,
+      referenceId: paymentIntent.id,
+    },
+    {
+      supabaseUrl,
+      serviceKey,
+      creds: { accessCode, secretKey },
+      resendApiKey,
+      origin: 'https://palopconnect.com',
+    },
   )
+
+  if (result.success) {
+    // provisionOrder already persisted credentials and marked esim_status=provisioned.
+    console.log(`[stripe-webhook] order=${order.id} provisioned — esimTranNo=${result.esimTranNo} iccid=${result.iccid}`)
+  } else {
+    console.error(`[stripe-webhook] order=${order.id} provisioning failed — ${result.error}`)
+    await markProvisioningFailed(supabase, order, result.error ?? 'eSIM provisioning failed')
+  }
+}
+
+// Record a provisioning failure and alert an admin. Resets esim_status to
+// 'failed' so a later retry (Stripe or admin) can re-claim it. Always returns
+// (never throws) so Stripe is not retried into an infinite supplier-call loop.
+async function markProvisioningFailed(
+  supabase: ReturnType<typeof createClient>,
+  order: Record<string, any>,
+  errorMessage: string,
+): Promise<void> {
+  try {
+    await supabase
+      .from('orders')
+      .update({ esim_status: 'failed', updated_at: new Date().toISOString() })
+      .eq('id', order.id)
+  } catch (e: any) {
+    console.error(`[stripe-webhook] could not set esim_status=failed for order=${order.id}: ${e?.message}`)
+  }
+  try {
+    await supabase.functions.invoke('notify-provisioning-failure', {
+      body: {
+        order_id: order.id,
+        customer_email: order.customer_email,
+        plan_id: order.plan_id,
+        plan_name: order.plan_name,
+        payment_intent_id: order.payment_intent_id,
+        esim_package_id: order.esim_package_id,
+        error_message: errorMessage,
+        error_type: 'webhook_provisioning_failed',
+      },
+    })
+  } catch (e: any) {
+    console.error(`[stripe-webhook] failed to send provisioning failure alert for order=${order.id}: ${e?.message}`)
+  }
 }
 
 async function handlePaymentFailed(

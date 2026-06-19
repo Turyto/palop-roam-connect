@@ -1,0 +1,47 @@
+Here's my CTO assessment.
+
+CTO Review — Critical Payment Bug
+Confirmed severity: CRITICAL — matches the developer's report exactly.
+The database tells the definitive story: since commercial launch on 8 June, 4 purchase attempts, 1 successful order. Auth shows 3 post-launch non-admin registrations/sessions beyond the one that worked — all resulting in charges with no order record.
+Confirmed impacted real customer: salomedelgado1963@gmail.com — registered 18 June ~19:00, Stripe shows payment, zero DB record. She paid real money and got nothing. This needs to be manually recovered today before anything else.
+Also flagged: anabela.c@palopconnect.com registered 19 June 10:37 with no order — if that was a real purchase test (not a free account creation), another charge is sitting unrecovered.
+
+Assessment of the root cause diagnosis
+The developer is correct. The current flow has a fundamental design flaw:
+Browser → Stripe (payment captured) → Browser → Supabase INSERT (can fail)
+Money is taken before the order record exists. The browser's Supabase write is protected by RLS (auth.uid() = user_id), but for anonymous/guest sessions — which is how most customers check out — the anon session identity at payment-initiation time and at insert time can diverge, especially under any network latency or tab behaviour between those two steps. The June 16 success was the exception; the current failure is the rule.
+One thing the report doesn't explain but matters: something changed between 16 June (1 success) and 18 June (consistent failures). The most likely candidates are the World Cup section deployment or a recent Replit/Supabase session handling change. Worth a 10-minute investigation to understand — but crucially, the architectural fix makes the cause irrelevant going forward.
+
+Assessment of the proposed fix
+The recommended direction is correct. Server-side order creation at create-payment-intent time is the standard pattern for exactly this class of problem. The correct flow becomes:
+Browser → Edge Function: create-payment-intent
+         ↳ Server writes pending order row (service-role, bypasses RLS)
+         ↳ Returns clientSecret + order_id to browser
+Browser → Stripe (payment captured)
+Stripe → Webhook → Edge Function: marks order paid → provisions eSIM → sends email
+The order exists before money is taken. A browser crash, network drop, or session glitch cannot produce a "charged but no record" outcome. This is architecturally sound.
+
+Implementation notes for the developer (where I'd push back / add detail)
+1. The webhook must be idempotent. The Stripe webhook will fire payment_intent.succeeded. The handler must check whether the order is already in completed state before provisioning — Stripe can retry webhooks, and duplicate eSIM provisioning is a real cost. Use ON CONFLICT DO NOTHING or a status check guard.
+2. Stripe webhook signature verification must be enforced. If it isn't already verifying Stripe-Signature header against STRIPE_WEBHOOK_SECRET, add that immediately. An unverified webhook endpoint is a security hole that could allow anyone to fake a "payment succeeded" event and receive a free eSIM.
+3. Handle the payment_intent.payment_failed event too. When payment fails after the pending order is created, the webhook should mark the order failed — otherwise the admin dashboard will accumulate stale pending rows for every failed card attempt.
+4. The customer_email problem. Currently customer_email is written by the browser at order creation time. If the order is created server-side at payment-intent time, the email must be passed as a parameter to the edge function (not read from the session), because for guest checkouts the customer enters their email in the Stripe form — which is after the order is created. Consider: store customer_email as nullable in the pending order, then populate it from the Stripe checkout metadata or payment_intent.metadata when the webhook fires.
+5. Pending order cleanup. Add a scheduled Supabase function (or manual cron) to cancel orders that remain pending for >30 minutes with no Stripe confirmation. Otherwise your admin dashboard will fill with ghost rows from abandoned checkouts.
+
+Recommended execution sequence
+Right now (before deploying the fix):
+
+Go to Stripe dashboard → find salomedelgado1963@gmail.com → confirm the payment_intent_id
+Manually create the order row in Supabase with that PI ID and status completed
+Trigger eSIM provisioning manually from the admin dashboard (or via the esim-access edge function directly)
+Send the credentials email manually via the "Resend Email" button in admin
+Reach out to Salomé to apologise and confirm she's received her eSIM
+
+Today (hotfix):
+
+Implement server-side pending order creation inside create-payment-intent
+Update Stripe webhook to finalize the existing pending order (not create a new one)
+Deploy and run one end-to-end test before re-opening sales
+
+Agree with the developer: this is a P0 hotfix, not a backlog item. Every hour the current code runs in production is another potential "charged, got nothing" outcome. The fix is well-scoped (~3–4 hours of focused work) and the developer has clearly identified the right solution.
+Approve the fix. Proceed immediately.

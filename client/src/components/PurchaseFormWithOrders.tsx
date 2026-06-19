@@ -9,7 +9,6 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
-import { useCreateOrderWithESIM } from "@/hooks/orders/useCreateOrderWithESIM";
 import { useAuth } from "@/contexts/auth";
 import { useLanguage } from "@/contexts/language";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,7 +37,6 @@ const PurchaseFormWithOrders = ({
   const { t } = useLanguage();
   const navigate = useNavigate();
   const c = t.checkout;
-  const { createOrderAsync, isCreatingOrder } = useCreateOrderWithESIM();
 
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
@@ -81,7 +79,10 @@ const PurchaseFormWithOrders = ({
           currency: plan.currency.toLowerCase(),
           plan_name: plan.name,
           plan_id: plan.id,
+          data_amount: plan.data,
+          duration_days: plan.days,
           customer_email: collectedEmailRef.current,
+          referral_code: localStorage.getItem("palop_ref") || undefined,
         },
       })
       .then(({ data, error }) => {
@@ -135,40 +136,15 @@ const PurchaseFormWithOrders = ({
     onProceedToPayment();
   };
 
-  // Called by PaymentDetails after Stripe confirms payment
-  const handlePaymentSuccess = async (confirmedPaymentIntentId: string) => {
-    // Use the email captured at checkout (works for both guests and authenticated users).
-    // Fall back to user.email if somehow the ref wasn't set (e.g. deep-link straight to payment).
-    const emailForOrder = collectedEmailRef.current || user?.email || "";
-
-    // Read referral code captured from ?ref= URL param (stored in localStorage on page load)
-    const referralCode = localStorage.getItem("palop_ref") || undefined;
-
-    try {
-      const result = await createOrderAsync({
-        plan_id: plan.id,
-        plan_name: plan.name,
-        data_amount: plan.data,
-        duration_days: plan.days,
-        price: plan.price,
-        currency: plan.currency,
-        payment_intent_id: confirmedPaymentIntentId,
-        customerEmail: emailForOrder,
-        referral_code: referralCode,
-      });
-
-      // Clear referral code from localStorage once the order is attributed
-      localStorage.removeItem("palop_ref");
-
-      navigate(`/success?payment_intent=${confirmedPaymentIntentId}`);
-    } catch (error: unknown) {
-      console.error("Order creation failed:", error);
-      toast({
-        title: c.orderError,
-        description: c.orderErrorDesc,
-        variant: "destructive",
-      });
-    }
+  // Called by PaymentDetails after Stripe confirms payment.
+  // The order was already created server-side by create-payment-intent (before the
+  // charge) and the Stripe webhook is the authoritative eSIM provisioner — so there
+  // is NO client-side INSERT here anymore. We simply move to the success page, which
+  // polls for the webhook's provisioning outcome.
+  const handlePaymentSuccess = (confirmedPaymentIntentId: string) => {
+    // Referral has already been attributed on the server-side order; clear it locally.
+    localStorage.removeItem("palop_ref");
+    navigate(`/success?payment_intent=${confirmedPaymentIntentId}`);
   };
 
   return (
@@ -247,7 +223,7 @@ const PurchaseFormWithOrders = ({
               <PaymentDetails
                 onSuccess={handlePaymentSuccess}
                 onBack={onBackToPlans}
-                isCreatingOrder={isCreatingOrder}
+                isCreatingOrder={false}
                 amount={plan.price}
                 currency={plan.currency}
               />

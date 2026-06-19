@@ -25,8 +25,10 @@ interface ActivationDetails {
   activation_url?: string | null;
 }
 
-// Attempt to (re-)provision an eSIM for an existing order.
-// Safe to call multiple times — uses payment_intent_id as idempotent outOrder reference.
+// MANUAL last-resort fallback — only used when the webhook has marked an order
+// as terminally `failed`. The Stripe webhook is the authoritative provisioner, so
+// this is NOT part of the normal success path; it exists purely to give a stranded
+// customer a self-service recovery. Idempotent via payment_intent_id as outOrder.
 async function attemptProvision(order: OrderDetails, paymentIntentRef: string): Promise<boolean> {
   try {
     // 1. Fetch the correct eSIM Access package for this plan
@@ -113,98 +115,85 @@ const OrderSuccess = () => {
   const paymentIntent = searchParams.get("payment_intent");
   const redirectStatus = searchParams.get("redirect_status");
 
+  // The order already exists (created server-side before the charge) and the Stripe
+  // webhook is the authoritative provisioner. The success page is now a passive
+  // observer: it POLLS for the webhook's outcome rather than provisioning itself.
   useEffect(() => {
-    const fetchOrder = async () => {
-      if (redirectStatus === "failed") {
-        setPageStatus("failed");
-        return;
-      }
+    if (redirectStatus === "failed" || !paymentIntent) {
+      setPageStatus("failed");
+      return;
+    }
 
-      if (!paymentIntent) {
-        setPageStatus("failed");
-        return;
-      }
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
 
-      // --- First attempt ---
-      let orderData: OrderDetails | null = null;
+    const POLL_INTERVAL_MS = 3000;
+    const MAX_POLLS = 25; // ~75s — comfortably covers the webhook's ~35s provisioning tail
 
-      const { data: first, error: firstError } = await supabase
+    const poll = async (attempt: number) => {
+      if (cancelled) return;
+
+      const { data: orderData } = await supabase
         .from("orders")
         .select("id, plan_id, plan_name, customer_email, price, currency, esim_status, payment_intent_id")
         .eq("payment_intent_id", paymentIntent)
         .maybeSingle();
 
-      if (firstError || !first) {
-        // Order not written yet (race between Stripe redirect and createOrderAsync)
-        await new Promise((r) => setTimeout(r, 2500));
-        const { data: retry } = await supabase
-          .from("orders")
-          .select("id, plan_id, plan_name, customer_email, price, currency, esim_status, payment_intent_id")
-          .eq("payment_intent_id", paymentIntent)
-          .maybeSingle();
+      if (cancelled) return;
 
-        if (!retry) {
-          // Still not there — likely the browser closed mid-flow. Show processing.
-          setPageStatus("processing");
-          return;
-        }
-        orderData = retry as OrderDetails;
-      } else {
-        orderData = first as OrderDetails;
-      }
-
-      setOrder(orderData);
-
-      // --- Fetch activation record ---
-      const { data: activationData } = await supabase
-        .from("esim_activations")
-        .select("provisioning_status, qr_code_data, activation_url")
-        .eq("order_id", orderData.id)
-        .maybeSingle();
-
-      // --- Provisioning succeeded and activation record exists ---
-      if (activationData?.provisioning_status === "completed") {
-        setActivation(activationData);
-        setPageStatus("success");
-        return;
-      }
-
-      // --- Auto-retry: order failed provisioning and we haven't retried yet ---
-      // This covers: page refresh after failure, 3DS redirect landing, wrong package returned.
-      if (
-        !hasRetried.current &&
-        (orderData.esim_status === "failed" || !activationData) &&
-        orderData.esim_status !== "provisioned"
-      ) {
-        hasRetried.current = true;
-        console.log('[OrderSuccess] esim_status is', orderData.esim_status, '— attempting re-provision');
-        const ok = await attemptProvision(orderData, paymentIntent);
-        if (ok) {
-          // Re-fetch activation after successful retry
-          const { data: newActivation } = await supabase
-            .from("esim_activations")
-            .select("provisioning_status, qr_code_data, activation_url")
-            .eq("order_id", orderData.id)
-            .maybeSingle();
-          setActivation(newActivation ?? null);
-          // Supplier allocates ICCID asynchronously — show processing, not success
-          setPageStatus("processing");
+      // Order row should always exist now (written before the charge). If it isn't
+      // visible yet (replication lag right after redirect), keep waiting briefly.
+      if (!orderData) {
+        if (attempt < MAX_POLLS) {
+          timer = setTimeout(() => poll(attempt + 1), POLL_INTERVAL_MS);
         } else {
           setPageStatus("processing");
         }
         return;
       }
 
-      // --- Still waiting (esim_status = provisioned but no completed activation yet) ---
-      if (activationData) {
-        setActivation(activationData);
-        setPageStatus("processing");
-      } else {
-        setPageStatus("processing");
+      const typedOrder = orderData as OrderDetails;
+      setOrder(typedOrder);
+
+      const { data: activationData } = await supabase
+        .from("esim_activations")
+        .select("provisioning_status, qr_code_data, activation_url")
+        .eq("order_id", typedOrder.id)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      // --- Provisioned by the webhook ---
+      if (
+        activationData?.provisioning_status === "completed" ||
+        typedOrder.esim_status === "provisioned"
+      ) {
+        setActivation(activationData ?? null);
+        setPageStatus("success");
+        return;
+      }
+
+      // --- Terminal failure: webhook tried and could not provision. Offer ONE
+      //     self-service recovery, then keep polling so success still surfaces. ---
+      if (typedOrder.esim_status === "failed" && !hasRetried.current) {
+        hasRetried.current = true;
+        console.log("[OrderSuccess] esim_status=failed — running manual fallback provision");
+        await attemptProvision(typedOrder, paymentIntent);
+      }
+
+      setPageStatus("processing");
+
+      if (attempt < MAX_POLLS) {
+        timer = setTimeout(() => poll(attempt + 1), POLL_INTERVAL_MS);
       }
     };
 
-    fetchOrder();
+    poll(0);
+
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
   }, [paymentIntent, redirectStatus]);
 
   const os = t.orderSuccess;
