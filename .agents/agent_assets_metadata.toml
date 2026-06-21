@@ -12,3 +12,9 @@ id = "CXXyM0DrhVcNKGmQgdpYP"
 uri = "file://.local/prelaunch_cleanup.txt"
 type = "text"
 title = "Step 2 — Cleanup SQL (transaction-safe, review before committing)"
+
+[[outputs]]
+id = "35ubMlJndX9epyNExnRa6"
+uri = "file://attached_assets/generated_videos/palopconnect_promo_vertical_final.mp4"
+type = "video"
+title = "PalopConnect — Vertical Promo (9:16)"
