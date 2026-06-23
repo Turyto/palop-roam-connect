@@ -30,7 +30,18 @@ Done (deployed to `btallyhejhqfpqwaboee`):
 - **Item 5** — GDPR: stripped JWT token-prefix and customer-email from all edge-function logs (`esim-access`, `sync-supplier-inventory`, `_shared/esim-provision.ts`, `stripe-webhook`); logs now use `userId`/`order id` only.
 
 Deferred to user:
-- **Item 4** — frontend deploy is `autoscale` running `vite preview` (cold-start 500s). App is a frontend-only Vite SPA (Supabase backend) → recommend switching the published deployment to **Replit Static Hosting** (build → `dist`, CDN-served, no cold starts). Publish-time change initiated by the user.
+- **Item 4** — frontend deploy is `autoscale` running `vite preview` (cold-start 500s). App is a frontend-only Vite SPA (Supabase backend) → recommend switching the published deployment to **Replit Static Hosting** (build → `dist`, CDN-served, no cold starts). Publish-time change initiated by the user. NOTE: Replit locks deployment type for an existing deployment — switching to Static requires creating a **new** Static deployment and re-pointing the `palopconnect.com` domain (not an in-place "Adjust settings" change). If deep links 404 on Static, add an SPA `index.html` fallback.
+
+### Backlog Status — validated against live code/DB (21 Jun 2026)
+Re-validated the "hand to Replit next sprint" board; two items were already shipped:
+- ✅ **CLOSE — Strip debug logging (GDPR)** — Done & live. No customer email / auth-token data in any edge-function log.
+- ✅ **CLOSE — `referral_code` in Stripe PI metadata** — Done & live. `create-payment-intent` appends `metadata[referral_code]` (plus `order_id`, `user_id`, `plan_id`); referral attribution auditable from Stripe dashboard.
+- 🟡 **KEEP — Abandoned checkout auto-cancel** — Partial. Event-driven `payment_intent.canceled` handler is live (cancels on any Stripe cancel/expiry, never overrides paid). STILL NEEDED: a scheduled sweep (e.g. `pg_cron`) to auto-cancel `pending` orders older than N hours that never got a Stripe event (true tab-close abandonment). Cleared manually so far. Not blocking sales.
+- ❌ **KEEP — Validate Portugal/PALOP plans before selling** — Not started (follow-up #30). Codes `CKH1003`/`CKH1011` exist in `esim_packages` but were never test-provisioned.
+
+Clarification on "don't open Portugal/country plans yet":
+- Dedicated per-country SKUs (`portugal-*`, `europe-weekly/monthly/plus`, `CKH1003`/`CKH1011`) are **not exposed for sale** anywhere — DB rows only, already effectively closed. Storefront `planCards` only sells the 4 bundles, and the "Portugal" coverage tab falls back to those same 4.
+- The 4 live bundles (Arrival/Essential/Comfort/Freedom) use **validated** codes (`PRC8B6GK2`, `PV0Q6PZ7G`, `P29FDU5TL`, `P6PBYX5G4`) with confirmed provisioning, and they advertise "Portugal + Europe coverage" — so Portugal *coverage* is already sold safely via these. The restriction applies only to the unvalidated `CKH`-based Portugal SKUs.
 
 ### Pre-Launch Blocker
 - **GDPR cookie consent banner** — not yet implemented; required before EU public marketing push
