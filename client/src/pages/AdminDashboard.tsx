@@ -9,6 +9,7 @@ import AdminSupportTickets from "@/components/admin/AdminSupportTickets";
 import AdminInventory from "@/components/admin/AdminInventory";
 import AdminLanguageToggle from "@/components/admin/AdminLanguageToggle";
 import AdminReferrals from "@/components/admin/AdminReferrals";
+import AdminCommissions from "@/components/admin/AdminCommissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -140,12 +141,13 @@ const AdminDashboard = () => {
           </div>
 
           <Tabs defaultValue="orders" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="orders">Orders</TabsTrigger>
               <TabsTrigger value="users">Users</TabsTrigger>
               <TabsTrigger value="support">Support</TabsTrigger>
               <TabsTrigger value="catalog">Catalog</TabsTrigger>
               <TabsTrigger value="referrals">Referrals</TabsTrigger>
+              <TabsTrigger value="commissions">Commissions</TabsTrigger>
             </TabsList>
 
             <TabsContent value="orders">
@@ -166,6 +168,10 @@ const AdminDashboard = () => {
 
             <TabsContent value="referrals">
               <AdminReferrals />
+            </TabsContent>
+
+            <TabsContent value="commissions">
+              <AdminCommissions />
             </TabsContent>
           </Tabs>
         </div>

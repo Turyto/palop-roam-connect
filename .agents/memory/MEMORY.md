@@ -1,1 +1,2 @@
 - [Order provisioning paths](order-provisioning-paths.md) — TWO paths provision eSIMs; any order-status logic must be mirrored in both or orders get stuck.
+- [Supabase single shared backend](supabase-single-backend.md) — no dev/prod split; migrations apply to live prod DB; admin RLS = `get_current_user_role() = 'admin'`.

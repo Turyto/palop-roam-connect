@@ -249,6 +249,62 @@ export type Database = {
         }
         Relationships: []
       }
+      partner_commissions: {
+        Row: {
+          amount: number
+          commission_date: string
+          created_at: string
+          currency: string
+          customer_email: string | null
+          customer_name: string | null
+          id: string
+          notes: string | null
+          order_id: string | null
+          partner_code: string | null
+          partner_name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          commission_date?: string
+          created_at?: string
+          currency?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          partner_code?: string | null
+          partner_name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          commission_date?: string
+          created_at?: string
+          currency?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          partner_code?: string | null
+          partner_name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_commissions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plans: {
         Row: {
           coverage: string[] | null
