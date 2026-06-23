@@ -1,7 +1,25 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import fs from "fs";
 import { componentTagger } from "lovable-tagger";
+
+// Emits dist/404.html as a copy of the built index.html so that Replit Static
+// Hosting serves the SPA shell for client-side routes (deep links / hard
+// refreshes like /support, /orders, /admin/dashboard) instead of a hard 404.
+function spaFallback() {
+  return {
+    name: "spa-404-fallback",
+    closeBundle() {
+      const outDir = path.resolve(__dirname, "dist");
+      const indexPath = path.join(outDir, "index.html");
+      const notFoundPath = path.join(outDir, "404.html");
+      if (fs.existsSync(indexPath)) {
+        fs.copyFileSync(indexPath, notFoundPath);
+      }
+    },
+  };
+}
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -14,6 +32,8 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === 'development' &&
       componentTagger(),
+    mode !== 'development' &&
+      spaFallback(),
   ].filter(Boolean),
   resolve: {
     alias: {
