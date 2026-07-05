@@ -29,6 +29,7 @@ import {
   ToggleLeft,
   ToggleRight,
   ShoppingBag,
+  Handshake,
 } from "lucide-react";
 
 interface ReferralCodeRow {
@@ -141,6 +142,29 @@ const AdminReferrals = () => {
     },
   });
 
+  const { data: commissionsOwed = { byCode: {} as Record<string, number>, total: 0 } } =
+    useQuery({
+      queryKey: ["admin-referral-commissions-owed"],
+      queryFn: async () => {
+        const { data, error } = await supabase
+          .from("partner_commissions")
+          .select("partner_code, amount, status")
+          .eq("status", "owed");
+        if (error) throw error;
+        const byCode: Record<string, number> = {};
+        let total = 0;
+        (data ?? []).forEach((c) => {
+          const amt = Number(c.amount);
+          total += amt;
+          if (c.partner_code) {
+            const key = c.partner_code.trim().toUpperCase();
+            byCode[key] = (byCode[key] ?? 0) + amt;
+          }
+        });
+        return { byCode, total };
+      },
+    });
+
   const createCodeMutation = useMutation({
     mutationFn: async ({
       code,
@@ -243,7 +267,7 @@ const AdminReferrals = () => {
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <Card>
           <CardContent className="p-5">
             <div className="flex items-start justify-between mb-2">
@@ -279,7 +303,25 @@ const AdminReferrals = () => {
               </div>
             </div>
             <p className="text-2xl font-bold text-gray-900">€{totalPending.toFixed(2)}</p>
-            <p className="text-xs text-gray-400 mt-1">Awaiting payout</p>
+            <p className="text-xs text-gray-400 mt-1">Customer referral rewards</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex items-start justify-between mb-2">
+              <p className="text-xs font-medium text-gray-500">Commissions Owed</p>
+              <div className="p-1.5 rounded-full bg-blue-50">
+                <Handshake className="h-4 w-4 text-blue-600" />
+              </div>
+            </div>
+            <p
+              className="text-2xl font-bold text-gray-900"
+              data-testid="text-referrals-commissions-owed"
+            >
+              €{commissionsOwed.total.toFixed(2)}
+            </p>
+            <p className="text-xs text-gray-400 mt-1">Partner payouts owed</p>
           </CardContent>
         </Card>
 
@@ -389,7 +431,7 @@ const AdminReferrals = () => {
                       onClick={() => setExpandedCode(expandedCode === row.code ? null : row.code)}
                       className={`grid grid-cols-[1fr_auto] gap-2 py-3 px-1 cursor-pointer hover:bg-gray-50 rounded transition-colors ${!row.is_active ? "opacity-50" : ""}`}
                     >
-                      <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 items-center text-sm">
+                      <div className="grid grid-cols-2 sm:grid-cols-7 gap-2 items-center text-sm">
                         {/* Code + badges */}
                         <div className="sm:col-span-2 flex flex-wrap items-center gap-2">
                           <span className="font-mono font-semibold text-palop-green">
@@ -432,6 +474,22 @@ const AdminReferrals = () => {
                           <p className={row.pendingRewards > 0 ? "font-semibold text-yellow-700" : "text-gray-400"}>
                             {row.pendingRewards > 0 ? `€${row.pendingRewards.toFixed(2)}` : "—"}
                           </p>
+                        </div>
+
+                        {/* Partner commission owed */}
+                        <div className="text-center hidden sm:block">
+                          <p className="text-xs text-gray-400">Commission</p>
+                          {(() => {
+                            const owed = commissionsOwed.byCode[row.code.toUpperCase()] ?? 0;
+                            return (
+                              <p
+                                className={owed > 0 ? "font-semibold text-blue-700" : "text-gray-400"}
+                                data-testid={`text-code-commission-${row.code}`}
+                              >
+                                {owed > 0 ? `€${owed.toFixed(2)}` : "—"}
+                              </p>
+                            );
+                          })()}
                         </div>
 
                         {/* Created */}
