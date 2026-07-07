@@ -83,6 +83,23 @@ Deno.serve(async (req: Request): Promise<Response> => {
       return json({ success: true, alreadyProvisioned: true, esimTranNo: order.esim_order_id ?? null });
     }
 
+    // ATOMIC CLAIM — only one invocation may purchase (real money). Flip
+    // esim_status → 'provisioning' only where no supplier order exists yet and
+    // no other invocation already claimed it. 0 rows updated = lost the race.
+    const claimRes = await fetch(
+      `${supabaseUrl}/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}&user_id=eq.${user.id}&esim_order_id=is.null&esim_status=not.in.(provisioned,provisioning)`,
+      {
+        method: 'PATCH',
+        headers: { ...restHeaders, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+        body: JSON.stringify({ esim_status: 'provisioning' }),
+      },
+    );
+    const claimedRows = await claimRes.json().catch(() => []);
+    if (!claimRes.ok || !Array.isArray(claimedRows) || claimedRows.length === 0) {
+      console.log(`[esimcard-provision] order=${orderId} claim lost — another invocation is provisioning`);
+      return json({ success: false, error: 'Provisioning already in progress for this order' }, 409);
+    }
+
     // Resolve the supplier package SERVER-SIDE from the order's plan — never
     // trust a client-supplied package id (would allow arbitrary reseller spend).
     const pkgRes = await fetch(

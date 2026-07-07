@@ -100,20 +100,30 @@ function extractSimFields(sim: any): {
 }
 
 // ---------------------------------------------------------------------------
-// Poll /my-esims/:id (or newest from /my-esims) until the profile is ready.
-// Purchase can be "delayed" — supplier says wait ~2 minutes then check MY ESIMS.
+// Poll until the profile is ready. Purchase can be "delayed" — supplier says
+// wait ~2 minutes then check MY ESIMS.
+//
+// Correlation is DETERMINISTIC only: we look up by the sim id from the
+// purchase response, or match the /my-esims list by the ICCID from the
+// purchase response. We NEVER pick "the newest" list entry — under concurrent
+// purchases that could bind another customer's SIM to this order.
 // ---------------------------------------------------------------------------
 async function fetchESIMCardDetails(
   token: string,
   simId: string | null,
+  iccid: string | null,
   maxAttempts = 5,
 ): Promise<ReturnType<typeof extractSimFields> | null> {
+  if (!simId && !iccid) {
+    console.log('[esimcard/fetch-details] no simId or iccid to correlate — skipping poll (manual resolution required)');
+    return null;
+  }
   const delays = [0, 5000, 10000, 20000, 30000];
   const authHeaders = { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' };
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     if (delays[attempt] > 0) await new Promise((r) => setTimeout(r, delays[attempt]));
-    console.log(`[esimcard/fetch-details] attempt ${attempt + 1}/${maxAttempts} — simId=${simId ?? '(newest)'}`);
+    console.log(`[esimcard/fetch-details] attempt ${attempt + 1}/${maxAttempts} — simId=${simId ?? 'null'} iccid=${iccid ?? 'null'}`);
 
     try {
       let sim: any = null;
@@ -121,30 +131,32 @@ async function fetchESIMCardDetails(
         const res = await fetch(`${ESIMCARD_BASE_URL}/my-esims/${simId}`, { headers: authHeaders });
         const data = await res.json().catch(() => null);
         sim = data?.data?.sim ?? data?.data ?? null;
-      } else {
-        // No sim id from purchase (delayed) — take the newest from the list
+      } else if (iccid) {
+        // Correlate strictly by ICCID from the purchase response
         const res = await fetch(`${ESIMCARD_BASE_URL}/my-esims?page=1`, { headers: authHeaders });
         const data = await res.json().catch(() => null);
-        const list: any[] = data?.data ?? [];
-        if (list.length > 0) {
-          sim = list[0];
-          // Enrich with full details if we now have an id
-          if (sim?.id) {
-            const dRes = await fetch(`${ESIMCARD_BASE_URL}/my-esims/${sim.id}`, { headers: authHeaders });
-            const dData = await dRes.json().catch(() => null);
-            sim = dData?.data?.sim ?? dData?.data ?? sim;
-          }
+        const list: any[] = Array.isArray(data?.data) ? data.data : [];
+        const match = list.find((s: any) => s?.iccid === iccid) ?? null;
+        if (match?.id) {
+          const dRes = await fetch(`${ESIMCARD_BASE_URL}/my-esims/${match.id}`, { headers: authHeaders });
+          const dData = await dRes.json().catch(() => null);
+          sim = dData?.data?.sim ?? dData?.data ?? match;
+        } else {
+          sim = match;
         }
       }
       if (sim) {
         const fields = extractSimFields(sim);
-        if (fields.iccid && (fields.activationCode || fields.qrCodeUrl || fields.shortUrl)) {
+        // Guard against supplier returning a different profile than requested
+        if (iccid && fields.iccid && fields.iccid !== iccid) {
+          console.error(`[esimcard/fetch-details] ICCID mismatch — expected=${iccid} got=${fields.iccid}; discarding`);
+        } else if (fields.iccid && (fields.activationCode || fields.qrCodeUrl || fields.shortUrl)) {
           console.log(`[esimcard/fetch-details] resolved — iccid=${fields.iccid} hasLPA=${!!fields.activationCode} hasQR=${!!fields.qrCodeUrl}`);
           return fields;
+        } else {
+          if (!simId && fields.simId) simId = fields.simId;
+          console.log(`[esimcard/fetch-details] profile not ready yet — iccid=${fields.iccid ?? 'null'}`);
         }
-        // Keep the sim id for subsequent attempts if we learned it
-        if (!simId && fields.simId) simId = fields.simId;
-        console.log(`[esimcard/fetch-details] profile not ready yet — iccid=${fields.iccid ?? 'null'}`);
       }
     } catch (e: any) {
       console.error(`[esimcard/fetch-details] attempt=${attempt + 1} exception — ${e.message}`);
@@ -201,7 +213,11 @@ export async function provisionESIMCardOrder(
   let fields = simApplied && purchasedSim ? extractSimFields(purchasedSim) : null;
   const needsPoll = !fields || !fields.iccid || !(fields.activationCode || fields.qrCodeUrl || fields.shortUrl);
   if (needsPoll) {
-    fields = await fetchESIMCardDetails(token, fields?.simId ?? purchasedSim?.id ?? null)
+    fields = await fetchESIMCardDetails(
+      token,
+      fields?.simId ?? purchasedSim?.id ?? null,
+      fields?.iccid ?? purchasedSim?.iccid ?? null,
+    )
       ?? fields
       ?? { simId: purchasedSim?.id ?? null, iccid: purchasedSim?.iccid ?? null, activationCode: null, qrCodeUrl: null, shortUrl: null };
   }
