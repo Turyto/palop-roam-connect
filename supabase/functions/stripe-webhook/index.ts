@@ -159,6 +159,7 @@ async function handlePaymentSucceeded(
     .from('orders')
     .update({ esim_status: 'provisioning', updated_at: new Date().toISOString() })
     .eq('id', order.id)
+    .is('esim_order_id', null) // never re-purchase if a supplier order (or pending marker) exists — real money
     .or('esim_status.eq.pending,esim_status.eq.failed,esim_status.is.null')
     .select('id')
   if (claimError) {

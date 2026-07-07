@@ -188,7 +188,6 @@ export const useCreateOrderWithESIM = () => {
           const { data: cardResponse, error: cardInvokeError } = await supabase.functions.invoke('esimcard-provision', {
             body: {
               orderId: orderResult.id,
-              packageTypeId: supplierPackageId,
               customerEmail,
               planName: orderData.plan_name,
               dataAmount: orderData.data_amount,

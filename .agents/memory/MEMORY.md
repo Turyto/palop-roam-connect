@@ -2,3 +2,4 @@
 - [Supabase single shared backend](supabase-single-backend.md) — no dev/prod split; migrations apply to live prod DB; admin RLS = `get_current_user_role() = 'admin'`.
 - [Static Hosting SPA fallback](static-hosting-spa-fallback.md) — SPA deep links need 404.html copy of built index.html (rewrites blocked); deployment-type switch isn't in-place.
 - [Supplier code validation](supplier-code-validation.md) — never make a plan sellable without verifying its code against the live eSIM Access catalog; use the supplier's validity days, not assumed ones.
+- [eSIM supplier integration rules](esim-supplier-integration.md) — duplicate-spend guard on esim_order_id, server-side package resolution, eSIMCard API + deploy notes.

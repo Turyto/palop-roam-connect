@@ -206,6 +206,36 @@ export async function provisionESIMCardOrder(
       ?? { simId: purchasedSim?.id ?? null, iccid: purchasedSim?.iccid ?? null, activationCode: null, qrCodeUrl: null, shortUrl: null };
   }
 
+  // Minimum viable activation payload: an ICCID plus at least one way to
+  // install (LPA code, QR image, or universal link). Anything less must NOT
+  // be treated as a successful provision — but the reseller balance HAS been
+  // charged, so mark the order to block a duplicate purchase on retry.
+  const complete = !!fields?.iccid && !!(fields?.activationCode || fields?.qrCodeUrl || fields?.shortUrl);
+  if (!complete) {
+    const pendingMarker = fields?.simId ?? `esimcard-pending-${input.orderId}`;
+    console.error(`[esimcard] purchase charged but activation data unresolved — order=${input.orderId} simId=${fields?.simId ?? 'null'}`);
+    try {
+      await fetch(`${supabaseUrl}/rest/v1/orders?id=eq.${encodeURIComponent(input.orderId)}`, {
+        method: 'PATCH',
+        headers: {
+          'apikey': serviceKey,
+          'Authorization': `Bearer ${serviceKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal',
+        },
+        body: JSON.stringify({ esim_order_id: pendingMarker, esim_status: 'processing' }),
+      });
+    } catch (e: any) {
+      console.error(`[esimcard] failed to mark pending order (double-purchase guard): ${e?.message}`);
+    }
+    return {
+      success: false,
+      esimTranNo: fields?.simId ?? null,
+      iccid: fields?.iccid ?? null,
+      error: 'eSIM purchased but activation data not ready — support will follow up',
+    };
+  }
+
   const result: ProvisionResult = {
     success: true,
     esimTranNo: fields?.simId ?? null,

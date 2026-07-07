@@ -201,29 +201,29 @@ export const planCards: PlanCard[] = [
     { pt: 'Ideal para estadias mais longas', en: 'Best for longer stays' },
     10, 30, SAM),
 
-  // PALOP — Mozambique (supplier integration pending → not purchasable yet)
+  // PALOP — Mozambique (eSIMCard supplier)
   card('mz-3gb', 'palop',
     { pt: 'Moçambique 3 GB', en: 'Mozambique 3 GB' },
     { pt: 'Ideal para visitas curtas', en: 'Great for short visits' },
-    3, 15, { pt: 'Moçambique', en: 'Mozambique' },
-    { countryKey: 'mozambique', available: false }),
+    3, 30, { pt: 'Moçambique', en: 'Mozambique' },
+    { countryKey: 'mozambique' }),
   card('mz-5gb', 'palop',
     { pt: 'Moçambique 5 GB', en: 'Mozambique 5 GB' },
     { pt: 'Ideal para estadias mais longas', en: 'Best for longer stays' },
     5, 30, { pt: 'Moçambique', en: 'Mozambique' },
-    { countryKey: 'mozambique', available: false }),
+    { countryKey: 'mozambique' }),
 
-  // PALOP — Cabo Verde (supplier integration pending → not purchasable yet)
+  // PALOP — Cabo Verde (eSIMCard supplier)
   card('cv-3gb', 'palop',
     { pt: 'Cabo Verde 3 GB', en: 'Cabo Verde 3 GB' },
     { pt: 'Ideal para visitas curtas', en: 'Great for short visits' },
     3, 30, { pt: 'Cabo Verde', en: 'Cabo Verde' },
-    { countryKey: 'cabo-verde', available: false }),
+    { countryKey: 'cabo-verde' }),
   card('cv-5gb', 'palop',
     { pt: 'Cabo Verde 5 GB', en: 'Cabo Verde 5 GB' },
     { pt: 'Ideal para estadias mais longas', en: 'Best for longer stays' },
     5, 30, { pt: 'Cabo Verde', en: 'Cabo Verde' },
-    { countryKey: 'cabo-verde', available: false }),
+    { countryKey: 'cabo-verde' }),
 
   // PALOP — Guinea-Bissau
   card('gw-3gb', 'palop',

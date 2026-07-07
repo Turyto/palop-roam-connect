@@ -55,16 +55,17 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }
 
     const body = await req.json();
-    const { orderId, packageTypeId, customerEmail, planName, dataAmount, referenceId } = body ?? {};
-    if (!orderId || !packageTypeId) {
-      return json({ success: false, error: 'orderId and packageTypeId are required' }, 400);
+    const { orderId, customerEmail, planName, dataAmount, referenceId } = body ?? {};
+    if (!orderId) {
+      return json({ success: false, error: 'orderId is required' }, 400);
     }
 
-    // Ownership + state check — the order must exist, belong to the caller, and
-    // not already be provisioned (prevents duplicate purchases with real money).
+    // Ownership + state check — the order must exist, belong to the caller,
+    // be PAID, and not already be provisioned (prevents duplicate purchases
+    // with real money).
     const restHeaders = { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}`, 'Accept': 'application/json' };
     const orderRes = await fetch(
-      `${supabaseUrl}/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}&user_id=eq.${user.id}&select=id,esim_status,esim_order_id&limit=1`,
+      `${supabaseUrl}/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}&user_id=eq.${user.id}&select=id,esim_status,esim_order_id,payment_status,plan_id&limit=1`,
       { headers: restHeaders },
     );
     const orderRows = await orderRes.json().catch(() => []);
@@ -73,9 +74,26 @@ Deno.serve(async (req: Request): Promise<Response> => {
       console.error(`[esimcard-provision] order not found or not owned — order=${orderId} userId=${user.id}`);
       return json({ success: false, error: 'Order not found' }, 404);
     }
+    if (order.payment_status !== 'succeeded' && order.payment_status !== 'paid') {
+      console.error(`[esimcard-provision] order=${orderId} not paid — payment_status=${order.payment_status}`);
+      return json({ success: false, error: 'Order is not paid' }, 403);
+    }
     if (order.esim_status === 'provisioned' || order.esim_order_id) {
       console.log(`[esimcard-provision] order=${orderId} already provisioned — skipping duplicate purchase`);
       return json({ success: true, alreadyProvisioned: true, esimTranNo: order.esim_order_id ?? null });
+    }
+
+    // Resolve the supplier package SERVER-SIDE from the order's plan — never
+    // trust a client-supplied package id (would allow arbitrary reseller spend).
+    const pkgRes = await fetch(
+      `${supabaseUrl}/rest/v1/esim_packages?plan_id=eq.${encodeURIComponent(order.plan_id)}&supplier=eq.esimcard&select=supplier_package_id&limit=1`,
+      { headers: restHeaders },
+    );
+    const pkgRows = await pkgRes.json().catch(() => []);
+    const packageTypeId = Array.isArray(pkgRows) && pkgRows[0]?.supplier_package_id ? pkgRows[0].supplier_package_id : null;
+    if (!packageTypeId) {
+      console.error(`[esimcard-provision] no esimcard package mapping for plan=${order.plan_id} order=${orderId}`);
+      return json({ success: false, error: 'No eSIMCard package configured for this plan' }, 400);
     }
 
     const resendApiKey = Deno.env.get('RESEND_API_KEY') ?? '';
