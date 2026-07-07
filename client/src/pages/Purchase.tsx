@@ -6,7 +6,7 @@ import HomeFooter from "@/components/home/HomeFooter";
 import PurchaseFormWithOrders from "@/components/PurchaseFormWithOrders";
 import PurchaseSteps from "@/components/PurchaseSteps";
 import SelectedPlanSummary from "@/components/SelectedPlanSummary";
-import { PLAN_PRICES } from "@/content/plansPageContent";
+import { PLAN_PRICES, planCards } from "@/content/plansPageContent";
 
 type PurchaseStep = "checkout" | "payment";
 
@@ -33,69 +33,28 @@ const Purchase = () => {
     }
   }, [planParam, navigate]);
 
-  // Pre-defined plans — new public plans + legacy eSIM Access plans
+  // Pre-defined plans — public plans (from /plans page content) + legacy eSIM Access plans
   const availablePlans: ESIMPlan[] = [
-    // Active public plans (from /plans page)
-    {
-      id: "arrival",
-      name: "Arrival",
-      data: "3 GB",
-      days: 15,
-      price: PLAN_PRICES['arrival'],
-      currency: "EUR",
-      features: [
-        "3 GB of Internet",
-        "Valid for 15 days",
-        "Portugal + Europe coverage",
-        "Instant QR delivery",
-        "No contract required"
-      ]
-    },
-    {
-      id: "essential",
-      name: "Essential",
-      data: "5 GB",
-      days: 30,
-      price: PLAN_PRICES['essential'],
-      currency: "EUR",
-      features: [
-        "5 GB of Internet",
-        "Valid for 30 days",
-        "Portugal + Europe coverage",
-        "Instant QR delivery",
-        "No contract required"
-      ]
-    },
-    {
-      id: "comfort",
-      name: "Comfort",
-      data: "10 GB",
-      days: 30,
-      price: PLAN_PRICES['comfort'],
-      currency: "EUR",
-      features: [
-        "10 GB of Internet",
-        "Valid for 30 days",
-        "Portugal + Europe coverage",
-        "Instant QR delivery",
-        "No contract required"
-      ]
-    },
-    {
-      id: "freedom",
-      name: "Freedom",
-      data: "20 GB",
-      days: 30,
-      price: PLAN_PRICES['freedom'],
-      currency: "EUR",
-      features: [
-        "20 GB of Internet",
-        "Valid for 30 days",
-        "Portugal + Europe coverage",
-        "Instant QR delivery",
-        "No contract required"
-      ]
-    },
+    // Active public plans — derived from the plans page content source.
+    // Plans marked available:false (supplier not live yet) are intentionally
+    // excluded so they cannot be purchased via a direct URL.
+    ...planCards
+      .filter((p) => p.available)
+      .map((p): ESIMPlan => ({
+        id: p.id,
+        name: p.name.en,
+        data: p.data,
+        days: parseInt(p.validityDays, 10),
+        price: PLAN_PRICES[p.id],
+        currency: "EUR",
+        features: [
+          `${p.data} of Internet`,
+          `Valid for ${p.validityDays} days`,
+          `${p.coverageLabel.en} coverage`,
+          "Instant QR delivery",
+          "No contract required"
+        ]
+      })),
     // Legacy eSIM Access plans (preserved for backward compatibility)
     {
       id: "lite",
@@ -216,6 +175,9 @@ const Purchase = () => {
       if (plan) {
         setSelectedPlan(plan);
         setCurrentStep("checkout");
+      } else {
+        // Unknown or not-yet-available plan id — send back to the plans page
+        navigate('/plans', { replace: true });
       }
     }
   }, [planParam]);

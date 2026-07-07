@@ -16,7 +16,13 @@ import BulkActionsToolbar from "./BulkActionsToolbar";
 import type { Plan } from "@/hooks/usePlans";
 import { supabase } from "@/integrations/supabase/client";
 
-const CHECKOUT_PLAN_IDS = ['arrival', 'essential', 'comfort', 'freedom'];
+const CHECKOUT_PLAN_IDS = [
+  'arrival', 'essential', 'comfort', 'freedom',
+  'sa-3gb', 'sa-5gb', 'sa-10gb',
+  'sam-3gb', 'sam-5gb', 'sam-10gb',
+  'gw-3gb', 'gw-5gb',
+  'ao-3gb', 'ao-5gb',
+];
 
 const PlansCatalogTab = () => {
   const { plans, isLoading, updatePlan, deletePlan } = usePlans();
