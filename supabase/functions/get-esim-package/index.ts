@@ -29,13 +29,15 @@ Deno.serve(async (req: Request): Promise<Response> => {
       });
     }
 
-    // Only return rows that have a valid esim_access_package_id — rows with null IDs
-    // belong to other suppliers and cannot be provisioned through the eSIM Access API.
+    // Supplier-aware lookup: return rows provisionable by EITHER supplier —
+    //   • eSIM Access rows (esim_access_package_id set) — original behavior
+    //   • eSIMCard rows (supplier='esimcard' with supplier_package_id set)
+    // Rows with neither ID remain excluded (cannot be provisioned).
     // Order by created_at desc so the most recently added package wins if there are duplicates.
     const url =
       `${supabaseUrl}/rest/v1/esim_packages` +
       `?plan_id=eq.${encodeURIComponent(plan_id)}` +
-      `&esim_access_package_id=not.is.null` +
+      `&or=(esim_access_package_id.not.is.null,and(supplier.eq.esimcard,supplier_package_id.not.is.null))` +
       `&order=created_at.desc` +
       `&limit=1`;
 

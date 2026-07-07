@@ -97,10 +97,13 @@ export const useCreateOrderWithESIM = () => {
       let esimError: string | null = null;
       let parsedESIM: ReturnType<typeof parseESIMResponse> | null = null;
 
-      // Guard: package row found but no eSIM Access package ID — another supplier's row
-      if (packageData && !packageData.esim_access_package_id) {
-        esimError = `Plan '${orderData.plan_id}' has no eSIM Access package configured (supplier: ${packageData.supplier ?? 'unknown'})`;
-        console.error('[useCreateOrderWithESIM] package found but esim_access_package_id is null:', packageData);
+      // Supplier routing: eSIMCard rows carry supplier='esimcard' + supplier_package_id.
+      const isESIMCard = packageData?.supplier === 'esimcard' && !!packageData?.supplier_package_id;
+
+      // Guard: package row found but not provisionable by any known supplier path
+      if (packageData && !packageData.esim_access_package_id && !isESIMCard) {
+        esimError = `Plan '${orderData.plan_id}' has no provisionable package configured (supplier: ${packageData.supplier ?? 'unknown'})`;
+        console.error('[useCreateOrderWithESIM] package found but no usable package id:', packageData);
       }
 
       // --- CREATE LOCAL ORDER (BEFORE provisioning) ---
@@ -108,7 +111,10 @@ export const useCreateOrderWithESIM = () => {
       // a real order_id and can persist the resolved ICCID/QR server-side before
       // returning. This eliminates the silent data-loss window where a client
       // drop after provisioning would lose the credentials forever.
-      const hasPackageMapping = !!packageData?.esim_access_package_id;
+      const hasPackageMapping = !!packageData?.esim_access_package_id || isESIMCard;
+      const supplierPackageId = isESIMCard
+        ? (packageData!.supplier_package_id as string)
+        : (packageData?.esim_access_package_id ?? null);
 
       if (!packageData) {
         // 7.3 — Missing package mapping: not a transient API failure but a configuration gap.
@@ -133,11 +139,11 @@ export const useCreateOrderWithESIM = () => {
         // Provisional eSIM status — finalised after the supplier call below.
         ...(hasPackageMapping
           ? {
-              esim_package_id: packageData!.esim_access_package_id,
+              esim_package_id: supplierPackageId,
               esim_status: 'provisioning',
             }
           : {
-              esim_package_id: packageData?.esim_access_package_id ?? null,
+              esim_package_id: supplierPackageId ?? null,
               esim_status: 'failed',
             }),
       };
@@ -175,7 +181,38 @@ export const useCreateOrderWithESIM = () => {
       // --- PROVISION eSIM WITH SUPPLIER ---
       // orderId + userId are passed so the edge function persists the resolved
       // ICCID/QR server-side BEFORE returning to the client.
-      if (hasPackageMapping) {
+      if (hasPackageMapping && isESIMCard) {
+        // eSIMCard supplier — the edge function does everything server-side
+        // (login → purchase → persist activation/QR/order rows → email).
+        try {
+          const { data: cardResponse, error: cardInvokeError } = await supabase.functions.invoke('esimcard-provision', {
+            body: {
+              orderId: orderResult.id,
+              packageTypeId: supplierPackageId,
+              customerEmail,
+              planName: orderData.plan_name,
+              dataAmount: orderData.data_amount,
+              referenceId: paymentIntentId ?? `order-${Date.now()}`,
+            },
+          });
+          if (cardInvokeError || !cardResponse?.success) {
+            esimError = cardInvokeError?.message || cardResponse?.error || 'eSIMCard provisioning failed';
+            console.error('[useCreateOrderWithESIM] esimcard-provision failed:', esimError);
+          } else {
+            esimOrderData = cardResponse;
+            parsedESIM = {
+              esimTranNo: cardResponse.esimTranNo ?? undefined,
+              iccid: cardResponse.iccid ?? undefined,
+              activationCode: cardResponse.activationCode ?? undefined,
+              qrCodeUrl: cardResponse.qrCodeUrl ?? undefined,
+              shortUrl: cardResponse.shortUrl ?? undefined,
+            };
+          }
+        } catch (error: any) {
+          esimError = error.message || 'eSIM provisioning failed';
+          console.error('eSIMCard order creation error:', error);
+        }
+      } else if (hasPackageMapping) {
         try {
           const esimResponse = await createESIMOrder({
             packageId: packageData!.esim_access_package_id,
@@ -210,7 +247,7 @@ export const useCreateOrderWithESIM = () => {
           .update({
             esim_status: 'provisioned',
             esim_order_id: parsedESIM.esimTranNo,
-            esim_package_id: packageData?.esim_access_package_id,
+            esim_package_id: supplierPackageId,
             esim_delivered_at: new Date().toISOString(),
           })
           .eq('id', orderResult.id);
@@ -247,7 +284,7 @@ export const useCreateOrderWithESIM = () => {
               provisioning_log: {
                 esim_order_id: parsedESIM.esimTranNo,
                 created_at: new Date().toISOString(),
-                package_code: packageData.esim_access_package_id,
+                package_code: supplierPackageId,
                 iccid: parsedESIM.iccid,
                 qr_code_url: parsedESIM.qrCodeUrl,
                 short_url: parsedESIM.shortUrl,
@@ -312,7 +349,7 @@ export const useCreateOrderWithESIM = () => {
               error: esimError,
               error_type: !packageData ? 'missing_package_mapping' : 'api_call_failed',
               failed_at: new Date().toISOString(),
-              package_code: packageData?.esim_access_package_id ?? null,
+              package_code: supplierPackageId ?? null,
               payment_intent_id: paymentIntentId,
             },
           });
@@ -329,7 +366,7 @@ export const useCreateOrderWithESIM = () => {
             plan_id: orderData.plan_id,
             plan_name: orderData.plan_name,
             payment_intent_id: paymentIntentId,
-            esim_package_id: packageData?.esim_access_package_id ?? null,
+            esim_package_id: supplierPackageId ?? null,
             error_message: esimError,
             error_type: !packageData ? 'missing_package_mapping' : 'api_call_failed',
           },

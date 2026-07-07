@@ -22,6 +22,8 @@ const CHECKOUT_PLAN_IDS = [
   'sam-3gb', 'sam-5gb', 'sam-10gb',
   'gw-3gb', 'gw-5gb',
   'ao-3gb', 'ao-5gb',
+  'mz-3gb', 'mz-5gb',
+  'cv-3gb', 'cv-5gb',
 ];
 
 const PlansCatalogTab = () => {
@@ -37,11 +39,13 @@ const PlansCatalogTab = () => {
   const [packageCheckKey, setPackageCheckKey] = useState(0);
 
   useEffect(() => {
+    // Supplier-aware: a plan is configured if it has EITHER an eSIM Access
+    // package code OR an eSIMCard supplier package id.
     supabase
       .from('esim_packages')
       .select('plan_id')
       .in('plan_id', CHECKOUT_PLAN_IDS)
-      .not('esim_access_package_id', 'is', null)
+      .or('esim_access_package_id.not.is.null,and(supplier.eq.esimcard,supplier_package_id.not.is.null)')
       .then(({ data }) => {
         const configured = new Set((data ?? []).map((r: any) => r.plan_id));
         setUnconfiguredPackagePlans(CHECKOUT_PLAN_IDS.filter(id => !configured.has(id)));

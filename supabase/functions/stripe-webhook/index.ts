@@ -1,6 +1,7 @@
 import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { provisionOrder } from '../_shared/esim-provision.ts'
+import { provisionESIMCardOrder } from '../_shared/esimcard-provision.ts'
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
   apiVersion: '2024-04-10',
@@ -170,20 +171,76 @@ async function handlePaymentSucceeded(
   }
 
   // --- 4. Provision ---
-  const accessCode = Deno.env.get('ESIM_ACCESS_ACCESS_CODE') ?? ''
-  const secretKey = Deno.env.get('ESIM_ACCESS_SECRET_KEY') ?? ''
   const resendApiKey = Deno.env.get('RESEND_API_KEY') ?? ''
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 
-  if (!accessCode || !secretKey) {
-    console.error(`[stripe-webhook] eSIM Access credentials not configured — cannot provision order=${order.id}`)
-    await markProvisioningFailed(supabase, order, 'eSIM Access credentials not configured')
-    return
-  }
   if (!order.esim_package_id) {
     console.error(`[stripe-webhook] order=${order.id} has no esim_package_id — cannot provision`)
     await markProvisioningFailed(supabase, order, 'No eSIM package mapping on order')
+    return
+  }
+
+  // --- 4a. Supplier lookup — branch by esim_packages.supplier for this plan.
+  // Default is 'esim_access' (existing path, unchanged). Only an explicit
+  // supplier='esimcard' row routes to the eSIMCard provisioner.
+  let supplier = 'esim_access'
+  try {
+    const { data: pkgRow } = await supabase
+      .from('esim_packages')
+      .select('supplier')
+      .eq('plan_id', order.plan_id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (pkgRow?.supplier) supplier = pkgRow.supplier as string
+  } catch (e: any) {
+    console.warn(`[stripe-webhook] supplier lookup failed for order=${order.id} — defaulting to esim_access: ${e?.message}`)
+  }
+
+  if (supplier === 'esimcard') {
+    const esimcardEmail = Deno.env.get('ESIMCARD_EMAIL') ?? ''
+    const esimcardPassword = Deno.env.get('ESIMCARD_PASSWORD') ?? ''
+    if (!esimcardEmail || !esimcardPassword) {
+      console.error(`[stripe-webhook] eSIMCard credentials not configured — cannot provision order=${order.id}`)
+      await markProvisioningFailed(supabase, order, 'eSIMCard credentials not configured')
+      return
+    }
+    console.log(`[stripe-webhook] provisioning order=${order.id} supplier=esimcard package=${order.esim_package_id}`)
+    const cardResult = await provisionESIMCardOrder(
+      {
+        orderId: order.id as string,
+        userId: order.user_id as string,
+        packageCode: order.esim_package_id as string,
+        customerEmail: (order.customer_email as string | null) ?? null,
+        planName: (order.plan_name as string | null) ?? null,
+        dataAmount: (order.data_amount as string | null) ?? null,
+        referenceId: paymentIntent.id,
+      },
+      {
+        supabaseUrl,
+        serviceKey,
+        creds: { email: esimcardEmail, password: esimcardPassword },
+        resendApiKey,
+        origin: 'https://palopconnect.com',
+        writtenBy: 'stripe-webhook-provision',
+      },
+    )
+    if (cardResult.success) {
+      console.log(`[stripe-webhook] order=${order.id} provisioned via eSIMCard — simId=${cardResult.esimTranNo} iccid=${cardResult.iccid}`)
+    } else {
+      console.error(`[stripe-webhook] order=${order.id} eSIMCard provisioning failed — ${cardResult.error}`)
+      await markProvisioningFailed(supabase, order, cardResult.error ?? 'eSIMCard provisioning failed')
+    }
+    return
+  }
+
+  const accessCode = Deno.env.get('ESIM_ACCESS_ACCESS_CODE') ?? ''
+  const secretKey = Deno.env.get('ESIM_ACCESS_SECRET_KEY') ?? ''
+
+  if (!accessCode || !secretKey) {
+    console.error(`[stripe-webhook] eSIM Access credentials not configured — cannot provision order=${order.id}`)
+    await markProvisioningFailed(supabase, order, 'eSIM Access credentials not configured')
     return
   }
 

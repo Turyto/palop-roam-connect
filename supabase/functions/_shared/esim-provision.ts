@@ -215,7 +215,7 @@ async function createSupplierOrder(input: ProvisionOrderInput, creds: ESIMAccess
 // ---------------------------------------------------------------------------
 // Persist resolved credentials (service role). Existence-checked + idempotent.
 // ---------------------------------------------------------------------------
-async function persistESIMRecords(opts: {
+export async function persistESIMRecords(opts: {
   supabaseUrl: string;
   serviceKey: string;
   orderId: string;
@@ -226,8 +226,10 @@ async function persistESIMRecords(opts: {
   qrCodeUrl: string | null;
   shortUrl: string | null;
   packageCode: string;
+  /** Provenance tag written into provisioning_log. Defaults to the webhook path tag. */
+  writtenBy?: string;
 }): Promise<void> {
-  const { supabaseUrl, serviceKey, orderId, userId, esimTranNo, iccid, activationCode, qrCodeUrl, shortUrl, packageCode } = opts;
+  const { supabaseUrl, serviceKey, orderId, userId, esimTranNo, iccid, activationCode, qrCodeUrl, shortUrl, packageCode, writtenBy } = opts;
   const restHeaders = {
     'apikey': serviceKey,
     'Authorization': `Bearer ${serviceKey}`,
@@ -258,7 +260,7 @@ async function persistESIMRecords(opts: {
           qr_code_url: qrCodeUrl,
           short_url: shortUrl,
           lpa_code: activationCode,
-          written_by: 'stripe-webhook-provision',
+          written_by: writtenBy ?? 'stripe-webhook-provision',
         },
       }),
     });
@@ -302,7 +304,7 @@ async function persistESIMRecords(opts: {
 // ---------------------------------------------------------------------------
 // Customer delivery email (magic link + activation details).
 // ---------------------------------------------------------------------------
-async function sendProvisioningEmail(opts: {
+export async function sendProvisioningEmail(opts: {
   customerEmail: string;
   planName: string;
   dataAmount: string;
