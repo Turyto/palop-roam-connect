@@ -1,0 +1,1699 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "ESIM Reseller API Documentation"
+  },
+  "servers": [
+    {
+      "url": "https://portal.esimcard.com/api/developer/reseller",
+      "description": "Production server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Bearer token authentication"
+      }
+    }
+  },
+  "paths": {
+    "/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Login",
+        "description": "Authenticates a Reseller account using email and password credentials. Upon successful authentication, returns a JWT access token that must be used for all subsequent secured API requests.",
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "source": "curl -X POST 'https://portal.esimcard.com/api/developer/reseller/login' \\\n-H 'Content-Type: application/json' \\\n-d '{\"email\":\"dealer123@gmail.com\", \"password\":\"testUser123\"}'"
+          },
+          {
+            "lang": "PHP",
+            "source": "<?php\n$ch = curl_init('https://portal.esimcard.com/api/developer/reseller/login');\ncurl_setopt($ch, CURLOPT_RETURNTRANSFER, true);\ncurl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);\ncurl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['email' => 'dealer123@gmail.com', 'password' => 'testUser123']));\n$response = curl_exec($ch);\ncurl_close($ch);\necho $response;\n?>"
+          },
+          {
+            "lang": "JavaScript (fetch)",
+            "source": "fetch('https://portal.esimcard.com/api/developer/reseller/login', {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json' },\n  body: JSON.stringify({ email: 'dealer123@gmail.com', password: 'testUser123' })\n}).then(res => res.json()).then(console.log);"
+          },
+          {
+            "lang": "Python",
+            "source": "import requests\n\nurl = 'https://portal.esimcard.com/api/developer/reseller/login'\nheaders = {'Content-Type': 'application/json'}\ndata = {'email': 'dealer123@gmail.com', 'password': 'testUser123'}\nresponse = requests.post(url, headers=headers, json=data)\nprint(response.json())"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "example": "reseller123@gmail.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "example": "testUser123"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": true,
+                  "access_token": "34343178|AdcidN1xsNjddsbTMKyActAfjdsalfasfdjalsfas34343",
+                  "token_type": "Bearer",
+                  "user": {
+                    "id": 296,
+                    "name": "testUser",
+                    "email": "reseller123@gmail.com",
+                    "balance": 0
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": false,
+                  "message": "Invalid login details"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/logout": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Logout",
+        "description": "Terminates the current authenticated reseller session by invalidating the active JWT access token. After logout, the token becomes invalid and cannot be used to access protected endpoints.",
+        "security": [{ "BearerAuth": [] }],
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "source": "curl -X POST 'https://portal.esimcard.com/api/developer/reseller/logout' \\\n-H 'Authorization: Bearer 34343178|AdcidN1xsNjddsbTMKyActAfjdsalfasfdjalsfas34343' \\\n-H 'Content-Type: application/json'"
+          },
+          {
+            "lang": "PHP",
+            "source": "<?php\n$ch = curl_init('https://portal.esimcard.com/api/developer/reseller/logout');\ncurl_setopt($ch, CURLOPT_RETURNTRANSFER, true);\ncurl_setopt($ch, CURLOPT_HTTPHEADER, [\n  'Content-Type: application/json',\n  'Authorization: Bearer 34343178|AdcidN1xsNjddsbTMKyActAfjdsalfasfdjalsfas34343'\n]);\n$response = curl_exec($ch);\ncurl_close($ch);\necho $response;\n?>"
+          },
+          {
+            "lang": "JavaScript (fetch)",
+            "source": "fetch('https://portal.esimcard.com/api/developer/reseller/logout', {\n  method: 'POST',\n  headers: {\n    'Content-Type': 'application/json',\n    'Authorization': 'Bearer 34343178|AdcidN1xsNjddsbTMKyActAfjdsalfasfdjalsfas34343'\n  }\n}).then(res => res.json()).then(console.log);"
+          },
+          {
+            "lang": "Python",
+            "source": "import requests\n\nurl = 'https://portal.esimcard.com/api/developer/reseller/logout'\nheaders = {\n  'Content-Type': 'application/json',\n  'Authorization': 'Bearer 34343178|AdcidN1xsNjddsbTMKyActAfjdsalfasfdjalsfas34343'\n}\nresponse = requests.post(url, headers=headers)\nprint(response.json())"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Logout successful",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": true,
+                  "message": "Logged out successfully"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or expired token",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": false,
+                  "message": "Token is invalid or expired"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pricing": {
+      "get": {
+        "tags": ["Bundles"],
+        "summary": "Packages & Pricing",
+        "description": "Retrieves a comprehensive list of all available eSIM bundles and their pricing details. Each bundle includes information such as country, data allowance, validity period, and cost. This endpoint allows authorized resellers to display or compare bundle options available for purchase and activation.",
+        "security": [{ "BearerAuth": [] }],
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "source": "curl -X GET 'https://portal.esimcard.com/api/developer/reseller/pricing' \\\n  -H 'Authorization: Bearer <your_access_token>'"
+          },
+          {
+            "lang": "PHP",
+            "source": "<?php\n$ch = curl_init('https://portal.esimcard.com/api/developer/reseller/pricing');\ncurl_setopt($ch, CURLOPT_HTTPHEADER, [\n  'Authorization: Bearer <your_access_token>'\n]);\ncurl_setopt($ch, CURLOPT_RETURNTRANSFER, true);\n$response = curl_exec($ch);\ncurl_close($ch);\necho $response;\n?>"
+          },
+          {
+            "lang": "JavaScript (fetch)",
+            "source": "fetch('https://portal.esimcard.com/api/developer/reseller/pricing', {\n  headers: { 'Authorization': 'Bearer <your_access_token>' }\n})\n  .then(res => res.json())\n  .then(data => console.log(data))\n  .catch(err => console.error(err));"
+          },
+          {
+            "lang": "Python",
+            "source": "import requests\n\nheaders = {\n  'Authorization': 'Bearer <your_access_token>'\n}\nresponse = requests.get('https://portal.esimcard.com/api/developer/reseller/pricing', headers=headers)\nprint(response.json())"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bundles list retrieved successfully.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": true,
+                  "data": {
+                    "countries": [
+                      {
+                        "name": "Honduras",
+                        "code": "hn",
+                        "packages": [
+                          {
+                            "id": "6f2555c7-3846-45f2-afac-ca4636238da5",
+                            "name": "eSIM, 1GB, 7 Days, Honduras, Unthrottled",
+                            "price": "13.53",
+                            "data_quantity": 1,
+                            "data_unit": "GB",
+                            "package_validity": 7,
+                            "package_validity_unit": "Day"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "United States",
+                        "code": "us",
+                        "packages": [
+                          {
+                            "id": "f31588d2-805e-4723-96e7-17b2d70a2626",
+                            "name": "Unlimited Talk, Text 10GB @ 5G speed",
+                            "price": "44.38",
+                            "data_quantity": 10,
+                            "data_unit": "GB",
+                            "package_validity": 30,
+                            "package_validity_unit": "Day"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — Missing or invalid access token.",
+            "content": {
+              "application/json": {
+                "example": { "message": "Unauthenticated." }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/packages": {
+      "get": {
+        "tags": ["Bundles"],
+        "summary": "Packages",
+        "description": "Retrieves a paginated list of all available eSIM packages. Each package includes details such as data, voice, and SMS allowances, pricing, and validity duration. This endpoint also supports filtering by package type (e.g., data-only or data + voice + SMS), allowing resellers to quickly identify and compare plans that best fit their customers’ needs.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "package_type",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["DATA-ONLY", "DATA-VOICE-SMS"],
+              "default": "DATA-ONLY"
+            },
+            "description": "Filter packages by type (e.g., 'DATA-ONLY' or 'DATA-VOICE-SMS'). Defaults to 'DATA-ONLY'."
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "source": "curl -X GET 'https://portal.esimcard.com/api/developer/reseller/packages?package_type=DATA-ONLY' \\\n  -H 'Authorization: Bearer <your_access_token>'"
+          },
+          {
+            "lang": "PHP",
+            "source": "<?php\n$ch = curl_init('https://portal.esimcard.com/api/developer/reseller/packages?package_type=DATA-ONLY');\ncurl_setopt($ch, CURLOPT_HTTPHEADER, [\n  'Authorization: Bearer <your_access_token>'\n]);\ncurl_setopt($ch, CURLOPT_RETURNTRANSFER, true);\n$response = curl_exec($ch);\ncurl_close($ch);\necho $response;\n?>"
+          },
+          {
+            "lang": "JavaScript (fetch)",
+            "source": "fetch('https://portal.esimcard.com/api/developer/reseller/packages?package_type=DATA-ONLY', {\n  headers: { 'Authorization': 'Bearer <your_access_token>' }\n})\n  .then(res => res.json())\n  .then(data => console.log(data))\n  .catch(err => console.error(err));"
+          },
+          {
+            "lang": "Python",
+            "source": "import requests\n\nheaders = {\n  'Authorization': 'Bearer <your_access_token>'\n}\nparams = {\n  'package_type': 'DATA-ONLY'\n}\nresponse = requests.get('https://portal.esimcard.com/api/developer/reseller/packages', headers=headers, params=params)\nprint(response.json())"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of packages retrieved successfully.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": true,
+                  "meta": {
+                    "total": 86,
+                    "perPage": 20,
+                    "currentPage": 1,
+                    "lastPage": 5
+                  },
+                  "data": [
+                    {
+                      "id": "00306b97-0b66-42f8-bed2-29def8a0a12d",
+                      "name": "eSimCard 1GB Europe",
+                      "price": "3.61",
+                      "data_quantity": 1,
+                      "data_unit": "GB",
+                      "voice_quantity": 0,
+                      "voice_unit": "Minutes",
+                      "sms_quantity": 0,
+                      "package_validity": 7,
+                      "package_validity_unit": "Day",
+                      "package_type": "DATA-ONLY"
+                    },
+                    {
+                      "id": "ef9229ad-03ac-46be-acc8-a8aaa0e3b1cc",
+                      "name": "eSimCard 1GB North America",
+                      "price": "5.81",
+                      "data_quantity": 1,
+                      "data_unit": "GB",
+                      "voice_quantity": 0,
+                      "voice_unit": "Minutes",
+                      "sms_quantity": 0,
+                      "package_validity": 7,
+                      "package_validity_unit": "Day",
+                      "package_type": "DATA-ONLY"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — Missing or invalid access token.",
+            "content": {
+              "application/json": {
+                "example": { "message": "Unauthenticated." }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/package/detail/:id": {
+      "get": {
+        "tags": ["Bundles"],
+        "summary": "Package Details",
+        "description": "Retrieves comprehensive details for a specific eSIM package using its unique ID. The response includes the package’s data, voice, and SMS allowances, pricing, validity period, and a list of supported countries. Each country entry provides network coverage details, including available network names and supported generations (2G/3G/4G/5G).",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" },
+            "description": "The unique UUID of the eSIM package to retrieve."
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "source": "curl -X GET 'https://portal.esimcard.com/api/developer/reseller/package/detail/f31588d2-805e-4723-96e7-17b2d70a2626' \\\n  -H 'Authorization: Bearer <your_access_token>'"
+          },
+          {
+            "lang": "PHP",
+            "source": "<?php\n$packageId = 'f31588d2-805e-4723-96e7-17b2d70a2626';\n$url = 'https://portal.esimcard.com/api/developer/reseller/package/detail/' . $packageId;\n$ch = curl_init($url);\ncurl_setopt($ch, CURLOPT_HTTPHEADER, [\n  'Authorization: Bearer <your_access_token>'\n]);\ncurl_setopt($ch, CURLOPT_RETURNTRANSFER, true);\n$response = curl_exec($ch);\ncurl_close($ch);\necho $response;\n?>"
+          },
+          {
+            "lang": "JavaScript (fetch)",
+            "source": "const packageId = 'f31588d2-805e-4723-96e7-17b2d70a2626';\nfetch(`https://portal.esimcard.com/api/developer/reseller/package/detail/${packageId}`, {\n  headers: { 'Authorization': 'Bearer <your_access_token>' }\n})\n  .then(res => res.json())\n  .then(data => console.log(data))\n  .catch(err => console.error(err));"
+          },
+          {
+            "lang": "Python",
+            "source": "import requests\n\npackage_id = 'f31588d2-805e-4723-96e7-17b2d70a2626'\nurl = f'https://portal.esimcard.com/api/developer/reseller/package/detail/{package_id}'\nheaders = {\n  'Authorization': 'Bearer <your_access_token>'\n}\nresponse = requests.get(url, headers=headers)\nprint(response.json())"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Package details retrieved successfully.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": true,
+                  "data": {
+                    "id": "f31588d2-805e-4723-96e7-17b2d70a2626",
+                    "name": "Unlimited Talk, Text 10gb @ 5g speed",
+                    "price": "46.60",
+                    "data_quantity": 10,
+                    "data_unit": "GB",
+                    "voice_quantity": 10000,
+                    "voice_unit": "Minutes",
+                    "sms_quantity": 10000,
+                    "package_validity": 30,
+                    "package_validity_unit": "Day",
+                    "romaing_countries": [
+                      {
+                        "id": 167,
+                        "name": "United States",
+                        "image_url": "https://flagcdn.com/w80/us.png",
+                        "network_coverage": [
+                          {
+                            "network_name": "AT&T Mobility",
+                            "network_code": "USACG",
+                            "two_g": false,
+                            "three_g": true,
+                            "four_G": true,
+                            "five_G": false
+                          },
+                          {
+                            "network_name": "T-Mobile USA, Inc",
+                            "network_code": "USAW6",
+                            "two_g": true,
+                            "three_g": true,
+                            "four_G": true,
+                            "five_G": false
+                          }
+                        ]
+                      }
+                    ],
+                    "countries": [
+                      {
+                        "id": 167,
+                        "name": "United States",
+                        "image_url": "https://flagcdn.com/w80/us.png",
+                        "network_coverage": [
+                          {
+                            "network_name": "AT&T Mobility",
+                            "network_code": "USACG",
+                            "two_g": false,
+                            "three_g": true,
+                            "four_G": true,
+                            "five_G": false
+                          },
+                          {
+                            "network_name": "T-Mobile USA, Inc",
+                            "network_code": "USAW6",
+                            "two_g": true,
+                            "three_g": true,
+                            "four_G": true,
+                            "five_G": false
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — Missing or invalid access token.",
+            "content": {
+              "application/json": {
+                "example": { "message": "Unauthenticated." }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/packages/country": {
+      "get": {
+        "tags": ["Bundles"],
+        "summary": "Packages/Countries",
+        "description": "Get list of available countries where packages are available.",
+        "security": [{ "BearerAuth": [] }],
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "source": "curl -X GET \"https://portal.esimcard.com/api/developer/reseller/packages/country\" -H \"accept: application/json\" -H \"Authorization: Bearer YOUR_ACCESS_TOKEN\""
+          },
+          {
+            "lang": "JavaScript",
+            "label": "fetch",
+            "source": "fetch('https://portal.esimcard.com/api/developer/reseller/packages/country', {\n  method: 'GET',\n  headers: {\n    'accept': 'application/json',\n    'Authorization': 'Bearer YOUR_ACCESS_TOKEN'\n  }\n})\n  .then(response => response.json())\n  .then(data => console.log(data));"
+          },
+          {
+            "lang": "Python",
+            "source": "import requests\n\nurl = 'https://portal.esimcard.com/api/developer/reseller/packages/country'\nheaders = {\n    'accept': 'application/json',\n    'Authorization': 'Bearer YOUR_ACCESS_TOKEN'\n}\nresponse = requests.get(url, headers=headers)\nprint(response.json())"
+          },
+          {
+            "lang": "PHP",
+            "source": "<?php\n\n$curl = curl_init();\n\ncurl_setopt_array($curl, array(\n  CURLOPT_URL => 'https://portal.esimcard.com/api/developer/reseller/packages/country',\n  CURLOPT_RETURNTRANSFER => true,\n  CURLOPT_HTTPHEADER => array(\n    'accept: application/json',\n    'Authorization: Bearer YOUR_ACCESS_TOKEN'\n  ),\n));\n\n$response = curl_exec($curl);\ncurl_close($curl);\n\necho $response;\n?>"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Countries list retrieved successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": true,
+                  "data": [
+                    {
+                      "id": 9,
+                      "name": "Burkina Faso",
+                      "image_url": "https://flagcdn.com/w80/bf.png"
+                    },
+                    {
+                      "id": 167,
+                      "name": "United States",
+                      "image_url": "https://flagcdn.com/w80/us.png"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": { "message": "Unauthenticated." }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/packages/country/:id": {
+      "get": {
+        "tags": ["Bundles"],
+        "summary": "Country/Id",
+        "description": "Get packages for a specific country using its ID. Optionally, filter by package type (DATA-ONLY or DATA-VOICE-SMS).",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Country ID"
+          },
+          {
+            "name": "package_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["DATA-ONLY", "DATA-VOICE-SMS"]
+            },
+            "description": "Package type (optional)"
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "source": "curl -X GET \"https://portal.esimcard.com/api/developer/reseller/packages/country/167?package_type=DATA-ONLY\" \\\n-H \"accept: application/json\" \\\n-H \"Authorization: Bearer YOUR_ACCESS_TOKEN\""
+          },
+          {
+            "lang": "JavaScript",
+            "label": "fetch",
+            "source": "fetch('https://portal.esimcard.com/api/developer/reseller/packages/country/167?package_type=DATA-ONLY', {\n  method: 'GET',\n  headers: {\n    'accept': 'application/json',\n    'Authorization': 'Bearer YOUR_ACCESS_TOKEN'\n  }\n})\n  .then(response => response.json())\n  .then(data => console.log(data));"
+          },
+          {
+            "lang": "Python",
+            "source": "import requests\n\nurl = 'https://portal.esimcard.com/api/developer/reseller/packages/country/167'\nparams = {'package_type': 'DATA-ONLY'}\nheaders = {\n    'accept': 'application/json',\n    'Authorization': 'Bearer YOUR_ACCESS_TOKEN'\n}\nresponse = requests.get(url, headers=headers, params=params)\nprint(response.json())"
+          },
+          {
+            "lang": "PHP",
+            "source": "<?php\n\n$curl = curl_init();\n\ncurl_setopt_array($curl, array(\n  CURLOPT_URL => 'https://portal.esimcard.com/api/developer/reseller/packages/country/167?package_type=DATA-ONLY',\n  CURLOPT_RETURNTRANSFER => true,\n  CURLOPT_HTTPHEADER => array(\n    'accept: application/json',\n    'Authorization: Bearer YOUR_ACCESS_TOKEN'\n  ),\n));\n\n$response = curl_exec($curl);\ncurl_close($curl);\n\necho $response;\n?>"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Country packages retrieved successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": true,
+                  "meta": {
+                    "total": 7,
+                    "perPage": 15,
+                    "currentPage": 1,
+                    "lastPage": 1
+                  },
+                  "data": [
+                    {
+                      "id": "1153b007-b21d-40f3-9fd3-d1dac36ac233",
+                      "name": "3GB eSIM Data For 30 Days in United States",
+                      "data_quantity": 3,
+                      "data_unit": "GB",
+                      "voice_quantity": 0,
+                      "voice_unit": "Minutes",
+                      "sms_quantity": 0,
+                      "package_validity": 30,
+                      "package_validity_unit": "Day",
+                      "package_type": "DATA-ONLY",
+                      "unlimited": false
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": { "message": "Unauthenticated." }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/packages/continent": {
+      "get": {
+        "tags": ["Bundles"],
+        "summary": "Packages/Continent",
+        "description": "Retrieves a list of available continents where eSIM packages are offered.",
+        "operationId": "getContinents",
+        "security": [{ "BearerAuth": [] }],
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "source": "curl -X GET \"https://portal.esimcard.com/api/developer/reseller/packages/continent\" -H \"Authorization: Bearer YOUR_ACCESS_TOKEN\""
+          },
+          {
+            "lang": "PHP",
+            "source": "<?php\n$ch = curl_init();\ncurl_setopt($ch, CURLOPT_URL, 'https://portal.esimcard.com/api/developer/reseller/packages/continent');\ncurl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);\ncurl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer YOUR_ACCESS_TOKEN']);\n$response = curl_exec($ch);\ncurl_close($ch);\necho $response;"
+          },
+          {
+            "lang": "Python",
+            "source": "import requests\nheaders = {'Authorization': 'Bearer YOUR_ACCESS_TOKEN'}\nresponse = requests.get('https://portal.esimcard.com/api/developer/reseller/packages/continent', headers=headers)\nprint(response.json())"
+          },
+          {
+            "lang": "JavaScript",
+            "source": "fetch('https://portal.esimcard.com/api/developer/reseller/packages/continent', {\n  headers: { Authorization: 'Bearer YOUR_ACCESS_TOKEN' }\n})\n  .then(res => res.json())\n  .then(console.log)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Continents list retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "integer", "example": 1 },
+                          "name": { "type": "string", "example": "Asia" },
+                          "code": { "type": "string", "example": "as" },
+                          "image_url": {
+                            "type": "string",
+                            "format": "uri",
+                            "example": "http://127.0.0.1:8000/images/continents/Asia.svg"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "data": [
+                    {
+                      "id": 1,
+                      "name": "Asia",
+                      "code": "as",
+                      "image_url": "http://127.0.0.1:8000/images/continents/Asia.svg"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — Bearer token missing or invalid.",
+            "content": {
+              "application/json": {
+                "example": { "message": "Unauthenticated." }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/packages/continent/{id}": {
+      "get": {
+        "tags": ["Bundles"],
+        "summary": "Continent Packages",
+        "description": "Retrieves available eSIM packages for a specific continent, filtered optionally by package type (e.g., DATA-ONLY or DATA-VOICE-SMS). The response includes package details such as data allowance, price, validity, and whether the package offers unlimited usage.",
+        "operationId": "getContinentPackages",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Unique numeric ID of the continent to retrieve packages for."
+          },
+          {
+            "name": "package_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["DATA-ONLY", "DATA-VOICE-SMS"],
+              "default": "DATA-ONLY"
+            },
+            "description": "Filter packages by type (optional)."
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "source": "curl -X GET \"https://portal.esimcard.com/api/developer/reseller/packages/continent/1?package_type=DATA-ONLY\" -H \"Authorization: Bearer YOUR_ACCESS_TOKEN\""
+          },
+          {
+            "lang": "PHP",
+            "source": "<?php\n$ch = curl_init();\n$url = 'https://portal.esimcard.com/api/developer/reseller/packages/continent/1?package_type=DATA-ONLY';\ncurl_setopt($ch, CURLOPT_URL, $url);\ncurl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);\ncurl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer YOUR_ACCESS_TOKEN']);\n$response = curl_exec($ch);\ncurl_close($ch);\necho $response;"
+          },
+          {
+            "lang": "Python",
+            "source": "import requests\nheaders = {'Authorization': 'Bearer YOUR_ACCESS_TOKEN'}\nparams = {'package_type': 'DATA-ONLY'}\nresponse = requests.get('https://portal.esimcard.com/api/developer/reseller/packages/continent/1', headers=headers, params=params)\nprint(response.json())"
+          },
+          {
+            "lang": "JavaScript",
+            "source": "fetch('https://portal.esimcard.com/api/developer/reseller/packages/continent/1?package_type=DATA-ONLY', {\n  headers: { Authorization: 'Bearer YOUR_ACCESS_TOKEN' }\n})\n  .then(res => res.json())\n  .then(console.log)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Continent packages retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": true },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "total": { "type": "integer", "example": 26 },
+                        "perPage": { "type": "integer", "example": 15 },
+                        "currentPage": { "type": "integer", "example": 1 },
+                        "lastPage": { "type": "integer", "example": 2 }
+                      }
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "example": "6a9acbbc-b9a2-486d-b924-c1715a0aa27f"
+                          },
+                          "name": {
+                            "type": "string",
+                            "example": "1GB eSIM Data For 7 Days in Asia"
+                          },
+                          "price": { "type": "string", "example": "3.74" },
+                          "data_quantity": { "type": "integer", "example": 1 },
+                          "data_unit": { "type": "string", "example": "GB" },
+                          "voice_quantity": { "type": "integer", "example": 0 },
+                          "voice_unit": {
+                            "type": "string",
+                            "example": "Minutes"
+                          },
+                          "sms_quantity": { "type": "integer", "example": 0 },
+                          "package_validity": {
+                            "type": "integer",
+                            "example": 7
+                          },
+                          "package_validity_unit": {
+                            "type": "string",
+                            "example": "Day"
+                          },
+                          "package_type": {
+                            "type": "string",
+                            "enum": ["DATA-ONLY", "DATA-VOICE-SMS"],
+                            "example": "DATA-ONLY"
+                          },
+                          "unlimited": { "type": "boolean", "example": false }
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "meta": {
+                    "total": 26,
+                    "perPage": 15,
+                    "currentPage": 1,
+                    "lastPage": 2
+                  },
+                  "data": [
+                    {
+                      "id": "6a9acbbc-b9a2-486d-b924-c1715a0aa27f",
+                      "name": "1GB eSIM Data For 7 Days in Asia",
+                      "price": "3.74",
+                      "data_quantity": 1,
+                      "data_unit": "GB",
+                      "voice_quantity": 0,
+                      "voice_unit": "Minutes",
+                      "sms_quantity": 0,
+                      "package_validity": 7,
+                      "package_validity_unit": "Day",
+                      "package_type": "DATA-ONLY",
+                      "unlimited": false
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — Bearer token missing or invalid.",
+            "content": {
+              "application/json": {
+                "example": { "message": "Unauthenticated." }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/packages/global": {
+      "get": {
+        "tags": ["Bundles"],
+        "summary": "Global Packages",
+        "description": "Get global packages",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "package_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["DATA-ONLY", "DATA-VOICE-SMS"]
+            },
+            "description": "Package type"
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "source": "curl -X GET \"https://portal.esimcard.com/api/developer/reseller/packages/global/DATA-ONLY\" -H \"Authorization: Bearer YOUR_ACCESS_TOKEN\""
+          },
+          {
+            "lang": "PHP",
+            "source": "<?php\n$ch = curl_init();\n$url = 'https://portal.esimcard.com/api/developer/reseller/packages/global/DATA-ONLY';\ncurl_setopt($ch, CURLOPT_URL, $url);\ncurl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);\ncurl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer YOUR_ACCESS_TOKEN']);\n$response = curl_exec($ch);\ncurl_close($ch);\necho $response;"
+          },
+          {
+            "lang": "Python",
+            "source": "import requests\nheaders = {'Authorization': 'Bearer YOUR_ACCESS_TOKEN'}\nresponse = requests.get('https://portal.esimcard.com/api/developer/reseller/packages/global/DATA-ONLY', headers=headers)\nprint(response.json())"
+          },
+          {
+            "lang": "JavaScript",
+            "source": "fetch('https://portal.esimcard.com/api/developer/reseller/packages/global/DATA-ONLY', {\n  headers: { Authorization: 'Bearer YOUR_ACCESS_TOKEN' }\n})\n  .then(res => res.json())\n  .then(console.log)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Global packages retrieved successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": true,
+                  "meta": {
+                    "total": 14,
+                    "perPage": 15,
+                    "currentPage": 1,
+                    "lastPage": 1
+                  },
+                  "data": [
+                    {
+                      "id": "8b633f11-eff3-46d1-94cb-660edc91e9a1",
+                      "name": "1GB eSIM Data For 7 Days Global",
+                      "price": "9.65",
+                      "data_quantity": 1,
+                      "data_unit": "GB",
+                      "voice_quantity": 0,
+                      "voice_unit": "Minutes",
+                      "sms_quantity": 0,
+                      "package_validity": 7,
+                      "package_validity_unit": "Day",
+                      "package_type": "DATA-ONLY"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": { "message": "Unauthenticated." }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/can-topup-esim": {
+      "post": {
+        "tags": ["Bundles"],
+        "summary": "Check Topup Availability",
+        "description": "Check if an eSIM can be topped up",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "iccid": { "type": "string", "example": "89XXXXXXXXXXX" }
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "source": "curl -X POST \"https://portal.esimcard.com/api/developer/reseller/can-topup-esim\" \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Authorization: Bearer YOUR_ACCESS_TOKEN\" \\\n  -d '{\"iccid\": \"89XXXXXXXXXXX\"}'"
+          },
+          {
+            "lang": "PHP",
+            "source": "<?php\n$ch = curl_init();\n$url = 'https://portal.esimcard.com/api/developer/reseller/can-topup-esim';\n$data = json_encode(['iccid' => '89XXXXXXXXXXX']);\ncurl_setopt($ch, CURLOPT_URL, $url);\ncurl_setopt($ch, CURLOPT_POST, 1);\ncurl_setopt($ch, CURLOPT_POSTFIELDS, $data);\ncurl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);\ncurl_setopt($ch, CURLOPT_HTTPHEADER, [\n  'Content-Type: application/json',\n  'Authorization: Bearer YOUR_ACCESS_TOKEN'\n]);\n$response = curl_exec($ch);\ncurl_close($ch);\necho $response;"
+          },
+          {
+            "lang": "Python",
+            "source": "import requests\nurl = 'https://portal.esimcard.com/api/developer/reseller/can-topup-esim'\ndata = {'iccid': '89XXXXXXXXXXX'}\nheaders = {\n  'Authorization': 'Bearer YOUR_ACCESS_TOKEN',\n  'Content-Type': 'application/json'\n}\nresponse = requests.post(url, json=data, headers=headers)\nprint(response.json())"
+          },
+          {
+            "lang": "JavaScript",
+            "source": "fetch('https://portal.esimcard.com/api/developer/reseller/can-topup-esim', {\n  method: 'POST',\n  headers: {\n    'Content-Type': 'application/json',\n    'Authorization': 'Bearer YOUR_ACCESS_TOKEN'\n  },\n  body: JSON.stringify({ iccid: '89XXXXXXXXXXX' })\n})\n  .then(res => res.json())\n  .then(console.log)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Topup availability checked",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "available": {
+                    "summary": "Topup available",
+                    "value": {
+                      "status": true,
+                      "data": { "topup_available": true }
+                    }
+                  },
+                  "not_available": {
+                    "summary": "Topup not available",
+                    "value": {
+                      "status": true,
+                      "data": { "topup_available": false }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": { "message": "Unauthenticated." }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/package/purchase": {
+      "post": {
+        "tags": ["Bundles"],
+        "summary": "Purchase Package",
+        "description": "Purchase a package for an eSIM",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "package_type_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "f31588d2-805e-4723-96e7-17b2d70a2626"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "label": "cURL",
+            "source": "curl -X POST https://portal.esimcard.com/api/developer/reseller/package/purchase \\\n  -H 'Authorization: Bearer <YOUR_TOKEN>' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"imei\": \"356938035643809\",\n    \"package_type_id\": \"f31588d2-805e-4723-96e7-17b2d70a2626\"\n  }'"
+          },
+          {
+            "lang": "PHP",
+            "label": "PHP",
+            "source": "<?php\n$ch = curl_init('https://portal.esimcard.com/api/developer/reseller/package/purchase');\ncurl_setopt($ch, CURLOPT_RETURNTRANSFER, true);\ncurl_setopt($ch, CURLOPT_HTTPHEADER, [\n  'Authorization: Bearer <YOUR_TOKEN>',\n  'Content-Type: application/json'\n]);\n$data = json_encode([\n  'imei' => '356938035643809',\n  'package_type_id' => 'f31588d2-805e-4723-96e7-17b2d70a2626'\n]);\ncurl_setopt($ch, CURLOPT_POSTFIELDS, $data);\n$response = curl_exec($ch);\ncurl_close($ch);\necho $response;"
+          },
+          {
+            "lang": "JavaScript",
+            "label": "JavaScript (fetch)",
+            "source": "fetch('https://portal.esimcard.com/api/developer/reseller/package/purchase', {\n  method: 'POST',\n  headers: {\n    'Authorization': 'Bearer <YOUR_TOKEN>',\n    'Content-Type': 'application/json'\n  },\n  body: JSON.stringify({\n    imei: '356938035643809',\n    package_type_id: 'f31588d2-805e-4723-96e7-17b2d70a2626'\n  })\n})\n.then(res => res.json())\n.then(console.log)\n.catch(console.error);"
+          },
+          {
+            "lang": "Python",
+            "label": "Python",
+            "source": "import requests\n\nurl = 'https://portal.esimcard.com/api/developer/reseller/package/purchase'\nheaders = {\n  'Authorization': 'Bearer <YOUR_TOKEN>',\n  'Content-Type': 'application/json'\n}\ndata = {\n  'imei': '356938035643809',\n  'package_type_id': 'f31588d2-805e-4723-96e7-17b2d70a2626'\n}\nresponse = requests.post(url, headers=headers, json=data)\nprint(response.json())"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Package purchased successfully",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "instant": {
+                    "summary": "Instant purchase",
+                    "value": {
+                      "status": true,
+                      "data": {
+                        "sim_applied": true,
+                        "sim": {
+                          "id": "74806e1d-e37f-402c-8ca5-37e983cba5d5",
+                          "iccid": "89XXXXXXXXXXX",
+                          "status": "Installed"
+                        }
+                      }
+                    }
+                  },
+                  "delayed": {
+                    "summary": "Delayed purchase",
+                    "value": {
+                      "status": true,
+                      "data": {
+                        "sim_applied": false,
+                        "message": "Your esim has been purchased but cannot be downloaded now. Please wait 2 minutes and then check MY ESIMS api."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": { "message": "Unauthenticated." }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/package/date_voice_sms/purchase": {
+      "post": {
+        "tags": ["Bundles"],
+        "summary": "Purchase Data+Voice+SMS Package",
+        "description": "Purchase a package with data, voice, and SMS",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "imei": { "type": "string", "example": "356938035643809" },
+                  "package_type_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "f31588d2-805e-4723-96e7-17b2d70a2626"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "label": "cURL",
+            "source": "curl -X POST https://portal.esimcard.com/api/developer/reseller/package/date_voice_sms/purchase \\\n  -H 'Authorization: Bearer <YOUR_TOKEN>' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"imei\": \"356938035643809\",\n    \"package_type_id\": \"f31588d2-805e-4723-96e7-17b2d70a2626\"\n  }'"
+          },
+          {
+            "lang": "PHP",
+            "label": "PHP",
+            "source": "<?php\n$ch = curl_init('https://portal.esimcard.com/api/developer/reseller/package/date_voice_sms/purchase');\ncurl_setopt($ch, CURLOPT_RETURNTRANSFER, true);\ncurl_setopt($ch, CURLOPT_HTTPHEADER, [\n  'Authorization: Bearer <YOUR_TOKEN>',\n  'Content-Type: application/json'\n]);\n$data = json_encode([\n  'imei' => '356938035643809',\n  'package_type_id' => 'f31588d2-805e-4723-96e7-17b2d70a2626'\n]);\ncurl_setopt($ch, CURLOPT_POSTFIELDS, $data);\n$response = curl_exec($ch);\ncurl_close($ch);\necho $response;"
+          },
+          {
+            "lang": "JavaScript",
+            "label": "JavaScript (fetch)",
+            "source": "fetch('https://portal.esimcard.com/api/developer/reseller/package/date_voice_sms/purchase', {\n  method: 'POST',\n  headers: {\n    'Authorization': 'Bearer <YOUR_TOKEN>',\n    'Content-Type': 'application/json'\n  },\n  body: JSON.stringify({\n    imei: '356938035643809',\n    package_type_id: 'f31588d2-805e-4723-96e7-17b2d70a2626'\n  })\n})\n.then(res => res.json())\n.then(console.log)\n.catch(console.error);"
+          },
+          {
+            "lang": "Python",
+            "label": "Python",
+            "source": "import requests\n\nurl = 'https://portal.esimcard.com/api/developer/reseller/package/date_voice_sms/purchase'\nheaders = {\n  'Authorization': 'Bearer <YOUR_TOKEN>',\n  'Content-Type': 'application/json'\n}\ndata = {\n  'imei': '356938035643809',\n  'package_type_id': 'f31588d2-805e-4723-96e7-17b2d70a2626'\n}\nresponse = requests.post(url, headers=headers, json=data)\nprint(response.json())"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Package purchased successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": true,
+                  "data": {
+                    "id": "fc18fbd0-38e1-4a7a-95bc-998ca148519e",
+                    "package": "Unlimited Talk, Text 10gb @ 5g speed",
+                    "activated": true,
+                    "status": "Released"
+                  },
+                  "message": "Your request has been submitted successfully"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": { "message": "Unauthenticated." }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/my-bundles": {
+      "get": {
+        "tags": ["Purchased eSIMs"],
+        "summary": "My Bundles",
+        "description": "Get list of purchased bundles",
+        "security": [{ "BearerAuth": [] }],
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "label": "cURL",
+            "source": "curl -X GET 'https://portal.esimcard.com/api/developer/reseller/my-bundles' -H 'Authorization: Bearer YOUR_TOKEN'"
+          },
+          {
+            "lang": "PHP",
+            "label": "PHP",
+            "source": "<?php\n$ch = curl_init('https://portal.esimcard.com/api/developer/reseller/my-bundles');\ncurl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer YOUR_TOKEN']);\n$response = curl_exec($ch);\n?>"
+          },
+          {
+            "lang": "JavaScript",
+            "label": "JavaScript (fetch)",
+            "source": "fetch('https://portal.esimcard.com/api/developer/reseller/my-bundles', {\n  headers: { 'Authorization': 'Bearer YOUR_TOKEN' }\n})\n  .then(res => res.json())\n  .then(console.log);"
+          },
+          {
+            "lang": "Python",
+            "label": "Python",
+            "source": "import requests\nheaders = {'Authorization': 'Bearer YOUR_TOKEN'}\nresponse = requests.get('https://portal.esimcard.com/api/developer/reseller/my-bundles', headers=headers)\nprint(response.json())"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bundles retrieved successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": true,
+                  "meta": {
+                    "total": 1,
+                    "perPage": 15,
+                    "currentPage": 1,
+                    "lastPage": 1
+                  },
+                  "data": [
+                    {
+                      "id": "fc18fbd0-38e1-4a7a-95bc-998ca148519e",
+                      "package": "Unlimited Talk, Text 10gb @ 5g speed",
+                      "initial_data_quantity": 0.9313,
+                      "initial_data_unit": "GB",
+                      "rem_data_quantity": 0.9313,
+                      "rem_data_unit": "GB",
+                      "date_created": "2023-06-16 07:38:46",
+                      "date_activated": "2023-06-16 07:38:46",
+                      "date_expiry": "2023-07-16 07:38:46",
+                      "activated": true,
+                      "status": "Revoked"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": { "message": "Unauthenticated." }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/bundles/:id": {
+      "get": {
+        "tags": ["Purchased eSIMs"],
+        "summary": "Bundle Details",
+        "description": "Get details of a specific bundle",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" },
+            "description": "Bundle ID"
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "label": "cURL",
+            "source": "curl -X GET 'https://portal.esimcard.com/api/developer/reseller/bundles/{id}' -H 'Authorization: Bearer YOUR_TOKEN'"
+          },
+          {
+            "lang": "PHP",
+            "label": "PHP",
+            "source": "<?php\n$ch = curl_init('https://portal.esimcard.com/api/developer/reseller/bundles/{id}');\ncurl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer YOUR_TOKEN']);\n$response = curl_exec($ch);\n?>"
+          },
+          {
+            "lang": "JavaScript",
+            "label": "JavaScript (fetch)",
+            "source": "fetch('https://portal.esimcard.com/api/developer/reseller/bundles/{id}', {\n  headers: { 'Authorization': 'Bearer YOUR_TOKEN' }\n})\n  .then(res => res.json())\n  .then(console.log);"
+          },
+          {
+            "lang": "Python",
+            "label": "Python",
+            "source": "import requests\nheaders = {'Authorization': 'Bearer YOUR_TOKEN'}\nresponse = requests.get('https://portal.esimcard.com/api/developer/reseller/bundles/{id}', headers=headers)\nprint(response.json())"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bundle details retrieved",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": true,
+                  "data": [
+                    {
+                      "id": "fc18fbd0-38e1-4a7a-95bc-998ca148519e",
+                      "package": "Unlimited Talk, Text 10gb @ 5g speed",
+                      "date_created": "2023-06-16 07:38:46",
+                      "activated": true,
+                      "status": "Revoked"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": { "message": "Unauthenticated." }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/my-esims": {
+      "get": {
+        "tags": ["Purchased eSIMs"],
+        "summary": "My eSIMs",
+        "description": "Get list of purchased eSIMs",
+        "security": [{ "BearerAuth": [] }],
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "label": "cURL",
+            "source": "curl -X GET 'https://portal.esimcard.com/api/developer/reseller/my-esims' -H 'Authorization: Bearer YOUR_TOKEN'"
+          },
+          {
+            "lang": "PHP",
+            "label": "PHP",
+            "source": "<?php\n$ch = curl_init('https://portal.esimcard.com/api/developer/reseller/my-esims');\ncurl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer YOUR_TOKEN']);\n$response = curl_exec($ch);\n?>"
+          },
+          {
+            "lang": "JavaScript",
+            "label": "JavaScript (fetch)",
+            "source": "fetch('https://portal.esimcard.com/api/developer/reseller/my-esims', {\n  headers: { 'Authorization': 'Bearer YOUR_TOKEN' }\n})\n  .then(res => res.json())\n  .then(console.log);"
+          },
+          {
+            "lang": "Python",
+            "label": "Python",
+            "source": "import requests\nheaders = {'Authorization': 'Bearer YOUR_TOKEN'}\nresponse = requests.get('https://portal.esimcard.com/api/developer/reseller/my-esims', headers=headers)\nprint(response.json())"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "eSIMs retrieved successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": true,
+                  "meta": {
+                    "total": 1,
+                    "perPage": 15,
+                    "currentPage": 1,
+                    "lastPage": 1
+                  },
+                  "data": [
+                    {
+                      "id": "74806e1d-e37f-402c-8ca5-37e983cba5d5",
+                      "iccid": "89XXXXXXXXXXX",
+                      "created_at": "2023-06-16T11:38:46.000000Z",
+                      "last_bundle": "Unlimited Talk, Text 10gb @ 5g speed",
+                      "status": "Released",
+                      "total_bundles": 1,
+                      "universal_link": "https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=123"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": { "message": "Unauthenticated." }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/my-esims/:id": {
+      "get": {
+        "tags": ["Purchased eSIMs"],
+        "summary": "eSIM Details",
+        "description": "Get detailed information about a specific eSIM",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" },
+            "description": "eSIM ID"
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "label": "cURL",
+            "source": "curl -X GET 'https://portal.esimcard.com/api/developer/reseller/my-esims/{id}' -H 'Authorization: Bearer YOUR_TOKEN'"
+          },
+          {
+            "lang": "PHP",
+            "label": "PHP",
+            "source": "<?php\n$ch = curl_init('https://portal.esimcard.com/api/developer/reseller/my-esims/{id}');\ncurl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer YOUR_TOKEN']);\n$response = curl_exec($ch);\n?>"
+          },
+          {
+            "lang": "JavaScript",
+            "label": "JavaScript (fetch)",
+            "source": "fetch('https://portal.esimcard.com/api/developer/reseller/my-esims/{id}', {\n  headers: { 'Authorization': 'Bearer YOUR_TOKEN' }\n})\n  .then(res => res.json())\n  .then(console.log);"
+          },
+          {
+            "lang": "Python",
+            "label": "Python",
+            "source": "import requests\nheaders = {'Authorization': 'Bearer YOUR_TOKEN'}\nresponse = requests.get('https://portal.esimcard.com/api/developer/reseller/my-esims/{id}', headers=headers)\nprint(response.json())"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "eSIM details retrieved",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "single_package": {
+                    "summary": "eSIM with single package",
+                    "value": {
+                      "status": true,
+                      "data": {
+                        "sim": {
+                          "id": "74806e1d-e37f-402c-8ca5-37e983cba5d5",
+                          "iccid": "89XXXXXXXXXXX",
+                          "status": "Released",
+                          "total_bundles": 1
+                        },
+                        "in_use_packages": [
+                          {
+                            "id": "fc18fbd0-38e1-4a7a-95bc-998ca148519e",
+                            "package": "Unlimited Talk, Text 10gb @ 5g speed",
+                            "status": "Released"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": { "message": "Unauthenticated." }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/my-sim/:id/usage": {
+      "get": {
+        "tags": ["Purchased eSIMs"],
+        "summary": "Get eSIM Usage",
+        "description": "Retrieve usage details of a specific eSIM",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" },
+            "description": "eSIM ID"
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "label": "cURL",
+            "source": "curl -X GET 'https://portal.esimcard.com/api/developer/reseller/my-sim/{id}/usage' -H 'Authorization: Bearer YOUR_TOKEN'"
+          },
+          {
+            "lang": "PHP",
+            "label": "PHP",
+            "source": "<?php\n$ch = curl_init('https://portal.esimcard.com/api/developer/reseller/my-sim/{id}/usage');\ncurl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer YOUR_TOKEN']);\n$response = curl_exec($ch);\n?>"
+          },
+          {
+            "lang": "JavaScript",
+            "label": "JavaScript (fetch)",
+            "source": "fetch('https://portal.esimcard.com/api/developer/reseller/my-sim/{id}/usage', {\n  headers: { 'Authorization': 'Bearer YOUR_TOKEN' }\n})\n  .then(res => res.json())\n  .then(console.log);"
+          },
+          {
+            "lang": "Python",
+            "label": "Python",
+            "source": "import requests\nheaders = {'Authorization': 'Bearer YOUR_TOKEN'}\nresponse = requests.get('https://portal.esimcard.com/api/developer/reseller/my-sim/{id}/usage', headers=headers)\nprint(response.json())"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage details retrieved",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "limited_package": {
+                    "summary": "Limited data package",
+                    "value": {
+                      "status": true,
+                      "data": {
+                        "initial_data_quantity": 10,
+                        "initial_data_unit": "GB",
+                        "rem_data_quantity": 8,
+                        "rem_data_unit": "GB"
+                      }
+                    }
+                  },
+                  "unlimited_package": {
+                    "summary": "Unlimited data package",
+                    "value": {
+                      "status": true,
+                      "data": {
+                        "initial_data_quantity": "Unlimited",
+                        "initial_data_unit": "GB",
+                        "rem_data_quantity": "Unlimited",
+                        "rem_data_unit": "GB"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": { "message": "Unauthenticated." }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/order/:id": {
+      "get": {
+        "tags": ["Purchased eSIMs"],
+        "summary": "Details by Order Id",
+        "description": "Get details of a specific order",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Order ID"
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "label": "cURL",
+            "source": "curl -X GET 'https://portal.esimcard.com/api/developer/reseller/order/{id}' -H 'Authorization: Bearer YOUR_TOKEN'"
+          },
+          {
+            "lang": "PHP",
+            "label": "PHP",
+            "source": "<?php\n$ch = curl_init('https://portal.esimcard.com/api/developer/reseller/order/{id}');\ncurl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer YOUR_TOKEN']);\n$response = curl_exec($ch);\n?>"
+          },
+          {
+            "lang": "JavaScript",
+            "label": "JavaScript (fetch)",
+            "source": "fetch('https://portal.esimcard.com/api/developer/reseller/order/{id}', {\n  headers: { 'Authorization': 'Bearer YOUR_TOKEN' }\n})\n  .then(res => res.json())\n  .then(console.log);"
+          },
+          {
+            "lang": "Python",
+            "label": "Python",
+            "source": "import requests\nheaders = {'Authorization': 'Bearer YOUR_TOKEN'}\nresponse = requests.get('https://portal.esimcard.com/api/developer/reseller/order/{id}', headers=headers)\nprint(response.json())"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order details retrieved",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": true,
+                  "data": [
+                    {
+                      "id": "fc18fbd0-38e1-4a7a-95bc-998ca148519e",
+                      "package": "Unlimited Talk, Text 10gb @ 5g speed",
+                      "date_created": "2023-06-16 07:38:46",
+                      "status": "Completed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": { "message": "Unauthenticated." }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/balance": {
+      "get": {
+        "tags": ["Balance"],
+        "summary": "Get Account Balance",
+        "description": "Retrieve the current balance of the Reseller account",
+        "security": [{ "BearerAuth": [] }],
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "source": "curl -X GET 'https://portal.esimcard.com/api/developer/reseller/balance' \\\n  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN'"
+          },
+          {
+            "lang": "PHP",
+            "source": "<?php\n$curl = curl_init();\ncurl_setopt_array($curl, [\n  CURLOPT_URL => 'https://portal.esimcard.com/api/developer/reseller/balance',\n  CURLOPT_RETURNTRANSFER => true,\n  CURLOPT_HTTPHEADER => [\n    'Authorization: Bearer YOUR_ACCESS_TOKEN'\n  ],\n]);\n$response = curl_exec($curl);\ncurl_close($curl);\necho $response;"
+          },
+          {
+            "lang": "JavaScript (fetch)",
+            "source": "fetch('https://portal.esimcard.com/api/developer/reseller/balance', {\n  method: 'GET',\n  headers: {\n    'Authorization': 'Bearer YOUR_ACCESS_TOKEN'\n  }\n})\n  .then(response => response.json())\n  .then(data => console.log(data));"
+          },
+          {
+            "lang": "Python",
+            "source": "import requests\nurl = 'https://portal.esimcard.com/api/developer/reseller/balance'\nheaders = {'Authorization': 'Bearer YOUR_ACCESS_TOKEN'}\nresponse = requests.get(url, headers=headers)\nprint(response.json())"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account balance retrieved",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": true,
+                  "balance": 0
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": { "message": "Unauthenticated." }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/network-coverages": {
+      "get": {
+        "tags": ["Network Coverage"],
+        "summary": "Get Network Coverages",
+        "description": "Retrieve a list of available network coverages",
+        "security": [{ "BearerAuth": [] }],
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "source": "curl -X GET 'https://portal.esimcard.com/api/developer/reseller/network-coverages' \\\n  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN'"
+          },
+          {
+            "lang": "PHP",
+            "source": "<?php\n$curl = curl_init();\ncurl_setopt_array($curl, [\n  CURLOPT_URL => 'https://portal.esimcard.com/api/developer/reseller/network-coverages',\n  CURLOPT_RETURNTRANSFER => true,\n  CURLOPT_HTTPHEADER => [\n    'Authorization: Bearer YOUR_ACCESS_TOKEN'\n  ],\n]);\n$response = curl_exec($curl);\ncurl_close($curl);\necho $response;"
+          },
+          {
+            "lang": "JavaScript (fetch)",
+            "source": "fetch('https://portal.esimcard.com/api/developer/reseller/network-coverages', {\n  method: 'GET',\n  headers: {\n    'Authorization': 'Bearer YOUR_ACCESS_TOKEN'\n  }\n})\n  .then(response => response.json())\n  .then(data => console.log(data));"
+          },
+          {
+            "lang": "Python",
+            "source": "import requests\nurl = 'https://portal.esimcard.com/api/developer/reseller/network-coverages'\nheaders = {'Authorization': 'Bearer YOUR_ACCESS_TOKEN'}\nresponse = requests.get(url, headers=headers)\nprint(response.json())"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Network coverage list retrieved",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": true,
+                  "data": [
+                    {
+                      "id": 1,
+                      "name": "Cameroon",
+                      "image_url": "https://flagcdn.com/w80/cm.png",
+                      "network_coverage": [
+                        {
+                          "network_name": "MTN Cameroon Ltd",
+                          "network_code": "CMRMT",
+                          "two_g": true,
+                          "three_g": true,
+                          "four_G": false,
+                          "five_G": false
+                        }
+                      ]
+                    },
+                    {
+                      "id": 7,
+                      "name": "Egypt",
+                      "image_url": "https://flagcdn.com/w80/eg.png",
+                      "network_coverage": [
+                        {
+                          "network_name": "Orange Egypt",
+                          "network_code": "EGYAR",
+                          "two_g": true,
+                          "three_g": true,
+                          "four_G": true,
+                          "five_G": false
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": { "message": "Unauthenticated." }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
