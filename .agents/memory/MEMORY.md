@@ -3,3 +3,5 @@
 - [Static Hosting SPA fallback](static-hosting-spa-fallback.md) — SPA deep links need 404.html copy of built index.html (rewrites blocked); deployment-type switch isn't in-place.
 - [Supplier code validation](supplier-code-validation.md) — never make a plan sellable without verifying its code against the live eSIM Access catalog; use the supplier's validity days, not assumed ones.
 - [eSIM supplier integration rules](esim-supplier-integration.md) — duplicate-spend guard on esim_order_id, server-side package resolution, eSIMCard API + deploy notes.
+- [Supabase edge deploy](supabase-edge-deploy.md) — multipart deploy needs `<fn>/index.ts` entrypoint prefix or `_shared` imports break; test npm: deps with a throwaway fn.
+- [pdf-lib WinAnsi](pdf-lib-winansi.md) — standard fonts throw on non-WinAnsi chars (≈, →, smart quotes); sanitize dynamic text or PDFs silently fail.

@@ -1,6 +1,8 @@
+import { sendProvisioningEmail } from '../_shared/esim-email.ts';
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, sentry-trace, baggage',
 };
 
 /** Returns the caller's user ID from their JWT, or null if unauthenticated. */
@@ -45,193 +47,6 @@ async function verifyAdminUser(supabaseUrl: string, serviceKey: string, authHead
   }
 }
 
-/** Generate a Supabase magic link URL without sending an email. */
-async function generateMagicLink(
-  supabaseUrl: string,
-  serviceKey: string,
-  email: string,
-  redirectTo: string
-): Promise<string | null> {
-  try {
-    const res = await fetch(`${supabaseUrl}/auth/v1/admin/generate_link`, {
-      method: 'POST',
-      headers: {
-        'apikey': serviceKey,
-        'Authorization': `Bearer ${serviceKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        type: 'magiclink',
-        email,
-        options: { redirect_to: redirectTo },
-      }),
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data?.action_link ?? null;
-  } catch {
-    return null;
-  }
-}
-
-/** Send a bilingual (PT/EN) HTML email via Resend containing the magic link + eSIM details. */
-async function sendESIMEmail(opts: {
-  resendApiKey: string;
-  to: string;
-  planName: string;
-  dataAmount: string;
-  magicLink: string;
-  iccid: string | null;
-  lpaCode: string | null;
-  webUrl: string | null;
-  qrImageUrl: string | null;
-}): Promise<{ ok: boolean; error?: string }> {
-  const { resendApiKey, to, planName, dataAmount, magicLink, iccid, lpaCode, webUrl, qrImageUrl } = opts;
-
-  const lpaSection = lpaCode
-    ? `<div style="background:#f4f4f5;border-radius:8px;padding:16px;margin:16px 0;">
-        <p style="margin:0 0 4px;font-size:12px;color:#71717a;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Código de Ativação LPA <span style="font-weight:400;color:#a1a1aa;">/ LPA Activation Code</span></p>
-        <code style="font-size:13px;color:#18181b;word-break:break-all;line-height:1.6">${lpaCode}</code>
-      </div>`
-    : '';
-
-  const iccidSection = iccid
-    ? `<p style="margin:4px 0;font-size:14px;color:#52525b"><strong>ICCID:</strong> <code>${iccid}</code></p>`
-    : '';
-
-  const qrSection = qrImageUrl
-    ? `<div style="text-align:center;margin:20px 0;">
-        <img src="${qrImageUrl}" alt="eSIM QR Code" width="180" height="180" style="border:3px solid #16a34a;border-radius:8px;padding:6px;" />
-        <p style="font-size:13px;color:#374151;margin:10px 0 2px;font-weight:600;">Lê este QR Code para instalar o teu eSIM</p>
-        <p style="font-size:12px;color:#71717a;margin:0;">Scan this QR code to install your eSIM</p>
-      </div>`
-    : '';
-
-  const webUrlSection = webUrl
-    ? `<div style="text-align:center;margin:16px 0;">
-        <a href="${webUrl}" style="color:#2563eb;font-size:13px;">Ou toca aqui para ativar no teu dispositivo / Or tap here to activate on your device</a>
-      </div>`
-    : '';
-
-  const html = `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f9fafb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;padding:32px 16px;">
-    <tr><td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;max-width:600px;width:100%;">
-
-        <!-- Header -->
-        <tr><td style="background:linear-gradient(135deg,#16a34a,#1d4ed8);padding:32px 40px;text-align:center;">
-          <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;">O teu eSIM está pronto! 🌍</h1>
-          <p style="margin:6px 0 2px;color:rgba(255,255,255,0.75);font-size:13px;font-style:italic;">Your eSIM is ready!</p>
-          <p style="margin:10px 0 0;color:rgba(255,255,255,0.85);font-size:15px;">BuéChama · PALOP Roam Connect</p>
-        </td></tr>
-
-        <!-- Body -->
-        <tr><td style="padding:32px 40px;">
-
-          <!-- Portuguese intro -->
-          <p style="margin:0 0 8px;font-size:15px;color:#374151;">
-            O teu <strong>${planName || 'eSIM'}</strong>${dataAmount ? ` (${dataAmount})` : ''} está pronto para instalar.
-            Aqui estão os teus detalhes de ativação:
-          </p>
-          <!-- English intro -->
-          <p style="margin:0 0 20px;font-size:13px;color:#71717a;">
-            Your <strong>${planName || 'eSIM'}</strong>${dataAmount ? ` (${dataAmount})` : ''} is ready to install.
-            Here are your activation details:
-          </p>
-
-          ${qrSection}
-          ${lpaSection}
-          ${iccidSection}
-          ${webUrlSection}
-
-          <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
-
-          <!-- Installation instructions — Portuguese -->
-          <h2 style="margin:0 0 4px;font-size:16px;color:#18181b;">Como instalar</h2>
-          <p style="margin:0 0 10px;font-size:12px;color:#71717a;">How to install</p>
-          <ol style="margin:0;padding:0 0 0 20px;font-size:14px;color:#374151;line-height:2.2;">
-            <li>Vai a <strong>Definições → Dados móveis / Rede móvel</strong>
-              <br><span style="font-size:12px;color:#71717a;">Go to <em>Settings → Cellular / Mobile Data</em></span>
-            </li>
-            <li>Seleciona <strong>"Adicionar eSIM"</strong>
-              <br><span style="font-size:12px;color:#71717a;">Tap <em>"Add eSIM"</em> or <em>"Add Data Plan"</em></span>
-            </li>
-            <li>Lê o QR Code acima ou introduz o código LPA manualmente
-              <br><span style="font-size:12px;color:#71717a;">Scan the QR code above, or enter the LPA code manually</span>
-            </li>
-          </ol>
-
-          <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
-
-          <!-- Magic link CTA -->
-          <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:20px;text-align:center;">
-            <p style="margin:0 0 4px;font-size:14px;color:#1e40af;">
-              <strong>Acede às tuas encomendas a qualquer momento</strong>
-            </p>
-            <p style="margin:0 0 12px;font-size:12px;color:#3b82f6;">
-              Clica abaixo para entrar instantaneamente — sem senha necessária.<br>
-              <span style="color:#93c5fd;">Click below to sign in instantly — no password needed.</span>
-            </p>
-            <a href="${magicLink}"
-               style="display:inline-block;background:#1d4ed8;color:#ffffff;font-size:14px;font-weight:600;padding:12px 28px;border-radius:8px;text-decoration:none;">
-              Ver as minhas encomendas →
-            </a>
-            <p style="margin:10px 0 2px;font-size:11px;color:#6b7280;">Este link expira em 1 hora. Pede um novo em <a href="https://palopconnect.com/auth" style="color:#6b7280;">palopconnect.com/auth</a>.</p>
-            <p style="margin:0;font-size:11px;color:#9ca3af;">This link expires in 1 hour. After that, <a href="https://palopconnect.com/auth" style="color:#9ca3af;">sign in at palopconnect.com/auth</a> to get a new one — no password needed.</p>
-          </div>
-        </td></tr>
-
-        <!-- Footer -->
-        <tr><td style="background:#f9fafb;padding:20px 40px;text-align:center;">
-          <p style="margin:0;font-size:12px;color:#9ca3af;">BuéChama · PALOP Roam Connect · <a href="mailto:suporte@palopconnect.com" style="color:#9ca3af;">suporte@palopconnect.com</a></p>
-        </td></tr>
-
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>`;
-
-  const textBody = [
-    `O teu eSIM está pronto — BuéChama / Your eSIM is ready — BuéChama`,
-    `Plano / Plan: ${planName || 'eSIM'}${dataAmount ? ` (${dataAmount})` : ''}`,
-    iccid ? `ICCID: ${iccid}` : '',
-    lpaCode ? `Código de Ativação LPA / LPA Activation Code: ${lpaCode}` : '',
-    webUrl ? `URL de ativação / Activation URL: ${webUrl}` : '',
-    ``,
-    `Como instalar / How to install:`,
-    `1. Vai a Definições → Dados móveis / Go to Settings → Cellular / Mobile Data`,
-    `2. Seleciona "Adicionar eSIM" / Tap "Add eSIM" or "Add Data Plan"`,
-    `3. Lê o QR Code ou introduz o código LPA / Scan the QR code or enter the LPA code manually`,
-    ``,
-    `Ver as minhas encomendas / View your orders: ${magicLink}`,
-    `(Link expira em 1 hora / Link expires in 1 hour)`,
-  ].filter(Boolean).join('\n');
-
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${resendApiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: 'BuéChama <noreply@palopconnect.com>',
-      to: [to],
-      subject: `O teu eSIM está pronto — ${planName || 'BuéChama'} | Your eSIM is ready`,
-      html,
-      text: textBody,
-    }),
-  });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    return { ok: false, error: err?.message ?? `Resend error ${res.status}` };
-  }
-  return { ok: true };
-}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -361,26 +176,24 @@ Deno.serve(async (req) => {
 
     // --- Primary path: Resend transactional email with magic link + eSIM details ---
     if (resendApiKey) {
-      // Generate magic link URL — fall back to plain orders URL if generation fails
-      const magicLink =
-        (await generateMagicLink(supabaseUrl, serviceRoleKey, customerEmail, redirectTo)) ??
-        redirectTo;
-
-      const emailResult = await sendESIMEmail({
-        resendApiKey,
-        to: customerEmail,
-        planName,
-        dataAmount,
-        magicLink,
-        iccid,
-        lpaCode,
-        webUrl,
-        qrImageUrl,
-      });
-
-      if (!emailResult.ok) {
+      try {
+        await sendProvisioningEmail({
+          customerEmail,
+          planName,
+          dataAmount,
+          iccid,
+          lpaCode,
+          webUrl,
+          qrImageUrl,
+          supabaseUrl,
+          serviceKey: serviceRoleKey,
+          resendApiKey,
+          origin: baseUrl,
+          redirectTo,
+        });
+      } catch (e: any) {
         return new Response(
-          JSON.stringify({ success: false, error: emailResult.error }),
+          JSON.stringify({ success: false, error: e?.message ?? 'Email send failed' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
