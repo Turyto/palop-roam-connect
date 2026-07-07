@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, RefreshCw, Eye, CheckCircle, RotateCw, Download } from "lucide-react";
+import { Search, RefreshCw, Eye, CheckCircle, RotateCw, Download, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useOrderManagement } from "@/hooks/useOrderManagement";
 import OrderDetailsModal from "./orders/OrderDetailsModal";
@@ -29,12 +29,23 @@ interface Order {
   status: string;
   payment_status: string;
   created_at: string;
+  duration_days: number;
+  payment_intent_id: string | null;
   esim_delivered_at: string | null;
   esim_status: string | null;
   esim_order_id: string | null;
+  // Optional: generated Supabase types may predate this column
+  esim_failure_reason?: string | null;
   customer_email: string | null;
   referral_code: string | null;
 }
+
+// A paid order whose eSIM provisioning failed — needs manual intervention.
+const needsAttention = (order: Order) =>
+  order.esim_status === 'failed' &&
+  order.payment_status === 'succeeded' &&
+  order.status !== 'completed' &&
+  order.status !== 'cancelled';
 
 const AdminOrdersTable = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -88,7 +99,9 @@ const AdminOrdersTable = () => {
         order.id.toLowerCase().includes(searchLower)
       );
 
-      const matchesStatus = statusFilter === "all" || order.status === statusFilter;
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "needs_attention" ? needsAttention(order) : order.status === statusFilter);
       const matchesPayment = paymentFilter === "all" || order.payment_status === paymentFilter;
 
       // P2: hide stale abandoned checkouts (pending > 30 min) from the default view.
@@ -177,12 +190,21 @@ const AdminOrdersTable = () => {
     );
   };
 
+  const attentionOrders = orders.filter(needsAttention);
+
   const getESIMStatusBadge = (order: Order) => {
     if (order.esim_status === 'delivered' || order.esim_delivered_at) {
       return <Badge className="bg-green-100 text-green-800">Delivered</Badge>;
     }
     if (order.esim_order_id) {
       return <Badge className="bg-blue-100 text-blue-800">Provisioned</Badge>;
+    }
+    if (needsAttention(order)) {
+      return (
+        <Badge className="bg-red-100 text-red-800" title={order.esim_failure_reason ?? undefined}>
+          Needs attention
+        </Badge>
+      );
     }
     if (order.esim_status === 'failed' || order.status === 'failed') {
       return <Badge className="bg-red-100 text-red-800">Failed</Badge>;
@@ -219,6 +241,34 @@ const AdminOrdersTable = () => {
 
   return (
     <>
+      {attentionOrders.length > 0 && (
+        <div
+          className="mb-4 flex items-center justify-between rounded-lg border border-red-300 bg-red-50 px-4 py-3"
+          data-testid="banner-provisioning-failures"
+        >
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 text-red-600 shrink-0" />
+            <div>
+              <p className="font-semibold text-red-800 text-sm">
+                {attentionOrders.length} paid {attentionOrders.length === 1 ? 'order' : 'orders'} with failed eSIM provisioning
+              </p>
+              <p className="text-red-700 text-xs">
+                Customers paid but did not receive their eSIM — manual intervention required.
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-red-300 text-red-700 hover:bg-red-100"
+            onClick={() => setStatusFilter('needs_attention')}
+            data-testid="button-view-attention-orders"
+          >
+            View orders
+          </Button>
+        </div>
+      )}
+
       <Card>
         <CardHeader>
           <div className="flex justify-between items-center">
@@ -256,6 +306,7 @@ const AdminOrdersTable = () => {
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
                 <SelectItem value="failed">Failed</SelectItem>
+                <SelectItem value="needs_attention">Needs Attention</SelectItem>
               </SelectContent>
             </Select>
 
@@ -307,9 +358,18 @@ const AdminOrdersTable = () => {
                     </TableRow>
                   ) : (
                     filteredOrders.map((order) => (
-                      <TableRow key={order.id}>
+                      <TableRow
+                        key={order.id}
+                        className={needsAttention(order) ? "bg-red-50 hover:bg-red-100" : undefined}
+                        data-testid={`row-order-${order.id}`}
+                      >
                         <TableCell className="font-mono text-xs">
-                          {order.id.slice(0, 8)}...
+                          <span className="flex items-center gap-1">
+                            {needsAttention(order) && (
+                              <AlertTriangle className="h-3.5 w-3.5 text-red-600 shrink-0" aria-label="Needs attention" />
+                            )}
+                            {order.id.slice(0, 8)}...
+                          </span>
                         </TableCell>
                         <TableCell className="font-medium">
                           {order.customer_email ?? <span className="text-gray-400 text-xs italic">no email</span>}

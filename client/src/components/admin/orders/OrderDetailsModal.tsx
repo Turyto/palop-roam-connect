@@ -24,6 +24,7 @@ interface AdminOrder {
   esim_delivered_at: string | null;
   esim_status: string | null;
   esim_order_id: string | null;
+  esim_failure_reason?: string | null;
   referral_code: string | null;
 }
 
@@ -230,6 +231,14 @@ const OrderDetailsModal = ({ order, isOpen, onClose }: OrderDetailsModalProps) =
               </div>
             </div>
           </div>
+
+          {/* Provisioning failure reason — why the supplier order failed */}
+          {order.esim_status === 'failed' && order.esim_failure_reason && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4" data-testid="text-failure-reason">
+              <p className="text-sm font-semibold text-red-800 mb-1">Provisioning failure reason</p>
+              <p className="text-xs text-red-700 break-all font-mono">{order.esim_failure_reason}</p>
+            </div>
+          )}
 
           {/* eSIM details panel shown after successful resend */}
           {resentDetails && (

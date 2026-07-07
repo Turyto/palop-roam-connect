@@ -45,6 +45,12 @@ Clarification on "don't open Portugal/country plans yet":
 - Dedicated per-country SKUs (`portugal-*`, `europe-weekly/monthly/plus`, `CKH1003`/`CKH1011`) are **not exposed for sale** anywhere — DB rows only, already effectively closed. Storefront `planCards` only sells the 4 bundles, and the "Portugal" coverage tab falls back to those same 4.
 - The 4 live bundles (Arrival/Essential/Comfort/Freedom) use **validated** codes (`PRC8B6GK2`, `PV0Q6PZ7G`, `P29FDU5TL`, `P6PBYX5G4`) with confirmed provisioning, and they advertise "Portugal + Europe coverage" — so Portugal *coverage* is already sold safely via these. The restriction applies only to the unvalidated `CKH`-based Portugal SKUs.
 
+### July 2026 — Provisioning Failure Warning System
+- Root cause of missing Jul 7 alert: Resend silently suppressed delivery — `NOTIFY_ADMIN_EMAIL` pointed to a palopconnect.com address that had hard-bounced. Now set (Supabase secret) to turyto@gmail.com; delivery verified.
+- `orders.esim_failure_reason` column added (migration `20260707120000`); persisted by both stripe-webhook (`markProvisioningFailed`) and `notify-provisioning-failure`.
+- `notify-provisioning-failure` (v21+) sends admin alert + bilingual PT/EN customer "small delay" email (WhatsApp + suporte@). **Hardened:** accepts only `order_id` (+ optional error_message); loads the order server-side with service role and only acts if payment succeeded + esim_status failed + not completed/cancelled; all emails/plan data derived from DB; error text HTML-escaped, 500-char cap, written only if reason not already set.
+- Admin dashboard (`AdminOrdersTable.tsx`): "Needs Attention" banner + counter, filter option, red row highlight + badge for paid-but-failed orders; `OrderDetailsModal.tsx` shows the failure reason.
+
 ### Pre-Launch Blocker
 - **GDPR cookie consent banner** — not yet implemented; required before EU public marketing push
 

@@ -4,4 +4,6 @@
 - [Supplier code validation](supplier-code-validation.md) — never make a plan sellable without verifying its code against the live eSIM Access catalog; use the supplier's validity days, not assumed ones.
 - [eSIM supplier integration rules](esim-supplier-integration.md) — duplicate-spend guard on esim_order_id, server-side package resolution, eSIMCard API + deploy notes.
 - [Supabase edge deploy](supabase-edge-deploy.md) — multipart deploy needs `<fn>/index.ts` entrypoint prefix or `_shared` imports break; test npm: deps with a throwaway fn.
+- [Resend delivery suppression](resend-delivery-suppression.md) — Resend returns 200 but silently drops mail to previously-bounced recipients; verify `last_event: delivered`.
+- [Edge function authorization](edge-function-authz.md) — verify_jwt is not authorization; client-invokable fns must re-derive data server-side and gate on DB state.
 - [pdf-lib WinAnsi](pdf-lib-winansi.md) — standard fonts throw on non-WinAnsi chars (≈, →, smart quotes); sanitize dynamic text or PDFs silently fail.

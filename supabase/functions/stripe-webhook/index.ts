@@ -285,7 +285,11 @@ async function markProvisioningFailed(
   try {
     await supabase
       .from('orders')
-      .update({ esim_status: 'failed', updated_at: new Date().toISOString() })
+      .update({
+        esim_status: 'failed',
+        esim_failure_reason: errorMessage.slice(0, 500),
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', order.id)
   } catch (e: any) {
     console.error(`[stripe-webhook] could not set esim_status=failed for order=${order.id}: ${e?.message}`)
