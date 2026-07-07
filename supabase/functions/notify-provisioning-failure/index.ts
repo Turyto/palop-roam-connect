@@ -165,7 +165,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       'Content-Type': 'application/json',
     };
     const orderRes = await fetch(
-      `${supabaseUrl}/rest/v1/orders?id=eq.${encodeURIComponent(order_id)}&select=id,customer_email,plan_id,plan_name,payment_intent_id,esim_package_id,payment_status,esim_status,status,esim_failure_reason&limit=1`,
+      `${supabaseUrl}/rest/v1/orders?id=eq.${encodeURIComponent(order_id)}&select=id,user_id,customer_email,plan_id,plan_name,payment_intent_id,esim_package_id,payment_status,esim_status,status,esim_failure_reason,failure_notified_at&limit=1`,
       { headers: restHeaders },
     );
     const orderRows = await orderRes.json().catch(() => []);
@@ -175,6 +175,44 @@ Deno.serve(async (req: Request): Promise<Response> => {
         status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    // --- CALLER ENTITLEMENT: only the service role (webhook), the order's
+    // owner, or an admin may trigger notifications for this order.
+    let callerRole: string | null = null;
+    let callerSub: string | null = null;
+    try {
+      const jwt = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
+      const claims = JSON.parse(atob(jwt.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+      callerRole = claims?.role ?? null;
+      callerSub = claims?.sub ?? null;
+    } catch (_) { /* verify_jwt already validated the signature; parse only */ }
+    let entitled = callerRole === 'service_role';
+    if (!entitled && callerSub) {
+      if (callerSub === order.user_id) {
+        entitled = true;
+      } else {
+        const profRes = await fetch(
+          `${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(callerSub)}&select=role&limit=1`,
+          { headers: restHeaders },
+        );
+        const prof = (await profRes.json().catch(() => []))?.[0];
+        entitled = prof?.role === 'admin';
+      }
+    }
+    if (!entitled) {
+      console.warn(`[notify-failure] rejected — caller not entitled to order=${order_id}`);
+      return new Response(JSON.stringify({ error: 'Not authorized for this order' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // --- IDEMPOTENCY: never re-send notifications for the same failed order.
+    if (order.failure_notified_at) {
+      return new Response(JSON.stringify({ success: true, already_notified: true }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const eligible =
       order.payment_status === 'succeeded' &&
       order.esim_status === 'failed' &&
@@ -241,6 +279,19 @@ Deno.serve(async (req: Request): Promise<Response> => {
         console.log(`[notify-failure] customer delay email sent — resendId=${customerResult.id} order=${order_id}`);
       } else {
         console.error(`[notify-failure] customer delay email failed — order=${order_id}`, JSON.stringify(customerResult.error));
+      }
+    }
+
+    // --- 4. Mark as notified (idempotency guard for future calls) ---
+    if (adminResult.ok || customerResult?.ok) {
+      try {
+        await fetch(`${supabaseUrl}/rest/v1/orders?id=eq.${encodeURIComponent(order_id)}&failure_notified_at=is.null`, {
+          method: 'PATCH',
+          headers: { ...restHeaders, 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ failure_notified_at: new Date().toISOString() }),
+        });
+      } catch (e: any) {
+        console.error(`[notify-failure] notified-at persist exception — order=${order_id} ${e?.message}`);
       }
     }
 

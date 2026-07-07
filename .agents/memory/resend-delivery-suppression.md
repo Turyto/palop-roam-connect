@@ -6,4 +6,4 @@ Resend accepts the API call (200 + id) even when the recipient address is on its
 
 **Why:** A provisioning-failure alert on 7 Jul 2026 was "sent" but never arrived because NOTIFY_ADMIN_EMAIL pointed to a palopconnect.com address that had hard-bounced earlier.
 
-**How to apply:** When an email "was sent but never arrived", check `GET https://api.resend.com/emails/{id}` — `last_event: bounced/suppressed` vs `delivered`. Point alert recipients at a real monitored mailbox (currently turyto@gmail.com via Supabase secret NOTIFY_ADMIN_EMAIL) and verify delivery, not just the send response.
+**How to apply:** When an email "was sent but never arrived", check `GET https://api.resend.com/emails/{id}` — `last_event: bounced/suppressed` vs `delivered`. Point alert recipients at a real monitored mailbox (configured via Supabase secret NOTIFY_ADMIN_EMAIL) and verify delivery, not just the send response.
