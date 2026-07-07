@@ -148,9 +148,49 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    if (!order_id || !supabaseUrl || !serviceKey) {
-      return new Response(JSON.stringify({ error: 'order_id required' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+
+    // Parse caller JWT claims (signature already validated by verify_jwt).
+    let callerRole: string | null = null;
+    let callerSub: string | null = null;
+    try {
+      const jwt = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
+      const claims = JSON.parse(atob(jwt.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+      callerRole = claims?.role ?? null;
+      callerSub = claims?.sub ?? null;
+    } catch (_) { /* parse only */ }
+
+    // --- ANOMALY PATH: service-role callers (stripe-webhook) may raise an
+    // admin-only alert with no order row (e.g. webhook received payment for an
+    // unknown order). Admin alert only — never emails customers, never writes.
+    if (!order_id) {
+      if (callerRole !== 'service_role') {
+        return new Response(JSON.stringify({ error: 'order_id required' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const anomalyResult = await sendEmail(resendKey, {
+        from: ALERT_FROM,
+        to: [ADMIN_EMAIL],
+        subject: `[Alert] eSIM webhook anomaly — ${esc(body?.error_type ?? 'unknown')}`,
+        html: buildAdminHtml({
+          order_id: null,
+          customer_email: typeof body?.customer_email === 'string' ? body.customer_email.slice(0, 200) : null,
+          plan_id: null,
+          plan_name: null,
+          payment_intent_id: typeof body?.payment_intent_id === 'string' ? body.payment_intent_id.slice(0, 100) : null,
+          esim_package_id: null,
+          error_message,
+        }),
+      });
+      return new Response(JSON.stringify({ success: anomalyResult.ok, resend_id: anomalyResult.id ?? null }), {
+        status: anomalyResult.ok ? 200 : 502,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!supabaseUrl || !serviceKey) {
+      return new Response(JSON.stringify({ error: 'Server misconfigured' }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -165,7 +205,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       'Content-Type': 'application/json',
     };
     const orderRes = await fetch(
-      `${supabaseUrl}/rest/v1/orders?id=eq.${encodeURIComponent(order_id)}&select=id,user_id,customer_email,plan_id,plan_name,payment_intent_id,esim_package_id,payment_status,esim_status,status,esim_failure_reason,failure_notified_at&limit=1`,
+      `${supabaseUrl}/rest/v1/orders?id=eq.${encodeURIComponent(order_id)}&select=id,user_id,customer_email,plan_id,plan_name,payment_intent_id,esim_package_id,payment_status,esim_status,status,esim_failure_reason,failure_notified_at,customer_notified_at&limit=1`,
       { headers: restHeaders },
     );
     const orderRows = await orderRes.json().catch(() => []);
@@ -178,14 +218,6 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     // --- CALLER ENTITLEMENT: only the service role (webhook), the order's
     // owner, or an admin may trigger notifications for this order.
-    let callerRole: string | null = null;
-    let callerSub: string | null = null;
-    try {
-      const jwt = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
-      const claims = JSON.parse(atob(jwt.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-      callerRole = claims?.role ?? null;
-      callerSub = claims?.sub ?? null;
-    } catch (_) { /* verify_jwt already validated the signature; parse only */ }
     let entitled = callerRole === 'service_role';
     if (!entitled && callerSub) {
       if (callerSub === order.user_id) {
@@ -206,8 +238,12 @@ Deno.serve(async (req: Request): Promise<Response> => {
       });
     }
 
-    // --- IDEMPOTENCY: never re-send notifications for the same failed order.
-    if (order.failure_notified_at) {
+    // --- IDEMPOTENCY (per channel): admin alert gated on failure_notified_at,
+    // customer email gated on customer_notified_at. A failed admin send never
+    // blocks a retry of the admin alert, and vice versa.
+    const adminAlreadyNotified = !!order.failure_notified_at;
+    const customerAlreadyNotified = !!order.customer_notified_at;
+    if (adminAlreadyNotified && customerAlreadyNotified) {
       return new Response(JSON.stringify({ success: true, already_notified: true }), {
         status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -252,22 +288,39 @@ Deno.serve(async (req: Request): Promise<Response> => {
       }
     }
 
-    // --- 2. Admin alert ---
-    const adminResult = await sendEmail(resendKey, {
-      from: ALERT_FROM,
-      to: [ADMIN_EMAIL],
-      subject: `[Alert] eSIM provisioning FAILED — ${plan_name ?? plan_id}`,
-      html: buildAdminHtml(payload),
-    });
-    if (adminResult.ok) {
-      console.log(`[notify-failure] admin alert sent — resendId=${adminResult.id} order=${order_id}`);
-    } else {
-      console.error('[notify-failure] admin alert send failed:', JSON.stringify(adminResult.error));
+    // Helper to stamp a per-channel notified-at timestamp (guarded, best-effort)
+    const stamp = async (column: string) => {
+      try {
+        await fetch(`${supabaseUrl}/rest/v1/orders?id=eq.${encodeURIComponent(order_id)}&${column}=is.null`, {
+          method: 'PATCH',
+          headers: { ...restHeaders, 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ [column]: new Date().toISOString() }),
+        });
+      } catch (e: any) {
+        console.error(`[notify-failure] ${column} persist exception — order=${order_id} ${e?.message}`);
+      }
+    };
+
+    // --- 2. Admin alert (skipped only if a previous admin alert succeeded) ---
+    let adminResult: { ok: boolean; id?: string; error?: unknown } = { ok: true };
+    if (!adminAlreadyNotified) {
+      adminResult = await sendEmail(resendKey, {
+        from: ALERT_FROM,
+        to: [ADMIN_EMAIL],
+        subject: `[Alert] eSIM provisioning FAILED — ${plan_name ?? plan_id}`,
+        html: buildAdminHtml(payload),
+      });
+      if (adminResult.ok) {
+        console.log(`[notify-failure] admin alert sent — resendId=${adminResult.id} order=${order_id}`);
+        await stamp('failure_notified_at');
+      } else {
+        console.error('[notify-failure] admin alert send failed:', JSON.stringify(adminResult.error));
+      }
     }
 
     // --- 3. Customer "small delay" email (bilingual, no technical details) ---
     let customerResult: { ok: boolean; id?: string; error?: unknown } | null = null;
-    if (customer_email) {
+    if (customer_email && !customerAlreadyNotified) {
       customerResult = await sendEmail(resendKey, {
         from: CUSTOMER_FROM,
         to: [customer_email],
@@ -277,27 +330,17 @@ Deno.serve(async (req: Request): Promise<Response> => {
       // GDPR: log order id only, never the customer email
       if (customerResult.ok) {
         console.log(`[notify-failure] customer delay email sent — resendId=${customerResult.id} order=${order_id}`);
+        await stamp('customer_notified_at');
       } else {
         console.error(`[notify-failure] customer delay email failed — order=${order_id}`, JSON.stringify(customerResult.error));
-      }
-    }
-
-    // --- 4. Mark as notified (idempotency guard for future calls) ---
-    if (adminResult.ok || customerResult?.ok) {
-      try {
-        await fetch(`${supabaseUrl}/rest/v1/orders?id=eq.${encodeURIComponent(order_id)}&failure_notified_at=is.null`, {
-          method: 'PATCH',
-          headers: { ...restHeaders, 'Prefer': 'return=minimal' },
-          body: JSON.stringify({ failure_notified_at: new Date().toISOString() }),
-        });
-      } catch (e: any) {
-        console.error(`[notify-failure] notified-at persist exception — order=${order_id} ${e?.message}`);
       }
     }
 
     return new Response(JSON.stringify({
       success: adminResult.ok,
       resend_id: adminResult.id ?? null,
+      admin_already_notified: adminAlreadyNotified,
+      customer_already_notified: customerAlreadyNotified,
       reason_persisted: reasonPersisted,
       customer_email_sent: customerResult?.ok ?? false,
     }), {

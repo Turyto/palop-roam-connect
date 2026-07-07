@@ -255,7 +255,7 @@ export const useCreateOrderWithESIM = () => {
       } else if (esimError) {
         await supabase
           .from('orders')
-          .update({ esim_status: 'failed' })
+          .update({ esim_status: 'failed', status: 'needs_attention' })
           .eq('id', orderResult.id);
       }
 

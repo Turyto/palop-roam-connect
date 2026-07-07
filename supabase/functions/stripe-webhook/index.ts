@@ -288,9 +288,12 @@ async function markProvisioningFailed(
       .update({
         esim_status: 'failed',
         esim_failure_reason: errorMessage.slice(0, 500),
+        // Distinct state for paid-but-failed orders (instead of a confusing "processing")
+        status: 'needs_attention',
         updated_at: new Date().toISOString(),
       })
       .eq('id', order.id)
+      .not('status', 'in', '("completed","cancelled")')
   } catch (e: any) {
     console.error(`[stripe-webhook] could not set esim_status=failed for order=${order.id}: ${e?.message}`)
   }
