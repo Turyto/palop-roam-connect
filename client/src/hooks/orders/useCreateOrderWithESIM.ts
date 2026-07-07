@@ -140,7 +140,9 @@ export const useCreateOrderWithESIM = () => {
         ...(hasPackageMapping
           ? {
               esim_package_id: supplierPackageId,
-              esim_status: 'provisioning',
+              // eSIMCard: insert as 'pending' — the esimcard-provision edge fn
+              // performs the atomic pending→provisioning claim itself.
+              esim_status: isESIMCard ? 'pending' : 'provisioning',
             }
           : {
               esim_package_id: supplierPackageId ?? null,

@@ -16,17 +16,25 @@ const FALLBACK_PACKAGES: Record<string, string> = {
 // Resolve the eSIM Access package code for a plan (DB row first, then fallback).
 async function resolveEsimPackageId(supabaseUrl: string, serviceKey: string, planId: string): Promise<string | null> {
   try {
+    // Supplier-aware: a plan is sellable with EITHER an eSIM Access package
+    // code OR an eSIMCard supplier package id (same logic as get-esim-package).
     const url =
       `${supabaseUrl}/rest/v1/esim_packages` +
       `?plan_id=eq.${encodeURIComponent(planId)}` +
-      `&esim_access_package_id=not.is.null` +
+      `&or=(esim_access_package_id.not.is.null,and(supplier.eq.esimcard,supplier_package_id.not.is.null))` +
       `&order=created_at.desc&limit=1`;
     const res = await fetch(url, {
       headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}`, 'Accept': 'application/json' },
     });
     const rows = await res.json().catch(() => []);
-    if (Array.isArray(rows) && rows.length > 0 && rows[0]?.esim_access_package_id) {
-      return rows[0].esim_access_package_id as string;
+    if (Array.isArray(rows) && rows.length > 0) {
+      const row = rows[0];
+      if (row?.supplier === 'esimcard' && row?.supplier_package_id) {
+        return row.supplier_package_id as string;
+      }
+      if (row?.esim_access_package_id) {
+        return row.esim_access_package_id as string;
+      }
     }
   } catch (e: any) {
     console.error(`[create-payment-intent] esim_packages lookup failed — ${e?.message}`);
