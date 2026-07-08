@@ -1,0 +1,49 @@
+DISCOVERY REQUEST — Partner Area: current implementation audit
+Before any new work begins on the Partner Area, I need a full picture of what is currently implemented. Please investigate the codebase and database and report back on each of the following. Do not make any changes — this is read-only investigation only.
+1. Frontend — Partner Area
+
+What routes exist for the partner area? (e.g. /partner, /dashboard, /referrals — list all)
+What React components make up the partner dashboard? List the file paths and give a one-paragraph description of what each one currently renders
+Does the UI currently show commission data to partners? If yes, what fields are displayed and where does the data come from?
+Is there any "consignment orders" section in the UI? If yes, describe it. If no, confirm it is absent.
+What does the partner see when they first log in to their area?
+
+2. Authentication — how partners are identified
+
+How does the system distinguish a partner account from a regular customer or admin account?
+Is there a partners table or equivalent in the database? If yes, list all columns.
+When a partner logs in via Supabase Auth, what identifier links their auth.uid() to their partner record?
+Do partners currently have Supabase Auth accounts at all? If yes, how many partner accounts exist? List them (email only, no passwords).
+Are there any partner-specific roles or claims set in Supabase Auth metadata?
+
+3. Database — partner-related tables
+For each of the following tables, if it exists: list all columns with their data types, constraints, and default values. Also show the current RLS policies (enabled/disabled, policy names, and the policy expression).
+Tables to check:
+
+partner_commissions
+referral_rewards
+partners (or equivalent)
+consignment_orders (may not exist yet)
+Any other table with "partner" or "referral" or "commission" in the name
+
+Also confirm: how many rows are currently in partner_commissions? In referral_rewards?
+4. Edge Functions — partner-related
+
+List any existing Edge Functions that relate to partner logic, referral tracking, or commission calculation
+For each: what does it do, what triggers it, and what tables does it read from or write to?
+Is there currently any Edge Function that serves data to the partner dashboard frontend? If yes, show its logic.
+
+5. Referral / commission flow
+
+When a customer purchases using a partner referral link, trace the exact code path: from the referral code being captured, through Stripe, through the webhook, to the commission being recorded. Which files are involved and what does each one do?
+Where in the code is the commission rate calculated? Is it hardcoded (e.g. 15%) or read from the database?
+Is there any tiered commission logic (e.g. 15% for sales 1–49, 20% for 50+)? If yes, where? If no, confirm it is absent.
+
+6. Current known data
+
+Show the full contents of partner_commissions (all rows, all columns)
+Confirm the Praia Tur partner record: what is their partner ID, referral code, and any other identifying fields?
+
+
+Output format requested:
+Return a structured report with one section per numbered area above. Be factual and specific — file paths, column names, row counts, policy expressions. Where something does not exist, say so explicitly rather than skipping it. This report will be used to write accurate implementation requirements.

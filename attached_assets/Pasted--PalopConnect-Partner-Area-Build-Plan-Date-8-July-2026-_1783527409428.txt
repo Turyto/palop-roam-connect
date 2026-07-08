@@ -1,0 +1,474 @@
+# PalopConnect — Partner Area Build Plan
+**Date:** 8 July 2026  
+**Prepared for:** Replit Developer  
+**Status:** Ready for implementation
+
+---
+
+## Context
+
+This document defines the full scope of work to build a partner-facing area in the PalopConnect platform. It is grounded in a live codebase audit completed 8 Jul 2026. All requirements below are written against verified current state — not assumptions.
+
+### Current state summary (from audit)
+
+- No partner-facing route, page, or dashboard exists
+- All partner-visible data (commissions, referrals) is currently admin-only
+- The only partner record is Praia Tur (referral code: PRAIATUR), linked to the owner's admin account — not a dedicated partner login
+- `partner_commissions` table exists, admin-only RLS, 1 row
+- `referral_codes` table exists, 1 partner-type row
+- `referral_rewards` table exists, 0 rows (customer loyalty — do not touch)
+- `consignment_orders` table does not exist
+- No partner role exists — only `admin` and `customer`
+- Commission trigger exists and fires correctly on order completion, but uses **wrong rate logic** (see P0.0)
+- 12 edge functions deployed; none serve partner dashboard data
+
+### Existing work that must not be touched
+
+| Asset | Reason |
+|---|---|
+| `stripe-webhook` edge function | Sole authoritative provisioner — zero changes |
+| `create-payment-intent` edge function | Working correctly |
+| `partner_commissions` RLS policies | Stays admin-only — partner access via edge function only |
+| `AdminReferrals.tsx` | Working admin tool — leave as-is |
+| `AdminCommissions.tsx` | Working admin tool — leave as-is |
+| `referral_rewards` table | Customer loyalty — unrelated to partner commissions |
+| `trg_attribute_referral` trigger | Customer referral rewards — do not touch |
+| 3 completed orders, 2 admin accounts | Never modify |
+
+---
+
+## Non-negotiable constraints
+
+These apply to every task in this plan without exception:
+
+1. **Admin accounts** `turyto@gmail.com` and `abela_c@hotmail.com` must never be deleted, demoted, or modified
+2. **`stripe-webhook`** and all provisioning logic: zero changes
+3. **`partner_commissions` RLS**: stays admin-only. Partners access their data through the `get-partner-dashboard` edge function only — never via direct table query
+4. **After every DB migration**: list all 18 public table RLS policies and confirm all are enabled and intact. Include this output in the migration report
+5. **No secrets, PI IDs, customer emails, or financial amounts in server/function logs**
+6. **All new tables must have RLS enabled from creation** — never leave a table with RLS disabled
+7. **Before touching any order row, trigger, or RLS policy**: confirm the change does not affect the 3 completed orders or the 2 admin accounts
+
+---
+
+## Execution sequence
+
+Phases must be executed in order. Each phase has hard dependencies on the one before it.
+
+```
+P0.0 → P0.1 → P0.2 → P0.3 → P0.4
+                                  ↓
+                              P1.1 (edge function)
+                                  ↓
+                    P2.1 + P2.2 + P2.3 (frontend, in parallel)
+                                  ↓
+                    P3.1 → P3.2 → P3.3
+                                  ↓
+                              P4.1
+```
+
+Immediate data fixes (section at end) can be done alongside P3.2 once the `consignment_orders` table exists.
+
+---
+
+## Phase 0 — Prerequisites
+
+### P0.0 — Fix commission rate trigger ⚠️ URGENT — do before any new partner sales
+
+**Problem:** The live DB trigger `record_partner_commission_on_order()` calculates commission rate based on order price:
+
+```sql
+-- CURRENT (WRONG) — price-based tiering
+v_rate := CASE WHEN COALESCE(NEW.price, 0) >= 50 THEN 0.20 ELSE 0.15 END;
+```
+
+**Correct logic:** Volume-based tiering — 15% for sales 1–49, 20% from sale 50 onwards.
+
+**Required change 1 — Fix the trigger rate logic:**
+
+```sql
+-- CORRECT — volume-based tiering
+SELECT COUNT(*) INTO v_completed_sales
+FROM partner_commissions
+WHERE partner_code = v_partner_code;
+
+v_rate := CASE WHEN v_completed_sales >= 49 THEN 0.20 ELSE 0.15 END;
+```
+
+`v_completed_sales` counts existing rows in `partner_commissions` for this partner code before the new one is inserted. If 49 or more rows already exist (i.e. this is sale 50 or above), apply 20%. Otherwise 15%.
+
+**Required change 2 — Add `rate` column to `partner_commissions`:**
+
+```sql
+ALTER TABLE partner_commissions
+ADD COLUMN rate numeric NOT NULL DEFAULT 0.15;
+```
+
+Update the trigger to store the computed rate into this column on every insert.
+
+Update the existing 1 row: set `rate = 0.15` (confirmed correct — it was the first sale).
+
+**Verification after deployment:**
+- Show the updated trigger function body from the DB
+- Confirm the existing row now has `rate = 0.15`
+- Confirm RLS policies on `partner_commissions` are unchanged (still admin-only)
+
+---
+
+### P0.1 — Add partner role
+
+The `profiles.role` column currently accepts only `admin` and `customer`. Add `partner` as a valid value.
+
+Update the CHECK constraint or enum. Do not change any existing profile rows. Confirm after migration: all existing profiles retain their current role.
+
+---
+
+### P0.2 — Create Praia Tur auth account
+
+Create a new Supabase Auth user for Praia Tur.
+
+- **Email:** confirm with Artur before creating (suggestion: their actual business email or `praiatur@palopconnect.com`)
+- **Password:** set a temporary secure password; Artur will share it with Praia Tur and advise them to change it on first login
+- **Profile:** set `profiles.role = 'partner'` for this new user
+- **Do not** give this account admin access of any kind
+
+Record and return the new user's `auth.uid()` — it is needed for P0.3 and P3.2.
+
+---
+
+### P0.3 — Migrate PRAIATUR referral code to Praia Tur account
+
+Currently `referral_codes.user_id` for the PRAIATUR row points to `turyto@gmail.com` (the owner's admin account). This is incorrect — the partner code must be owned by the partner's own account.
+
+```sql
+UPDATE referral_codes
+SET user_id = '<praia_tur_new_auth_uid>'  -- from P0.2
+WHERE code = 'PRAIATUR';
+```
+
+**Verification after migration:**
+- Confirm `referral_codes` row for PRAIATUR has `user_id` = Praia Tur's new `auth.uid()`
+- Confirm `turyto@gmail.com` account is unchanged and still has `role = 'admin'`
+- Confirm `referral_codes` RLS policies are intact
+
+---
+
+### P0.4 — Partner routing and auth redirect
+
+Add a protected route tree: `/partner`, `/partner/dashboard`, `/partner/commissions`, `/partner/consignment`.
+
+**Auth redirect logic** (update `client/src/pages/Auth.tsx`):
+- `role = 'admin'` → redirect to `/admin/dashboard` (unchanged)
+- `role = 'partner'` → redirect to `/partner/dashboard` (new)
+- `role = 'customer'` → redirect to `/orders` (unchanged)
+
+**Route protection:**
+- `/partner/*` routes: accessible only to users with `role = 'partner'`. Any other role attempting to access these routes is redirected to their own area.
+- `/admin/*` routes: unchanged — accessible only to admins.
+
+---
+
+## Phase 1 — Partner data edge function
+
+### P1.1 — New edge function: `get-partner-dashboard`
+
+This is the single server-side function that serves all data to the partner frontend. Partners never query `partner_commissions` or `consignment_orders` directly.
+
+**Location:** `supabase/functions/get-partner-dashboard/index.ts`
+
+**Logic (in order):**
+
+1. Read the caller's authenticated session from the request JWT. If no valid session: return 401.
+2. Look up `profiles.role` for `auth.uid()`. If role is not `partner`: return 403.
+3. Query `referral_codes` where `user_id = auth.uid()` AND `type = 'partner'` AND `is_active = true`. Extract `code` and `id`. If not found: return 404 with message "No active partner code found."
+4. Using the **service role key** (not the anon key): query `partner_commissions` where `partner_code = <their_code>`. Return all rows ordered by `commission_date DESC`.
+5. Using the **service role key**: query `consignment_orders` where `partner_id = auth.uid()`. Return all rows ordered by `created_at DESC`.
+6. Compute summary totals server-side:
+   - `commission_total_earned`: sum of `amount` where status in ('owed', 'paid')
+   - `commission_total_paid`: sum of `amount` where status = 'paid'
+   - `commission_total_pending`: sum of `amount` where status = 'owed'
+   - `consignment_total_pending`: sum of `total_value` where status = 'pending'
+   - `consignment_total_paid`: sum of `total_value` where status = 'paid'
+7. Return a single JSON payload:
+
+```json
+{
+  "partner": {
+    "code": "PRAIATUR",
+    "label": "Praiatur",
+    "uses_count": 1
+  },
+  "summary": {
+    "commission_total_earned": 0.00,
+    "commission_total_paid": 0.00,
+    "commission_total_pending": 0.00,
+    "consignment_total_pending": 0.00,
+    "consignment_total_paid": 0.00
+  },
+  "commissions": [...],
+  "consignment_orders": [...]
+}
+```
+
+**Logging rules:** Do not log customer email addresses, full order IDs, or any financial amounts. Log only: function invoked, partner_code resolved, row counts returned, errors.
+
+**Add to `supabase/config.toml`** if not already present. Deploy alongside existing functions without modifying any other function.
+
+---
+
+## Phase 2 — Partner dashboard frontend
+
+All components are new. They live under the `/partner` route tree. These are read-only views for the partner — no admin controls, no edit capability.
+
+All data is fetched by calling the `get-partner-dashboard` edge function on page load. Do not use supabase-js direct table queries in any partner component.
+
+### P2.1 — Partner main page (`/partner/dashboard`)
+
+**File:** `client/src/pages/PartnerDashboard.tsx`
+
+Displays:
+- Header: partner name (from `label`), referral code (from `code`), total sales to date (from `uses_count`)
+- Financial summary — 5 metric cards:
+  | Card | Value |
+  |---|---|
+  | Commission earned (all time) | `commission_total_earned` |
+  | Commission pending payment | `commission_total_pending` |
+  | Commission paid | `commission_total_paid` |
+  | Consignment pending invoice | `consignment_total_pending` |
+  | Consignment paid | `consignment_total_paid` |
+- Two navigation buttons: "My commissions" → `/partner/commissions`, "Consignment orders" → `/partner/consignment`
+
+Loading state: show skeleton cards while the edge function responds. Error state: show a clear message if the function returns an error.
+
+---
+
+### P2.2 — Commissions view (`/partner/commissions`)
+
+**File:** `client/src/pages/PartnerCommissions.tsx`
+
+Displays a table of all rows from the `commissions` array in the edge function response.
+
+**Columns:**
+
+| Column | Source | Notes |
+|---|---|---|
+| Date | `commission_date` | Format: DD/MM/YYYY |
+| Order ref | `order_id` | Display first 8 characters only |
+| Customer | `customer_name` | |
+| Commission rate | `rate` | Display as "15%" or "20%" |
+| Commission earned | `amount` | Format as €0,00 |
+| Status | `status` | Display "Pending" (for 'owed') or "Paid" (for 'paid') |
+| Paid date | `updated_at` | Show only when status = 'paid'; format DD/MM/YYYY |
+
+Default sort: newest first. Totals row at the bottom: total earned, total paid, total pending.
+
+Partners cannot edit, delete, or change status of any row.
+
+---
+
+### P2.3 — Consignment orders view (`/partner/consignment`)
+
+**File:** `client/src/pages/PartnerConsignment.tsx`
+
+Displays a table of all rows from the `consignment_orders` array in the edge function response.
+
+**Columns:**
+
+| Column | Source | Notes |
+|---|---|---|
+| Date | `created_at` | Format: DD/MM/YYYY |
+| Batch / Order ID | `batch_id` | |
+| Plan | `plan_name` | |
+| Quantity | `quantity` | |
+| Unit price | `unit_price` | Format as €0,00 |
+| Total value | `total_value` | Format as €0,00 |
+| Status | `status` | "Pending" or "Paid" |
+
+Default sort: newest first. Totals row at the bottom: total pending, total paid, grand total.
+
+Partners cannot edit any row.
+
+---
+
+## Phase 3 — Consignment infrastructure
+
+### P3.1 — New table: `consignment_orders`
+
+```sql
+CREATE TABLE consignment_orders (
+  id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  partner_id     uuid NOT NULL REFERENCES auth.users(id) ON DELETE RESTRICT,
+  partner_code   text NOT NULL,
+  batch_id       text,
+  plan_name      text NOT NULL,
+  quantity       integer NOT NULL CHECK (quantity > 0),
+  unit_price     numeric NOT NULL CHECK (unit_price >= 0),
+  total_value    numeric GENERATED ALWAYS AS (quantity * unit_price) STORED,
+  status         text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'paid')),
+  paid_at        timestamptz,
+  notes          text,
+  created_at     timestamptz NOT NULL DEFAULT now(),
+  updated_at     timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE consignment_orders ENABLE ROW LEVEL SECURITY;
+```
+
+**RLS policies — two only:**
+
+```sql
+-- Admin: full access
+CREATE POLICY "Admins can manage consignment orders"
+ON consignment_orders
+FOR ALL
+USING (get_current_user_role() = 'admin')
+WITH CHECK (get_current_user_role() = 'admin');
+
+-- Partner: read own rows only
+CREATE POLICY "Partners can view their own consignment orders"
+ON consignment_orders
+FOR SELECT
+USING (auth.uid() = partner_id);
+```
+
+**Verification after migration:**
+- Confirm RLS is enabled on `consignment_orders`
+- List all 18 public table RLS policies and confirm all are intact
+- Confirm no existing table RLS policies were changed
+
+---
+
+### P3.2 — Seed: Praia Tur consignment order
+
+Insert the following row into `consignment_orders` after P3.1 is complete.
+
+**Confirm with Artur before inserting:**
+- Plan name acquired
+- Quantity
+- Unit price
+
+Values known:
+- `partner_id`: Praia Tur's `auth.uid()` (from P0.2)
+- `partner_code`: PRAIATUR
+- `batch_id`: B26070616530004
+- `status`: pending
+- `notes`: "Praia Tur consignment order, July 2026"
+
+Do not insert with placeholder values. Wait for Artur's confirmation on plan name, quantity, and unit price before running this insert.
+
+---
+
+### P3.3 — Admin consignment management tab
+
+Add a new "Consignment" tab to the existing `AdminDashboard.tsx`, alongside the current Referrals and Commissions tabs.
+
+**New component:** `client/src/components/admin/AdminConsignment.tsx`
+
+This tab gives admins:
+
+**View — all consignment orders across all partners:**
+Columns: Partner name, Batch ID, Plan, Quantity, Unit price, Total value, Status, Date, Notes.
+Default sort: newest first.
+
+**Create form — new consignment order:**
+Fields:
+- Partner selector (dropdown of all `referral_codes` where `type = 'partner'`, showing `label`)
+- Batch ID (text input)
+- Plan name (text input)
+- Quantity (number input, min 1)
+- Unit price (number input, min 0)
+- Notes (textarea, optional)
+
+On submit: insert into `consignment_orders`. `partner_id` resolved from selected partner's `referral_codes.user_id`.
+
+**Status management:**
+Each row has a toggle button: "Mark as paid" (when status = pending) or "Mark as pending" (when status = paid). On toggle: update `status` and set/clear `paid_at`.
+
+Admin queries `consignment_orders` using the same supabase-js pattern as `AdminCommissions.tsx` (direct table query with admin auth).
+
+---
+
+## Phase 4 — Monthly summary
+
+### P4.1 — Monthly summary (admin-triggered, printable)
+
+Add a "Monthly summary" button to the admin's partner management area (location: inside the Commissions or Consignment admin tab — Artur to confirm preferred placement).
+
+**Interaction:**
+1. Admin selects a partner from a dropdown
+2. Admin selects month and year
+3. System generates a printable summary page
+
+**Summary page content:**
+
+```
+PALOP Connect — Partner Monthly Summary
+Partner: [label] ([code])
+Period: [Month Year]
+
+— PART 1: Commission sales —
+[Table: Date | Order ref | Customer | Rate | Amount | Status]
+Subtotal earned: €0,00
+Subtotal paid: €0,00
+Subtotal pending payment: €0,00
+
+— PART 2: Consignment orders —
+[Table: Date | Batch ID | Plan | Qty | Unit price | Total | Status]
+Subtotal pending invoice: €0,00
+Subtotal paid: €0,00
+
+— TOTALS —
+Amount PALOP Connect owes partner (commissions pending): €0,00
+Amount partner owes PALOP Connect (consignment pending invoice): €0,00
+```
+
+**Output:** Trigger `window.print()` on a clean, print-formatted HTML view. CSS `@media print` should hide navigation, buttons, and admin chrome. PDF export is out of scope for this phase.
+
+---
+
+## Immediate data fixes
+
+These are operational corrections, not feature work. Execute alongside Phase 3 once `consignment_orders` exists.
+
+**Fix 1 — Praia Tur Stripe PI confusion**
+
+There is a known confusion around Stripe PI `pi_3Tk0EXKy6kP7f0TQ1WReu7cg` (related to customer Salomé, Praia Tur link, price should be €14.90).
+
+**Before touching anything:** Artur must confirm exactly what correction is needed:
+- Is there an existing `partner_commissions` row that has the wrong amount?
+- Or does a new commission row need to be created at €14.90?
+- Or is this a pricing correction on the partner link itself?
+
+Do not modify any `partner_commissions` row or order record until Artur provides the precise correction in writing.
+
+**Fix 2 — Praia Tur consignment order B26070616530004**
+
+Handled in P3.2. Requires Artur's confirmation of plan name, quantity, and unit price before inserting.
+
+---
+
+## Questions requiring Artur's answer before starting
+
+| # | Question | Needed for |
+|---|---|---|
+| 1 | What email should be used for the Praia Tur auth account? | P0.2 |
+| 2 | What is the plan name, quantity, and unit price for batch B26070616530004? | P3.2 |
+| 3 | What exactly needs to be corrected regarding PI `pi_3Tk0EXKy6kP7f0TQ1WReu7cg`? | Fix 1 |
+| 4 | Where in the admin dashboard should the "Monthly summary" button live? | P4.1 |
+
+---
+
+## Deliverables checklist (report back on each)
+
+- [ ] P0.0: Updated trigger function body shown; existing `partner_commissions` row has `rate = 0.15`; all 18 RLS policies confirmed intact
+- [ ] P0.1: `partner` role added; no existing profile rows changed
+- [ ] P0.2: Praia Tur auth account created; `auth.uid()` returned; `profiles.role = 'partner'` confirmed
+- [ ] P0.3: PRAIATUR `referral_codes.user_id` updated; owner admin account unchanged
+- [ ] P0.4: Partner routing live; redirect logic confirmed for all 3 roles
+- [ ] P1.1: `get-partner-dashboard` edge function deployed; test call with Praia Tur session returns correct payload
+- [ ] P2.1–P2.3: Partner dashboard, commissions, and consignment pages rendering correctly
+- [ ] P3.1: `consignment_orders` table created; RLS enabled; all 18 public table policies listed and intact
+- [ ] P3.2: Praia Tur consignment order seeded (after Artur confirms values)
+- [ ] P3.3: Admin Consignment tab live; create, view, and status-toggle working
+- [ ] P4.1: Monthly summary generates correct data and prints cleanly
+- [ ] Fixes: Both data fixes applied after Artur's written confirmation
