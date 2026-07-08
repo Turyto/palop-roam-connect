@@ -7,3 +7,4 @@
 - [Resend delivery suppression](resend-delivery-suppression.md) — Resend returns 200 but silently drops mail to previously-bounced recipients; verify `last_event: delivered`.
 - [Edge function authorization](edge-function-authz.md) — verify_jwt is not authorization; client-invokable fns must re-derive data server-side and gate on DB state.
 - [pdf-lib WinAnsi](pdf-lib-winansi.md) — standard fonts throw on non-WinAnsi chars (≈, →, smart quotes); sanitize dynamic text or PDFs silently fail.
+- [Referral trigger constraint landmine](referral-trigger-landmine.md) — live trigger bodies diverge from repo migrations; an AFTER-trigger constraint violation aborts order completion; partner vs customer code split.

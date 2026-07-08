@@ -1,7 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-// Returns the user's role ('admin' | 'customer') or null if resolution fails.
+// Returns the user's role ('admin' | 'partner' | 'customer') or null if resolution fails.
 // Callers must treat null as an unresolved/error state — never assume 'customer' by default.
 export const fetchUserRole = async (userId: string): Promise<string | null> => {
   try {
@@ -17,7 +17,7 @@ export const fetchUserRole = async (userId: string): Promise<string | null> => {
     }
 
     const role = data?.role;
-    if (role !== 'admin' && role !== 'customer') {
+    if (role !== 'admin' && role !== 'partner' && role !== 'customer') {
       console.error('Unexpected or missing role value in profile:', role);
       return null;
     }

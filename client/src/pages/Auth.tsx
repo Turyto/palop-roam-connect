@@ -21,6 +21,8 @@ const Auth = () => {
       setTimeout(() => {
         if (userRole === 'admin') {
           navigate('/admin/dashboard', { replace: true });
+        } else if (userRole === 'partner') {
+          navigate('/partner/dashboard', { replace: true });
         } else {
           navigate('/orders', { replace: true });
         }

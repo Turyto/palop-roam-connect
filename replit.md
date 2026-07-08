@@ -52,6 +52,15 @@ Clarification on "don't open Portugal/country plans yet":
 - Paid-but-failed orders now get a distinct DB state: `orders.status='needs_attention'` (check constraint updated, migration `20260707150000`), set by both stripe-webhook and the client failure path; customer UI maps it to "processing", admin UI shows a red badge.
 - Admin dashboard (`AdminOrdersTable.tsx`): "Needs Attention" banner + counter, filter option, red row highlight + badge for paid-but-failed orders; `OrderDetailsModal.tsx` shows the failure reason.
 
+### July 2026 — Partner Area Foundations (Task: DB, auth, routing)
+- Commission trigger `record_partner_commission_on_order()` now uses **volume-based tiering**: 15% for a partner's sales 1–49, 20% from sale 50 (counts non-cancelled `partner_commissions` rows per code). Migration `20260708100000`.
+- `partner_commissions` gained `rate` (stored per row) and `paid_at` (admin-set only; trigger never touches it) columns; existing row backfilled `rate=0.15`, `paid_at=null`.
+- `app_role` enum now includes `partner` (migration `20260708110000`, separate txn from first use).
+- Praia Tur partner account live: **patrick.oliveira@praiatur.cv**, uid `99bee940-d18b-4318-9eb9-1341e80f1bfe`, role `partner`, email pre-confirmed; PRAIATUR referral code reassigned to this uid (migration record `20260708120000`).
+- `consignment_orders` table created with RLS from creation: admin full access + partner SELECT-own (migration `20260708130000`). DB now 20 public tables / 52 RLS policies.
+- Frontend: `/partner`, `/partner/dashboard`, `/partner/commissions`, `/partner/consignment` routes (`PartnerArea.tsx` placeholder with role guard); login redirect partner → `/partner/dashboard`; `fetchUserRole` accepts `partner`.
+- Next: partner dashboard edge function + real pages (Task #58), admin consignment tab + monthly summary (Task #59).
+
 ### Pre-Launch Blocker
 - **GDPR cookie consent banner** — not yet implemented; required before EU public marketing push
 

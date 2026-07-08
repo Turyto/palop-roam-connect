@@ -23,6 +23,7 @@ const CompatibilityPage = lazy(() => import("./pages/CompatibilityPage").catch((
 const HowItWorksPage = lazy(() => import("./pages/HowItWorksPage").catch(() => ({ default: () => <div className="p-20 text-center">Page missing or loading...</div> })));
 const NotFound = lazy(() => import("./pages/NotFound").catch(() => ({ default: () => <div className="p-20 text-center">404 Not Found</div> })));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard").catch(() => ({ default: () => <div className="p-20 text-center">Page missing or loading...</div> })));
+const PartnerArea = lazy(() => import("./pages/PartnerArea").catch(() => ({ default: () => <div className="p-20 text-center">Page missing or loading...</div> })));
 const ESim = lazy(() => import("./pages/ESim").catch(() => ({ default: () => <div className="p-20 text-center">Page missing or loading...</div> })));
 const Community = lazy(() => import("./pages/Community").catch(() => ({ default: () => <div className="p-20 text-center">Page missing or loading...</div> })));
 const Countries = lazy(() => import("./pages/Countries").catch(() => ({ default: () => <div className="p-20 text-center">Page missing or loading...</div> })));
@@ -91,6 +92,10 @@ const AppRoutes = () => (
     <Route path="/how-it-works" element={<HowItWorksPage />} />
     <Route path="/success" element={<OrderSuccess />} />
     <Route path="/admin/dashboard" element={<AdminDashboard />} />
+    <Route path="/partner" element={<PartnerArea />} />
+    <Route path="/partner/dashboard" element={<PartnerArea />} />
+    <Route path="/partner/commissions" element={<PartnerArea />} />
+    <Route path="/partner/consignment" element={<PartnerArea />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
