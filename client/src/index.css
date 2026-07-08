@@ -136,3 +136,22 @@
     box-shadow: 0 0 20px 0 rgba(0, 114, 198, 0.4);
   }
 }
+
+/* Partner monthly summary — print only the summary sheet */
+@media print {
+  body.print-partner-summary * {
+    visibility: hidden;
+  }
+  body.print-partner-summary #partner-monthly-summary,
+  body.print-partner-summary #partner-monthly-summary * {
+    visibility: visible;
+  }
+  body.print-partner-summary #partner-monthly-summary {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    border: none;
+    padding: 0;
+  }
+}

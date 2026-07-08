@@ -372,9 +372,11 @@ const AdminCommissions = () => {
                 <TableRow>
                   <TableHead>Partner</TableHead>
                   <TableHead>Customer</TableHead>
+                  <TableHead>Rate</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Date</TableHead>
+                  <TableHead>Paid Date</TableHead>
                   <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
@@ -392,12 +394,20 @@ const AdminCommissions = () => {
                     <TableCell className="text-sm text-gray-600">
                       {c.customer_name ?? "—"}
                     </TableCell>
+                    <TableCell className="text-sm" data-testid={`text-rate-${c.id}`}>
+                      {c.rate != null ? `${Number((Number(c.rate) * 100).toFixed(1))}%` : "—"}
+                    </TableCell>
                     <TableCell className="font-medium" data-testid={`text-amount-${c.id}`}>
                       €{Number(c.amount).toFixed(2)}
                     </TableCell>
                     <TableCell>{statusBadge(c.status)}</TableCell>
                     <TableCell className="text-xs text-gray-500">
                       {new Date(c.commission_date).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="text-xs text-gray-500" data-testid={`text-paid-date-${c.id}`}>
+                      {c.status === "paid" && c.paid_at
+                        ? new Date(c.paid_at).toLocaleDateString()
+                        : "—"}
                     </TableCell>
                     <TableCell className="text-right">
                       {c.status === "owed" ? (

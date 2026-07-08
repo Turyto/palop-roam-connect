@@ -10,6 +10,8 @@ import AdminInventory from "@/components/admin/AdminInventory";
 import AdminLanguageToggle from "@/components/admin/AdminLanguageToggle";
 import AdminReferrals from "@/components/admin/AdminReferrals";
 import AdminCommissions from "@/components/admin/AdminCommissions";
+import AdminConsignment from "@/components/admin/AdminConsignment";
+import PartnerMonthlySummary from "@/components/admin/PartnerMonthlySummary";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -141,13 +143,14 @@ const AdminDashboard = () => {
           </div>
 
           <Tabs defaultValue="orders" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="orders">Orders</TabsTrigger>
               <TabsTrigger value="users">Users</TabsTrigger>
               <TabsTrigger value="support">Support</TabsTrigger>
               <TabsTrigger value="catalog">Catalog</TabsTrigger>
               <TabsTrigger value="referrals">Referrals</TabsTrigger>
               <TabsTrigger value="commissions">Commissions</TabsTrigger>
+              <TabsTrigger value="consignment" data-testid="tab-consignment">Consignment</TabsTrigger>
             </TabsList>
 
             <TabsContent value="orders">
@@ -171,7 +174,14 @@ const AdminDashboard = () => {
             </TabsContent>
 
             <TabsContent value="commissions">
-              <AdminCommissions />
+              <div className="space-y-6">
+                <PartnerMonthlySummary />
+                <AdminCommissions />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="consignment">
+              <AdminConsignment />
             </TabsContent>
           </Tabs>
         </div>

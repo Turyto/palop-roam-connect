@@ -64,7 +64,14 @@ Clarification on "don't open Portugal/country plans yet":
 - `get-partner-dashboard` edge function deployed (verify_jwt=true): 401 no JWT → 403 non-partner (`profiles.role`) → 404 no active partner code → service-role fetch of `partner_commissions` (customer_email deliberately excluded) + `consignment_orders`, server-side summary totals in one JSON payload. CORS includes `sentry-trace`/`baggage`. Logs: invocation, partner_code, row counts only.
 - Frontend: `PartnerArea.tsx` shell (guard + nav + error/retry + PT/EN toggle) renders `PartnerDashboard.tsx` (header + 5 metric cards + nav buttons), `PartnerCommissions.tsx` and `PartnerConsignment.tsx` (read-only tables, DD/MM/YYYY, €0,00 pt-PT format, totals rows). Data via `usePartnerDashboard` hook — partners never query tables directly. Bilingual `partner` section added to `translations.ts`.
 - E2E verified live: 401 anon, 200 Praia Tur (earned €1.49 / 1 sale), 403 customer (throwaway account, deleted after).
-- Next: admin consignment tab + monthly summary (Task #59).
+
+### July 2026 — Admin Consignment Tab + Monthly Summary (Task #59)
+- New admin "Consignment" tab (`AdminConsignment.tsx`, 7th tab in `AdminDashboard.tsx`): all-partner consignment list (newest first), create form (partner dropdown from partner-type referral codes, `partner_id` resolved from the code's `user_id`; quantity ≥1, unit price ≥0), per-row Mark Paid/Pending toggle that sets/clears `paid_at`. Direct supabase-js with admin RLS.
+- `AdminCommissions.tsx` (minimal edit): status toggle now sets `paid_at=now()` on paid / clears on revert; `rate` + `paid_at` added to select and rendered as Rate / Paid Date columns.
+- `PartnerMonthlySummary.tsx` (top of admin Commissions tab): partner + month/year picker → printable statement (commission sales + consignment tables, subtotals, bidirectional "owes" totals) via `window.print()`; `@media print` CSS in `index.css` scoped by a `print-partner-summary` body class shows only `#partner-monthly-summary`.
+- **RLS fix (migration `20260708160000`, applied):** `referral_codes` only had owner-based policies, so after PRAIATUR was reassigned to the partner account, admins silently lost visibility/toggle of it (broke AdminReferrals + would break the new dropdowns). Added "Admins can manage referral codes" FOR ALL policy (`get_current_user_role()='admin'`). DB now 20 tables / 53 RLS policies.
+- E2E verified live via throwaway admin (deleted after): dropdown, insert (generated `total_value` correct), both toggles, month-range queries, commissions `paid_at` toggle; all test rows removed, prod state intact (1 commission, 0 consignment, 7 completed orders, 2 admins).
+- Out of scope / still pending Artur: Praia Tur consignment seed (batch B26070616530004 values), Stripe PI correction, monthly summary button placement confirmation (defaulted to Commissions tab).
 
 ### Pre-Launch Blocker
 - **GDPR cookie consent banner** — not yet implemented; required before EU public marketing push

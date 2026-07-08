@@ -117,8 +117,11 @@ const PartnerMonthlySummary = () => {
 
   const handlePrint = () => {
     document.body.classList.add("print-partner-summary");
-    window.print();
-    document.body.classList.remove("print-partner-summary");
+    try {
+      window.print();
+    } finally {
+      document.body.classList.remove("print-partner-summary");
+    }
   };
 
   return (
