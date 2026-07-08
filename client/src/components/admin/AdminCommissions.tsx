@@ -45,6 +45,8 @@ interface CommissionRow {
   notes: string | null;
   commission_date: string;
   created_at: string;
+  rate: number;
+  paid_at: string | null;
 }
 
 const AdminCommissions = () => {
@@ -70,7 +72,7 @@ const AdminCommissions = () => {
       const { data, error } = await supabase
         .from("partner_commissions")
         .select(
-          "id, partner_name, partner_code, amount, currency, order_id, customer_name, customer_email, status, notes, commission_date, created_at"
+          "id, partner_name, partner_code, amount, currency, order_id, customer_name, customer_email, status, notes, commission_date, created_at, rate, paid_at"
         )
         .order("commission_date", { ascending: false });
       if (error) throw error;
@@ -82,7 +84,10 @@ const AdminCommissions = () => {
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const { error } = await supabase
         .from("partner_commissions")
-        .update({ status })
+        .update({
+          status,
+          paid_at: status === "paid" ? new Date().toISOString() : null,
+        })
         .eq("id", id);
       if (error) throw error;
     },
