@@ -58,8 +58,13 @@ Clarification on "don't open Portugal/country plans yet":
 - `app_role` enum now includes `partner` (migration `20260708110000`, separate txn from first use).
 - Praia Tur partner account live: **patrick.oliveira@praiatur.cv**, uid `99bee940-d18b-4318-9eb9-1341e80f1bfe`, role `partner`, email pre-confirmed; PRAIATUR referral code reassigned to this uid (migration record `20260708120000`).
 - `consignment_orders` table created with RLS from creation: admin full access + partner SELECT-own (migration `20260708130000`). DB now 20 public tables / 52 RLS policies.
-- Frontend: `/partner`, `/partner/dashboard`, `/partner/commissions`, `/partner/consignment` routes (`PartnerArea.tsx` placeholder with role guard); login redirect partner → `/partner/dashboard`; `fetchUserRole` accepts `partner`.
-- Next: partner dashboard edge function + real pages (Task #58), admin consignment tab + monthly summary (Task #59).
+- Frontend: `/partner`, `/partner/dashboard`, `/partner/commissions`, `/partner/consignment` routes (`PartnerArea.tsx` shell with role guard); login redirect partner → `/partner/dashboard`; `fetchUserRole` accepts `partner`.
+
+### July 2026 — Partner Dashboard (Task: edge function + pages)
+- `get-partner-dashboard` edge function deployed (verify_jwt=true): 401 no JWT → 403 non-partner (`profiles.role`) → 404 no active partner code → service-role fetch of `partner_commissions` (customer_email deliberately excluded) + `consignment_orders`, server-side summary totals in one JSON payload. CORS includes `sentry-trace`/`baggage`. Logs: invocation, partner_code, row counts only.
+- Frontend: `PartnerArea.tsx` shell (guard + nav + error/retry + PT/EN toggle) renders `PartnerDashboard.tsx` (header + 5 metric cards + nav buttons), `PartnerCommissions.tsx` and `PartnerConsignment.tsx` (read-only tables, DD/MM/YYYY, €0,00 pt-PT format, totals rows). Data via `usePartnerDashboard` hook — partners never query tables directly. Bilingual `partner` section added to `translations.ts`.
+- E2E verified live: 401 anon, 200 Praia Tur (earned €1.49 / 1 sale), 403 customer (throwaway account, deleted after).
+- Next: admin consignment tab + monthly summary (Task #59).
 
 ### Pre-Launch Blocker
 - **GDPR cookie consent banner** — not yet implemented; required before EU public marketing push
