@@ -15,3 +15,17 @@ export function initAnalytics(): void {
     gaOptions: { anonymizeIp: true },
   });
 }
+
+/**
+ * Send a GA4 event. Safe no-op when analytics was never initialised
+ * (consent declined or no GA4 id configured) — never throws, so
+ * analytics can never break the app or the checkout.
+ */
+export function trackEvent(name: string, params?: Record<string, unknown>): void {
+  if (!initialized) return;
+  try {
+    ReactGA.event(name, params ?? {});
+  } catch {
+    /* analytics must never break the app */
+  }
+}

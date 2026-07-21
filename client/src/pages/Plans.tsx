@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { trackEvent } from '@/analytics';
 import HomeHeader from '@/components/home/HomeHeader';
 import HomeFooter from '@/components/home/HomeFooter';
 import PlansHeroSection from '@/components/plans/PlansHeroSection';
@@ -13,6 +14,11 @@ import { CoverageTab } from '@/content/plansPageContent';
 
 const Plans = () => {
   const [selectedTab, setSelectedTab] = useState<CoverageTab>('europe');
+
+  // GA4: view_plans on page view and whenever the coverage tab (corridor) changes
+  useEffect(() => {
+    trackEvent('view_plans', { corridor: selectedTab });
+  }, [selectedTab]);
 
   return (
     <div className="min-h-screen flex flex-col">

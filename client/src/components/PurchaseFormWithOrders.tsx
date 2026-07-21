@@ -17,6 +17,7 @@ import CartOverview from "./CartOverview";
 import PaymentDetails from "./PaymentDetails";
 import ContactForm, { makeCheckoutFormSchema } from "./ContactForm";
 import ConfirmationView from "./ConfirmationView";
+import { trackEvent } from "@/analytics";
 import { Loader2 } from "lucide-react";
 
 interface PurchaseFormWithOrdersProps {
@@ -44,6 +45,8 @@ const PurchaseFormWithOrders = ({
   const [paymentError, setPaymentError] = useState<string | null>(null);
   // Email captured at checkout — used for both guests and authenticated users
   const collectedEmailRef = useRef<string>("");
+  // GA4: fire begin_checkout only once per checkout session
+  const beginCheckoutTracked = useRef(false);
 
   const stripePromise = useMemo(() => {
     const pk = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
@@ -93,6 +96,15 @@ const PurchaseFormWithOrders = ({
         } else {
           setClientSecret(data.clientSecret);
           setPaymentIntentId(data.paymentIntentId);
+          // GA4: user reached the payment step (Payment Element about to mount)
+          if (!beginCheckoutTracked.current) {
+            beginCheckoutTracked.current = true;
+            trackEvent("begin_checkout", {
+              value: plan.price,
+              currency: "EUR",
+              plan_id: plan.id,
+            });
+          }
         }
         setPaymentLoading(false);
       });

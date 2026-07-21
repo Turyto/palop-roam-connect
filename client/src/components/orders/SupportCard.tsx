@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { LifeBuoy, Wifi, Smartphone, ExternalLink, MessageCircle } from 'lucide-react';
+import { trackEvent } from '@/analytics';
 
 interface SupportCardLabels {
   title: string;
@@ -43,7 +44,12 @@ const SupportCard = ({ labels: l }: SupportCardProps) => {
           className="w-full bg-[#25D366] hover:bg-[#25D366]/90 text-white"
           data-testid="button-whatsapp-support"
         >
-          <a href="https://wa.me/351911186695" target="_blank" rel="noopener noreferrer">
+          <a
+            href="https://wa.me/351911186695"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => trackEvent('whatsapp_click', { location: 'orders_support_card' })}
+          >
             <MessageCircle className="h-4 w-4 mr-1.5" />
             WhatsApp · resposta em 20 min
           </a>

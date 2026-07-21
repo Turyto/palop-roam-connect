@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/language';
 import type { Lang } from '@/lib/translations';
+import { trackEvent } from '@/analytics';
 
 const SHOW_START = new Date('2026-06-07T00:00:00');
 const SHOW_END = new Date('2026-07-20T00:00:00');
@@ -215,6 +216,7 @@ export default function WorldCupSection() {
               href="https://wa.me/351911186695"
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => trackEvent('whatsapp_click', { location: 'world_cup_section' })}
               className="mt-auto block text-center py-2.5 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90 border"
               style={{ borderColor: '#2DB84B', color: '#2DB84B' }}
               data-testid="button-wc-na-cta"

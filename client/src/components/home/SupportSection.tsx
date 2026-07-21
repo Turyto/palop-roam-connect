@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { LifeBuoy, MessageCircle } from 'lucide-react';
 import { useLanguage } from '@/contexts/language';
+import { trackEvent } from '@/analytics';
 
 const SupportSection = () => {
   const { t } = useLanguage();
@@ -46,6 +47,7 @@ const SupportSection = () => {
             href="https://wa.me/351911186695"
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => trackEvent('whatsapp_click', { location: 'home_support' })}
             className="inline-flex items-center gap-2 text-sm font-medium text-[#25D366] hover:underline"
             data-testid="link-whatsapp-home-support"
           >

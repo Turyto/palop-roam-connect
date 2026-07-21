@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Mail, Ticket, LifeBuoy, CheckCircle2, MessageCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { trackEvent } from '@/analytics';
 import { useAuth } from '@/contexts/auth';
 
 const formSchema = z.object({
@@ -102,6 +103,7 @@ export default function Support() {
                       href="https://wa.me/351911186695"
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={() => trackEvent('whatsapp_click', { location: 'support_page' })}
                       className="text-[#25D366] font-semibold hover:underline"
                       data-testid="link-whatsapp-support"
                     >

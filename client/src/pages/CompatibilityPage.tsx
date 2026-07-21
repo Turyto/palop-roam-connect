@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { trackEvent } from '@/analytics';
 import HomeHeader from '@/components/home/HomeHeader';
 import HomeFooter from '@/components/home/HomeFooter';
 import CompatibilityHeroSection from '@/components/compatibility/CompatibilityHeroSection';
@@ -8,6 +10,11 @@ import CompatibilityFAQSection from '@/components/compatibility/CompatibilityFAQ
 import FinalCompatibilityCTASection from '@/components/compatibility/FinalCompatibilityCTASection';
 
 const CompatibilityPage = () => {
+  // GA4: compatibility_view on page view
+  useEffect(() => {
+    trackEvent('compatibility_view');
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col">
       <HomeHeader />
