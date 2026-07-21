@@ -94,6 +94,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       duration_days,
       customer_email,
       referral_code,
+      ga_client_id,
     } = await req.json();
 
     if (!amount || amount <= 0) {
@@ -123,6 +124,12 @@ Deno.serve(async (req: Request): Promise<Response> => {
     });
     // P2: referral attribution must be auditable from the Stripe dashboard.
     if (referral_code) body.append('metadata[referral_code]', referral_code);
+    // GA4 Phase 2: client_id for the server-side purchase event (Measurement
+    // Protocol, sent by stripe-webhook). Empty string when no consent — additive,
+    // never blocks the checkout. Sanitised: string only, capped at 100 chars.
+    if (typeof ga_client_id === 'string' && ga_client_id.length > 0) {
+      body.append('metadata[ga_client_id]', ga_client_id.slice(0, 100));
+    }
     const response = await fetch('https://api.stripe.com/v1/payment_intents', {
       method: 'POST',
       headers: {

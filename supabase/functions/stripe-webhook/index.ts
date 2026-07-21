@@ -8,6 +8,129 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
   httpClient: Stripe.createFetchHttpClient(),
 })
 
+// ---------------------------------------------------------------------------
+// GA4 / sales-log accessories (Phase 2). STRICTLY fire-and-forget: nothing in
+// this block may throw into, delay, or change the HTTP status of the webhook
+// or the eSIM provisioning path. All callers wrap with waitUntil + .catch().
+// ---------------------------------------------------------------------------
+
+// Run a background promise without blocking the response. Uses EdgeRuntime.waitUntil
+// when available (Supabase Edge Runtime) so the work survives the response being sent.
+function fireAndForget(p: Promise<unknown>): void {
+  const guarded = p.catch((e) => console.error(`[stripe-webhook] background task failed (non-critical): ${e?.message ?? e}`))
+  try {
+    const er = (globalThis as any).EdgeRuntime
+    if (er?.waitUntil) {
+      er.waitUntil(guarded)
+      return
+    }
+  } catch { /* fall through */ }
+  void guarded
+}
+
+// GA4 Measurement Protocol. Silent no-op when secrets or client_id are absent.
+async function sendGa4Event(
+  clientId: string,
+  name: string,
+  params: Record<string, unknown>,
+): Promise<boolean> {
+  const measurementId = Deno.env.get('GA4_MEASUREMENT_ID') ?? ''
+  const apiSecret = Deno.env.get('GA4_API_SECRET') ?? ''
+  if (!measurementId || !apiSecret || !clientId) {
+    console.log(`[stripe-webhook] GA4 skipped — event=${name} (missing ${!measurementId ? 'measurement_id' : !apiSecret ? 'api_secret' : 'client_id'})`)
+    return false
+  }
+  const url = `https://www.google-analytics.com/mp/collect?measurement_id=${encodeURIComponent(measurementId)}&api_secret=${encodeURIComponent(apiSecret)}`
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ client_id: clientId, events: [{ name, params }] }),
+  })
+  // MP returns 2xx even for malformed payloads; log status only.
+  console.log(`[stripe-webhook] GA4 MP event=${name} status=${res.status}`)
+  return res.ok
+}
+
+// Record the sale in sales_log (once per PaymentIntent — unique key dedupes
+// Stripe retries and concurrent invocations) and, only when this invocation
+// actually inserted the row, send the server-side GA4 `purchase` event.
+async function recordSaleAndGa4Purchase(
+  paymentIntent: Stripe.PaymentIntent,
+  supabase: ReturnType<typeof createClient>,
+): Promise<void> {
+  const meta = paymentIntent.metadata ?? {}
+  const value = (paymentIntent.amount_received ?? paymentIntent.amount ?? 0) / 100
+  const currency = (paymentIntent.currency ?? 'eur').toUpperCase()
+  const { data: inserted, error } = await supabase
+    .from('sales_log')
+    .upsert(
+      {
+        stripe_payment_intent_id: paymentIntent.id,
+        order_id: meta.order_id || null,
+        user_id: meta.user_id || null,
+        plan_id: meta.plan_id || null,
+        amount: value,
+        currency,
+        channel: meta.referral_code ? 'partner' : 'direct',
+        partner_code: meta.referral_code || null,
+        ga_client_id: meta.ga_client_id || null,
+      },
+      { onConflict: 'stripe_payment_intent_id', ignoreDuplicates: true },
+    )
+    .select('id')
+  if (error) {
+    console.error(`[stripe-webhook] sales_log insert failed (non-critical) — pi=${paymentIntent.id} ${error.message}`)
+    return
+  }
+  if (!inserted || inserted.length === 0) {
+    console.log(`[stripe-webhook] sales_log already recorded — pi=${paymentIntent.id} — GA4 purchase not re-sent`)
+    return
+  }
+  console.log(`[stripe-webhook] sales_log recorded — pi=${paymentIntent.id} channel=${meta.referral_code ? 'partner' : 'direct'}`)
+  const sent = await sendGa4Event(meta.ga_client_id ?? '', 'purchase', {
+    transaction_id: paymentIntent.id,
+    value,
+    currency,
+    channel: meta.referral_code ? 'partner' : 'direct',
+    partner_code: meta.referral_code ?? null,
+    items: [{ item_id: meta.plan_id ?? '', item_name: meta.plan_id ?? '', quantity: 1 }],
+  }).catch((e) => {
+    console.error(`[stripe-webhook] GA4 purchase send failed (non-critical) — pi=${paymentIntent.id} ${e?.message ?? e}`)
+    return false
+  })
+  if (sent) {
+    await supabase
+      .from('sales_log')
+      .update({ ga4_sent: true })
+      .eq('stripe_payment_intent_id', paymentIntent.id)
+  }
+}
+
+// Record a failed/canceled payment (fire-and-forget; duplicates acceptable —
+// each Stripe event is one row, keyed for lookup by stripe_payment_intent_id).
+async function recordFailedPayment(
+  paymentIntent: Stripe.PaymentIntent,
+  eventType: 'payment_failed' | 'canceled',
+  supabase: ReturnType<typeof createClient>,
+): Promise<void> {
+  const meta = paymentIntent.metadata ?? {}
+  const { error } = await supabase.from('failed_payments').insert({
+    stripe_payment_intent_id: paymentIntent.id,
+    order_id: meta.order_id || null,
+    event_type: eventType,
+    failure_code: paymentIntent.last_payment_error?.code ?? null,
+    failure_message: (paymentIntent.last_payment_error?.message ?? '').slice(0, 500) || null,
+    amount: (paymentIntent.amount ?? 0) / 100,
+    currency: (paymentIntent.currency ?? 'eur').toUpperCase(),
+    plan_id: meta.plan_id || null,
+  })
+  if (error) {
+    console.error(`[stripe-webhook] failed_payments insert failed (non-critical) — pi=${paymentIntent.id} ${error.message}`)
+  } else {
+    console.log(`[stripe-webhook] failed_payments recorded — pi=${paymentIntent.id} type=${eventType}`)
+  }
+}
+
 Deno.serve(async (req: Request): Promise<Response> => {
   if (req.method !== 'POST') {
     return new Response('Method Not Allowed', { status: 405 })
@@ -44,15 +167,28 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
   try {
     switch (event.type) {
-      case 'payment_intent.succeeded':
-        await handlePaymentSucceeded(event.data.object as Stripe.PaymentIntent, supabase)
+      case 'payment_intent.succeeded': {
+        const pi = event.data.object as Stripe.PaymentIntent
+        await handlePaymentSucceeded(pi, supabase)
+        // GA4 Phase 2 — runs ONLY after the handler above returned, i.e. after
+        // provisioning is guaranteed (done, claimed elsewhere, or failure already
+        // handled). Fire-and-forget: never awaited on the critical path, never
+        // affects the HTTP status. Deduped inside via sales_log unique PI key.
+        fireAndForget(recordSaleAndGa4Purchase(pi, supabase))
         break
-      case 'payment_intent.payment_failed':
-        await handlePaymentFailed(event.data.object as Stripe.PaymentIntent, supabase)
+      }
+      case 'payment_intent.payment_failed': {
+        const pi = event.data.object as Stripe.PaymentIntent
+        await handlePaymentFailed(pi, supabase)
+        fireAndForget(recordFailedPayment(pi, 'payment_failed', supabase))
         break
-      case 'payment_intent.canceled':
-        await handlePaymentCanceled(event.data.object as Stripe.PaymentIntent, supabase)
+      }
+      case 'payment_intent.canceled': {
+        const pi = event.data.object as Stripe.PaymentIntent
+        await handlePaymentCanceled(pi, supabase)
+        fireAndForget(recordFailedPayment(pi, 'canceled', supabase))
         break
+      }
       case 'charge.dispute.created':
         await handleDisputeCreated(event.data.object as Stripe.Dispute)
         break

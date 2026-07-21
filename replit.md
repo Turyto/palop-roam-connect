@@ -73,6 +73,11 @@ Clarification on "don't open Portugal/country plans yet":
 - E2E verified live via throwaway admin (deleted after): dropdown, insert (generated `total_value` correct), both toggles, month-range queries, commissions `paid_at` toggle; all test rows removed, prod state intact (1 commission, 0 consignment, 7 completed orders, 2 admins).
 - Out of scope / still pending Artur: Praia Tur consignment seed (batch B26070616530004 values), Stripe PI correction, monthly summary button placement confirmation (defaulted to Commissions tab).
 
+### July 2026 — GA4 Instrumentation (Tasks #62/#63)
+- **Phase 1 (client, #62):** `trackEvent` helper in `client/src/analytics.ts` (no-op without consent/GA4 id); events `view_plans` (corridor), `compatibility_view`, `whatsapp_click` (4 wa.me locations), `begin_checkout` (once, on clientSecret). Measurement ID G-52WWSWJ3P7 via `VITE_GA4_ID`.
+- **Phase 2 (server, #63):** `getGaClientId()` (800ms cap, "" without consent) sent with create-payment-intent → `metadata[ga_client_id]` on the PI (additive, capped 100 chars). `sales_log` + `failed_payments` tables (migration `20260721100000`, RLS admin-SELECT only, writes via service role). stripe-webhook (v31): `sendGa4Event` Measurement Protocol helper + `recordSaleAndGa4Purchase` fired via EdgeRuntime.waitUntil AFTER `handlePaymentSucceeded` returns — never on the provisioning path; dedup = `sales_log.stripe_payment_intent_id` unique key (purchase sent only by the invocation that inserted the row; `ga4_sent` flag). `failed_payments` recorded fire-and-forget on failed/canceled events. Supabase secret `GA4_MEASUREMENT_ID` set; **`GA4_API_SECRET` NOT yet set (awaiting Artur)** — sendGa4Event degrades to a logged no-op until then; sales_log still records.
+- **Pending verification:** one real low-value purchase → reconcile GA4 purchase = sales_log = Stripe, then refund (blocked on GA4_API_SECRET).
+
 ### Pre-Launch Blocker
 - **GDPR cookie consent banner** — not yet implemented; required before EU public marketing push
 

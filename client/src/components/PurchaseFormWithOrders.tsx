@@ -17,7 +17,7 @@ import CartOverview from "./CartOverview";
 import PaymentDetails from "./PaymentDetails";
 import ContactForm, { makeCheckoutFormSchema } from "./ContactForm";
 import ConfirmationView from "./ConfirmationView";
-import { trackEvent } from "@/analytics";
+import { trackEvent, getGaClientId } from "@/analytics";
 import { Loader2 } from "lucide-react";
 
 interface PurchaseFormWithOrdersProps {
@@ -75,19 +75,25 @@ const PurchaseFormWithOrders = ({
     setPaymentLoading(true);
     setPaymentError(null);
 
-    supabase.functions
-      .invoke("create-payment-intent", {
-        body: {
-          amount: plan.price,
-          currency: plan.currency.toLowerCase(),
-          plan_name: plan.name,
-          plan_id: plan.id,
-          data_amount: plan.data,
-          duration_days: plan.days,
-          customer_email: collectedEmailRef.current,
-          referral_code: localStorage.getItem("palop_ref") || undefined,
-        },
-      })
+    // GA4: resolve client_id first (max 800ms, "" on no-consent/failure) so the
+    // server can attach it to the PaymentIntent metadata. Never blocks checkout.
+    getGaClientId()
+      .catch(() => "")
+      .then((gaClientId) =>
+        supabase.functions.invoke("create-payment-intent", {
+          body: {
+            amount: plan.price,
+            currency: plan.currency.toLowerCase(),
+            plan_name: plan.name,
+            plan_id: plan.id,
+            data_amount: plan.data,
+            duration_days: plan.days,
+            customer_email: collectedEmailRef.current,
+            referral_code: localStorage.getItem("palop_ref") || undefined,
+            ga_client_id: gaClientId || "",
+          },
+        }),
+      )
       .then(({ data, error }) => {
         if (error || !data?.clientSecret) {
           const msg = data?.error || error?.message || c.initialisingPayment;
