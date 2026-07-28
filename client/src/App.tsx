@@ -18,6 +18,7 @@ import Support from "./pages/Support";
 const Purchase = lazy(() => import("./pages/Purchase").catch(() => ({ default: () => <div className="p-20 text-center">Page missing or loading...</div> })));
 const OrderSuccess = lazy(() => import("./pages/OrderSuccess").catch(() => ({ default: () => <div className="p-20 text-center">Page missing or loading...</div> })));
 const Auth = lazy(() => import("./pages/Auth").catch(() => ({ default: () => <div className="p-20 text-center">Page missing or loading...</div> })));
+const ResetPassword = lazy(() => import("./pages/ResetPassword").catch(() => ({ default: () => <div className="p-20 text-center">Page missing or loading...</div> })));
 const Orders = lazy(() => import("./pages/Orders").catch(() => ({ default: () => <div className="p-20 text-center">Page missing or loading...</div> })));
 const CompatibilityPage = lazy(() => import("./pages/CompatibilityPage").catch(() => ({ default: () => <div className="p-20 text-center">Page missing or loading...</div> })));
 const HowItWorksPage = lazy(() => import("./pages/HowItWorksPage").catch(() => ({ default: () => <div className="p-20 text-center">Page missing or loading...</div> })));
@@ -87,6 +88,7 @@ const AppRoutes = () => (
     <Route path="/countries" element={<Countries />} />
     <Route path="/support" element={<Support />} />
     <Route path="/auth" element={<Auth />} />
+    <Route path="/auth/reset-password" element={<ResetPassword />} />
     <Route path="/orders" element={<Orders />} />
     <Route path="/compatibility" element={<CompatibilityPage />} />
     <Route path="/how-it-works" element={<HowItWorksPage />} />

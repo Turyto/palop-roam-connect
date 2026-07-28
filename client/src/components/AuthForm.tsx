@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Mail, Lock, CheckCircle, AlertCircle } from 'lucide-react';
 
 type AuthTab = 'magic' | 'password';
-type PasswordMode = 'signin' | 'signup';
+type PasswordMode = 'signin' | 'signup' | 'forgot';
 
 interface AuthFormProps {
   defaultTab?: AuthTab;
@@ -24,6 +24,7 @@ const AuthForm = ({ defaultTab = 'magic', expiredLink = false }: AuthFormProps) 
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
   const [magicSent, setMagicSent] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
@@ -52,9 +53,30 @@ const AuthForm = ({ defaultTab = 'magic', expiredLink = false }: AuthFormProps) 
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (loading || !email) return;
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      });
+      if (error) {
+        toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+      } else {
+        setResetSent(true);
+      }
+    } catch {
+      toast({ title: 'Erro', description: 'Ocorreu um erro. Tenta novamente.', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handlePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
+    if (passwordMode === 'forgot') return handleForgotPassword(e);
     setLoading(true);
     try {
       let result;
@@ -102,7 +124,27 @@ const AuthForm = ({ defaultTab = 'magic', expiredLink = false }: AuthFormProps) 
           </Card>
         )}
 
-        {magicSent ? (
+        {resetSent ? (
+          <Card>
+            <CardContent className="pt-8 pb-8 text-center">
+              <CheckCircle className="mx-auto mb-4 text-palop-green" size={48} />
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Verifica o teu email</h2>
+              <p className="text-gray-600 mb-1">Enviámos um link de recuperação para</p>
+              <p className="font-medium text-gray-900 mb-4">{email}</p>
+              <p className="text-sm text-gray-500 mb-6">
+                Clica no link para escolheres uma nova palavra-passe.
+                O link é válido por 1 hora.
+              </p>
+              <button
+                onClick={() => { setResetSent(false); setPasswordMode('signin'); setEmail(''); }}
+                className="text-sm text-palop-green hover:underline"
+                data-testid="button-back-to-signin"
+              >
+                Voltar ao início de sessão
+              </button>
+            </CardContent>
+          </Card>
+        ) : magicSent ? (
           <Card>
             <CardContent className="pt-8 pb-8 text-center">
               <CheckCircle className="mx-auto mb-4 text-palop-green" size={48} />
@@ -186,7 +228,50 @@ const AuthForm = ({ defaultTab = 'magic', expiredLink = false }: AuthFormProps) 
                 </form>
               )}
 
-              {tab === 'password' && (
+              {tab === 'password' && passwordMode === 'forgot' && (
+                <form onSubmit={handleForgotPassword} className="space-y-4">
+                  <p className="text-sm text-gray-600">
+                    Introduz o teu email e enviamos-te um link para escolheres
+                    uma nova palavra-passe.
+                  </p>
+                  <div>
+                    <label htmlFor="forgot-email" className="block text-sm font-medium text-gray-700 mb-1">
+                      Email
+                    </label>
+                    <Input
+                      id="forgot-email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="o.teu@email.com"
+                      required
+                      disabled={loading}
+                      data-testid="input-forgot-email"
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full bg-palop-green hover:bg-palop-green/90"
+                    disabled={loading}
+                    data-testid="button-send-reset-link"
+                  >
+                    {loading ? 'A enviar...' : 'Enviar link de recuperação'}
+                  </Button>
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => !loading && setPasswordMode('signin')}
+                      className="text-sm text-palop-green hover:underline disabled:opacity-50"
+                      disabled={loading}
+                      data-testid="button-cancel-forgot"
+                    >
+                      Voltar ao início de sessão
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {tab === 'password' && passwordMode !== 'forgot' && (
                 <form onSubmit={handlePassword} className="space-y-4">
                   {passwordMode === 'signup' && (
                     <div>
@@ -244,7 +329,18 @@ const AuthForm = ({ defaultTab = 'magic', expiredLink = false }: AuthFormProps) 
                   >
                     {loading ? 'A processar...' : passwordMode === 'signin' ? 'Entrar' : 'Criar conta'}
                   </Button>
-                  <div className="text-center">
+                  <div className="text-center space-y-2">
+                    {passwordMode === 'signin' && (
+                      <button
+                        type="button"
+                        onClick={() => !loading && setPasswordMode('forgot')}
+                        className="block w-full text-sm text-gray-500 hover:text-palop-green hover:underline disabled:opacity-50"
+                        disabled={loading}
+                        data-testid="button-forgot-password"
+                      >
+                        Esqueceste a palavra-passe?
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => {

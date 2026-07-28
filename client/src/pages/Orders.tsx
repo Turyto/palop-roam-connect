@@ -7,7 +7,7 @@ import { useLanguage } from "@/contexts/language";
 import { useOrders } from "@/hooks/useOrders";
 import { useCustomerQRCodes } from "@/hooks/useCustomerQRCodes";
 import { deriveActivationState } from "@/components/order-history/OrderActivationStateBlock";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import type { Order } from "@/hooks/orders/types";
 
@@ -185,6 +185,15 @@ const Orders = () => {
             <h2 className="text-lg font-semibold text-gray-800 mb-4">
               {o.historyTitle}
             </h2>
+            <p className="text-sm text-gray-500 -mt-2 mb-4">
+              <Link
+                to="/auth/reset-password"
+                className="text-palop-green hover:underline"
+                data-testid="link-change-password"
+              >
+                {o.changePassword}
+              </Link>
+            </p>
             <OrderHistory
               orders={orders}
               qrCodes={qrCodes}
