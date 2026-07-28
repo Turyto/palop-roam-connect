@@ -1,0 +1,76 @@
+kfeature implementation brief · MD
+Implementation Brief — Afrolink Credibility Block
+
+For: Replit developer Component: AfrolinkFeature.jsx (provided separately) Site: palopconnect.com (React / Vite SPA) Priority: High — social proof asset for an active press/campaign push Estimated effort: 1–2 hours
+
+1. Objective
+
+Add a reusable "as featured by Afrolink" credibility block to the site, linking to a published article about PalopConnect. It must appear in two places, in two visual variants, driven by a single component. The goal is to lift trust and conversion across all site traffic — not just campaign traffic.
+
+The component file AfrolinkFeature.jsx is complete and self-contained. Do not rewrite it. Integrate it as-is and place two instances as specified below.
+
+2. What you're given
+
+A single React component, AfrolinkFeature.jsx:
+
+No external dependencies (no icon library, no CSS framework needed — styles and SVG icons are inline)
+Inherits the site's font (font-family: inherit)
+Two variants via one prop: variant="full" (default) and variant="compact"
+Responsive down to mobile, with visible keyboard focus states
+Links open the article in a new tab with rel="noopener noreferrer"
+3. Integration steps
+Place AfrolinkFeature.jsx in the project's components directory (e.g. src/components/AfrolinkFeature.jsx — match the existing convention).
+Homepage — full variant. Import and render directly below the hero section, above the featured plans ("Planos em destaque"). This is the first trust signal a visitor sees.
+jsx
+   import AfrolinkFeature from "./components/AfrolinkFeature";
+
+   // in the homepage layout, immediately after the hero block:
+   <AfrolinkFeature />
+Plans page (/plans) — compact variant. Render the compact version near the top of the plans list, just above or between the country plan groups, so it sits close to the "Escolher plano" buttons where the purchase decision happens.
+jsx
+   <AfrolinkFeature variant="compact" />
+Respect existing section spacing. The component has its own internal padding but no outer margin — wrap it in the same spacing container the surrounding sections use (or add a top/bottom margin consistent with adjacent blocks) so it doesn't sit flush against neighbouring content.
+4. Copy — do not alter
+
+The user-facing text is European Portuguese (PT-PT) and has been reviewed. Do not translate, paraphrase, autocorrect, or "fix" it. In particular, keep the accented characters and the PT-PT spelling (e.g. "projecto", "nós") exactly as written in the component. If any build tool or linter tries to normalise the text, disable that for this file.
+
+The two links both point to: https://www.afrolink.pt/historias/palop-connect-a-proposta-que-liga-a-europa-e-os-palop
+
+Do not change this URL.
+
+5. Constraints
+No new dependencies. The component is intentionally dependency-free. Do not add an icon library or CSS framework for it.
+No browser storage. The component uses none; don't add any.
+Brand colours are fixed inline (PALOP Green 
+#2DB84B, deep green 
+#085041, pale 
+#E1F5EE). Keep them — they match the eSIM delivery packs customers already receive.
+Class names are namespaced (pc-afrolink*) to avoid clashing with existing styles. Don't rename them.
+If the site later adopts a shared design-token system, this can be refactored — but for now, ship it as-is.
+6. Acceptance criteria
+
+The task is done when all of the following are true:
+
+ Full variant renders on the homepage, directly below the hero, above the plans section
+ Compact variant renders on /plans, near the plan cards
+ Both links open the Afrolink article in a new tab and work on click
+ PT-PT copy is intact, correctly accented, and unmodified
+ Layout is responsive: on mobile (~360px wide) both variants reflow cleanly with no overflow, and the CTA remains tappable
+ Keyboard focus is visible on both links (tab to them — a green outline should appear)
+ Spacing above and below matches the rhythm of adjacent sections (no flush edges)
+ No console errors introduced; existing pages unaffected
+7. Separate but related — please also flag/fix
+
+While in the codebase, there is one unrelated but urgent issue worth fixing in the same session, because it affects every social share of the site:
+
+The site meta description currently lists São Tomé e Príncipe as an available destination, but there is no STP plan on sale. This appears in Google results and in the preview card whenever anyone shares a PalopConnect link (WhatsApp, Facebook, LinkedIn). It should be corrected to list only the corridors actually on sale (Angola, Cabo Verde, Guiné-Bissau, Moçambique — plus Portugal/Europa), or updated when STP launches.
+
+This is a small change (meta tags in the HTML head / index template) but high impact during the current campaign. Treat it as a quick, separate task from the component work above — confirm with the product owner before removing STP, in case a launch is imminent.
+
+8. Questions before you start
+
+If any of these are unclear, ask before building rather than assuming:
+
+Where does the homepage hero component live, and what's the cleanest insertion point directly after it?
+Does the site use a shared section-spacing wrapper, or per-section margins?
+Is there a linter/formatter that might rewrite the PT-PT strings on save?
