@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/auth";
 import HomeHeader from "@/components/home/HomeHeader";
 import AnnouncementBar from "@/components/home/AnnouncementBar";
 import HeroSection from "@/components/home/HeroSection";
+import AfrolinkFeature from "@/components/AfrolinkFeature";
 import AudienceSection from "@/components/home/AudienceSection";
 import HowItWorksSection from "@/components/home/HowItWorksSection";
 import BenefitsSection from "@/components/home/BenefitsSection";
@@ -47,6 +48,7 @@ const Index = () => {
       <HomeHeader />
       <main className="flex-grow">
         <HeroSection />
+        <AfrolinkFeature />
         <AudienceSection />
         <HowItWorksSection />
         <BenefitsSection />

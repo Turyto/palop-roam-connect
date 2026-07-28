@@ -11,6 +11,7 @@ import HelpChoosingSection from '@/components/plans/HelpChoosingSection';
 import UtilityLinksSection from '@/components/plans/UtilityLinksSection';
 import FinalPlansCTASection from '@/components/plans/FinalPlansCTASection';
 import { CoverageTab } from '@/content/plansPageContent';
+import AfrolinkFeature from '@/components/AfrolinkFeature';
 
 const Plans = () => {
   const [selectedTab, setSelectedTab] = useState<CoverageTab>('europe');
@@ -26,6 +27,7 @@ const Plans = () => {
       <main className="flex-grow">
         <PlansHeroSection />
         <CoverageSelectorSection selectedTab={selectedTab} onTabChange={setSelectedTab} />
+        <AfrolinkFeature variant="compact" />
         <FeaturedPlansSection selectedTab={selectedTab} />
         <ReassuranceStripSection />
         <SimpleComparisonSection />
