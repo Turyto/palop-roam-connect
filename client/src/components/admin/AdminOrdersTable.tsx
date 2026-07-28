@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, RefreshCw, Eye, CheckCircle, RotateCw, Download, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useOrderManagement } from "@/hooks/useOrderManagement";
+import { isFailedDelivery } from "@/hooks/useDeliveryProblems";
 import OrderDetailsModal from "./orders/OrderDetailsModal";
 
 interface Order {
@@ -41,11 +42,8 @@ interface Order {
 }
 
 // A paid order whose eSIM provisioning failed — needs manual intervention.
-const needsAttention = (order: Order) =>
-  order.esim_status === 'failed' &&
-  order.payment_status === 'succeeded' &&
-  order.status !== 'completed' &&
-  order.status !== 'cancelled';
+// Definition shared with the KPI card and global alert bar.
+const needsAttention = (order: Order) => isFailedDelivery(order);
 
 const AdminOrdersTable = () => {
   const [searchTerm, setSearchTerm] = useState("");

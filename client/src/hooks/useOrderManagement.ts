@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { DELIVERY_PROBLEMS_QUERY_KEY } from '@/hooks/useDeliveryProblems';
 
 export const useOrderManagement = () => {
   const { toast } = useToast();
@@ -26,6 +27,7 @@ export const useOrderManagement = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      queryClient.invalidateQueries({ queryKey: DELIVERY_PROBLEMS_QUERY_KEY });
       toast({
         title: 'Status Reset',
         description: 'Order provisioning status has been reset to pending.',
@@ -70,6 +72,7 @@ export const useOrderManagement = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      queryClient.invalidateQueries({ queryKey: DELIVERY_PROBLEMS_QUERY_KEY });
       toast({
         title: 'Order Completed',
         description: 'Order has been marked as completed.',

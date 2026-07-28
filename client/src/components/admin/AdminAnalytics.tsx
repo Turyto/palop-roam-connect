@@ -2,7 +2,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, Users, Package, Euro, Smartphone, BarChart3 } from "lucide-react";
+import { TrendingUp, TrendingDown, Users, Package, Euro, Smartphone, BarChart3, AlertTriangle, CheckCircle } from "lucide-react";
+import { useDeliveryProblems } from "@/hooks/useDeliveryProblems";
 
 interface AnalyticsData {
   totalRevenue: number;
@@ -29,7 +30,7 @@ const AdminAnalytics = () => {
       try {
         const { data: ordersData, error: ordersError } = await supabase
           .from('orders')
-          .select('id, price, status, created_at, esim_delivered_at, esim_status, esim_order_id');
+          .select('id, price, status, payment_status, created_at, esim_delivered_at, esim_status, esim_order_id');
 
         if (ordersError) throw ordersError;
 
@@ -54,8 +55,20 @@ const AdminAnalytics = () => {
           })
           .reduce((sum, o) => sum + Number(o.price), 0);
 
-        const pendingEsims = completedOrders.filter(o =>
-          o.esim_status !== 'delivered' && !o.esim_delivered_at
+        // Paid orders whose eSIM is still being provisioned (in flight).
+        // Delivered = esim_status 'provisioned'/'delivered' or a delivery timestamp.
+        // Failed provisioning is NOT pending — it's counted by the red
+        // "Failed deliveries" card (shared useDeliveryProblems definition).
+        const pendingEsims = (ordersData ?? []).filter(o =>
+          (o as any).payment_status === 'succeeded' &&
+          o.status !== 'cancelled' &&
+          o.esim_status !== 'failed' &&
+          o.esim_status !== 'provisioned' &&
+          o.esim_status !== 'delivered' &&
+          !o.esim_delivered_at &&
+          // Legacy rows: a supplier order id means the eSIM was provisioned
+          // even if esim_status was never updated.
+          !o.esim_order_id
         ).length;
 
         setAnalytics({
@@ -140,8 +153,8 @@ const AdminAnalytics = () => {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {Array.from({ length: 6 }).map((_, i) => (
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+        {Array.from({ length: 7 }).map((_, i) => (
           <Card key={i}>
             <CardContent className="p-5">
               <div className="animate-pulse">
@@ -157,7 +170,7 @@ const AdminAnalytics = () => {
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
       {/* Total Revenue */}
       <Card>
         <CardContent className="p-5">
@@ -224,6 +237,9 @@ const AdminAnalytics = () => {
         </CardContent>
       </Card>
 
+      {/* Failed deliveries — shared definition with global alert bar */}
+      <FailedDeliveriesCard />
+
       {/* Pending eSIMs */}
       <Card>
         <CardContent className="p-5">
@@ -234,13 +250,42 @@ const AdminAnalytics = () => {
             </div>
           </div>
           <p className="text-2xl font-bold text-gray-900">{analytics.pendingEsims}</p>
-          <p className="text-xs text-gray-400 mt-1">Completed, not delivered</p>
+          <p className="text-xs text-gray-400 mt-1">Paid, provisioning in progress</p>
         </CardContent>
       </Card>
 
       {/* Total Users — separate fetch */}
       <TotalUsersCard />
     </div>
+  );
+};
+
+const FailedDeliveriesCard = () => {
+  const { data, isLoading } = useDeliveryProblems();
+  const count = data?.totalProblems ?? 0;
+  const hasProblems = count > 0;
+
+  return (
+    <Card className={hasProblems ? "border-red-300" : undefined} data-testid="card-failed-deliveries">
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between mb-2">
+          <p className={`text-xs font-medium ${hasProblems ? "text-red-600" : "text-gray-500"}`}>
+            Failed Deliveries
+          </p>
+          <div className={`p-1.5 rounded-full ${hasProblems ? "bg-red-50" : "bg-green-50"}`}>
+            {hasProblems
+              ? <AlertTriangle className="h-4 w-4 text-red-600" />
+              : <CheckCircle className="h-4 w-4 text-green-600" />}
+          </div>
+        </div>
+        <p className={`text-2xl font-bold ${hasProblems ? "text-red-600" : "text-green-600"}`}>
+          {isLoading ? "—" : count}
+        </p>
+        <p className="text-xs text-gray-400 mt-1">
+          {hasProblems ? "Paid, not delivered — act now" : "All paid orders delivered"}
+        </p>
+      </CardContent>
+    </Card>
   );
 };
 

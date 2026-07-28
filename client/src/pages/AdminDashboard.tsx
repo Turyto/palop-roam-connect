@@ -8,6 +8,7 @@ import AdminAnalytics from "@/components/admin/AdminAnalytics";
 import AdminSupportTickets from "@/components/admin/AdminSupportTickets";
 import AdminInventory from "@/components/admin/AdminInventory";
 import AdminLanguageToggle from "@/components/admin/AdminLanguageToggle";
+import AdminAlertBar from "@/components/admin/AdminAlertBar";
 import AdminReferrals from "@/components/admin/AdminReferrals";
 import AdminCommissions from "@/components/admin/AdminCommissions";
 import AdminConsignment from "@/components/admin/AdminConsignment";
@@ -19,9 +20,10 @@ import { Shield, AlertTriangle, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const AdminDashboard = () => {
-  const { user, userRole, loading, signOut } = useAuth();
+  const { user, userRole, roleError, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("orders");
 
   const handleSignOut = async () => {
     console.log('AdminDashboard: Starting sign out process');
@@ -55,25 +57,19 @@ const AdminDashboard = () => {
     }, 100);
   };
 
+  // Unauthenticated visitors go to sign-in. This is the ONLY automatic
+  // redirect — signed-in non-admins see an explicit Access Denied card
+  // below instead of being silently bounced.
   useEffect(() => {
-    console.log('AdminDashboard - user:', user?.id, 'role:', userRole, 'loading:', loading);
-    
-    if (!loading) {
-      if (!user) {
-        console.log('No user, redirecting to auth');
-        navigate('/auth', { replace: true });
-        return;
-      }
-
-      if (userRole && userRole !== 'admin') {
-        console.log('User is not admin, redirecting to home');
-        navigate('/', { replace: true });
-        return;
-      }
+    if (!loading && !user) {
+      navigate('/auth', { replace: true });
     }
-  }, [user, userRole, loading, navigate]);
+  }, [user, loading, navigate]);
 
-  if (loading) {
+  // Auth session still resolving, or the role lookup for a signed-in user
+  // hasn't finished yet (userRole is null until fetched) — show a spinner
+  // instead of flashing Access Denied.
+  if (loading || (user && userRole === null && !roleError)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-lg">Loading...</div>
@@ -99,10 +95,15 @@ const AdminDashboard = () => {
               Access Denied
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <p className="text-gray-600">
-              You don't have permission to access the admin dashboard.
+              {roleError
+                ? "We couldn't verify your account permissions. Please try again."
+                : "You don't have permission to access the admin dashboard."}
             </p>
+            <Button variant="outline" onClick={() => navigate('/', { replace: true })}>
+              Go to homepage
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -142,7 +143,9 @@ const AdminDashboard = () => {
             <AdminAnalytics />
           </div>
 
-          <Tabs defaultValue="orders" className="space-y-6">
+          <AdminAlertBar onViewOrders={() => setActiveTab("orders")} />
+
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="orders">Orders</TabsTrigger>
               <TabsTrigger value="users">Users</TabsTrigger>
