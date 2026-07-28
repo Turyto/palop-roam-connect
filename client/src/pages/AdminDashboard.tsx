@@ -16,7 +16,9 @@ import PartnerMonthlySummary from "@/components/admin/PartnerMonthlySummary";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Shield, AlertTriangle, LogOut } from "lucide-react";
+import { Shield, AlertTriangle, LogOut, Package, BookOpen, Share2, Euro, Boxes, Users, LifeBuoy } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { useDeliveryProblems } from "@/hooks/useDeliveryProblems";
 import { useToast } from "@/hooks/use-toast";
 
 const AdminDashboard = () => {
@@ -146,14 +148,39 @@ const AdminDashboard = () => {
           <AdminAlertBar onViewOrders={() => setActiveTab("orders")} />
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            {/* Ordered by routine frequency: daily (Orders, Catalog),
+                partner group (Referrals, Commissions, Consignment),
+                occasional (Users, Support). */}
             <TabsList className="grid w-full grid-cols-7">
-              <TabsTrigger value="orders">Orders</TabsTrigger>
-              <TabsTrigger value="users">Users</TabsTrigger>
-              <TabsTrigger value="support">Support</TabsTrigger>
-              <TabsTrigger value="catalog">Catalog</TabsTrigger>
-              <TabsTrigger value="referrals">Referrals</TabsTrigger>
-              <TabsTrigger value="commissions">Commissions</TabsTrigger>
-              <TabsTrigger value="consignment" data-testid="tab-consignment">Consignment</TabsTrigger>
+              <TabsTrigger value="orders" className="flex items-center gap-1.5" data-testid="tab-orders">
+                <Package className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Orders</span>
+                <OrdersAttentionBadge />
+              </TabsTrigger>
+              <TabsTrigger value="catalog" className="flex items-center gap-1.5" data-testid="tab-catalog">
+                <BookOpen className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Catalog</span>
+              </TabsTrigger>
+              <TabsTrigger value="referrals" className="flex items-center gap-1.5" data-testid="tab-referrals">
+                <Share2 className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Referrals</span>
+              </TabsTrigger>
+              <TabsTrigger value="commissions" className="flex items-center gap-1.5" data-testid="tab-commissions">
+                <Euro className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Commissions</span>
+              </TabsTrigger>
+              <TabsTrigger value="consignment" className="flex items-center gap-1.5" data-testid="tab-consignment">
+                <Boxes className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Consignment</span>
+              </TabsTrigger>
+              <TabsTrigger value="users" className="flex items-center gap-1.5" data-testid="tab-users">
+                <Users className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Users</span>
+              </TabsTrigger>
+              <TabsTrigger value="support" className="flex items-center gap-1.5" data-testid="tab-support">
+                <LifeBuoy className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Support</span>
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="orders">
@@ -191,6 +218,22 @@ const AdminDashboard = () => {
       </main>
       <Footer />
     </div>
+  );
+};
+
+// Red count badge on the Orders tab fed by the shared problem metric.
+const OrdersAttentionBadge = () => {
+  const { data } = useDeliveryProblems();
+  const count = data?.totalProblems ?? 0;
+  if (count === 0) return null;
+  return (
+    <Badge
+      variant="destructive"
+      className="h-5 min-w-5 px-1.5 text-[11px] leading-none"
+      data-testid="badge-orders-attention"
+    >
+      {count}
+    </Badge>
   );
 };
 
