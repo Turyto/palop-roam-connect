@@ -73,7 +73,16 @@ const AdminReferrals = () => {
   const [showCreator, setShowCreator] = useState(false);
   const [partnerName, setPartnerName] = useState("");
   const [partnerCode, setPartnerCode] = useState("");
+  const [partnerEmail, setPartnerEmail] = useState("");
   const [codeError, setCodeError] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [inviteResult, setInviteResult] = useState<{
+    code: string;
+    email: string;
+    tempPassword: string | null;
+    existingUser: boolean;
+  } | null>(null);
+  const [copiedPassword, setCopiedPassword] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [expandedCode, setExpandedCode] = useState<string | null>(null);
 
@@ -200,6 +209,64 @@ const AdminReferrals = () => {
     },
   });
 
+  const invitePartnerMutation = useMutation({
+    mutationFn: async ({
+      email,
+      code,
+      label,
+    }: {
+      email: string;
+      code: string;
+      label: string;
+    }) => {
+      const { data, error } = await supabase.functions.invoke("invite-partner", {
+        body: { email, code, partner_name: label },
+      });
+      if (error) {
+        // Surface the function's own error message when available
+        let message = error.message;
+        try {
+          const ctx = await (error as any).context?.json?.();
+          if (ctx?.error) message = ctx.error;
+        } catch { /* keep default */ }
+        throw new Error(message);
+      }
+      if (data?.error) throw new Error(data.error);
+      return data as {
+        code: string;
+        email: string;
+        temp_password: string | null;
+        existing_user: boolean;
+      };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-referral-codes"] });
+      setInviteResult({
+        code: data.code,
+        email: data.email,
+        tempPassword: data.temp_password,
+        existingUser: data.existing_user,
+      });
+      toast({
+        title: "Partner onboarded",
+        description: data.existing_user
+          ? `${data.email} was promoted to partner and linked to ${data.code}.`
+          : `Account created for ${data.email} and linked to ${data.code}.`,
+      });
+      setPartnerName("");
+      setPartnerCode("");
+      setPartnerEmail("");
+      setShowCreator(false);
+    },
+    onError: (e: any) => {
+      toast({
+        title: "Failed to onboard partner",
+        description: e.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const toggleActiveMutation = useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
       const { error } = await supabase
@@ -236,7 +303,23 @@ const AdminReferrals = () => {
       setCodeError("Code must be at least 3 characters.");
       return;
     }
-    createCodeMutation.mutate({ code: partnerCode, label: partnerName });
+    const email = partnerEmail.trim().toLowerCase();
+    if (email) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        setEmailError("Enter a valid email address.");
+        return;
+      }
+      setEmailError("");
+      invitePartnerMutation.mutate({ email, code: partnerCode, label: partnerName });
+    } else {
+      createCodeMutation.mutate({ code: partnerCode, label: partnerName });
+    }
+  };
+
+  const copyPassword = (password: string) => {
+    navigator.clipboard.writeText(password);
+    setCopiedPassword(true);
+    setTimeout(() => setCopiedPassword(false), 2000);
   };
 
   const copyLink = (code: string) => {
@@ -386,6 +469,28 @@ const AdminReferrals = () => {
                   )}
                 </div>
               </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="partner-email">
+                  Partner Email{" "}
+                  <span className="text-gray-400 font-normal">(optional — creates their account too)</span>
+                </Label>
+                <Input
+                  id="partner-email"
+                  type="email"
+                  placeholder="partner@example.com"
+                  value={partnerEmail}
+                  onChange={(e) => {
+                    setPartnerEmail(e.target.value);
+                    setEmailError("");
+                  }}
+                  data-testid="input-partner-email"
+                />
+                {emailError && <p className="text-xs text-red-600">{emailError}</p>}
+                <p className="text-xs text-gray-500">
+                  With an email, the partner account is created (or an existing one is
+                  promoted) and linked to the code — no manual steps needed.
+                </p>
+              </div>
               {partnerCode && (
                 <p className="text-xs text-gray-500">
                   Partner link:{" "}
@@ -399,16 +504,66 @@ const AdminReferrals = () => {
                 disabled={
                   !partnerName.trim() ||
                   partnerCode.length < 3 ||
-                  createCodeMutation.isPending
+                  createCodeMutation.isPending ||
+                  invitePartnerMutation.isPending
                 }
                 className="bg-palop-green hover:bg-palop-green/90 text-white"
+                data-testid="button-create-partner"
               >
-                {createCodeMutation.isPending ? "Creating…" : "Create Partner Code"}
+                {createCodeMutation.isPending || invitePartnerMutation.isPending
+                  ? "Creating…"
+                  : partnerEmail.trim()
+                    ? "Create Partner & Account"
+                    : "Create Partner Code"}
               </Button>
             </div>
           </CardContent>
         )}
       </Card>
+
+      {/* One-time partner credentials */}
+      {inviteResult && (
+        <Card className="border-palop-green/40 bg-green-50/50">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2 text-palop-green">
+                <Check className="h-4 w-4" />
+                Partner onboarded — {inviteResult.code}
+              </CardTitle>
+              <Button variant="outline" size="sm" onClick={() => setInviteResult(null)} data-testid="button-dismiss-invite">
+                Dismiss
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0 space-y-2 text-sm">
+            <p>
+              Account: <span className="font-mono">{inviteResult.email}</span>
+              {inviteResult.existingUser && " (existing account, promoted to partner)"}
+            </p>
+            {inviteResult.tempPassword ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <span>Temporary password:</span>
+                  <span className="font-mono font-semibold bg-white border rounded px-2 py-1" data-testid="text-temp-password">
+                    {inviteResult.tempPassword}
+                  </span>
+                  <Button variant="ghost" size="sm" onClick={() => copyPassword(inviteResult.tempPassword!)} data-testid="button-copy-password">
+                    {copiedPassword ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500">
+                  Shown only once — share it with the partner over a secure channel
+                  (WhatsApp/phone). They sign in at palopconnect.com with it.
+                </p>
+              </>
+            ) : (
+              <p className="text-xs text-gray-500">
+                They sign in with their existing password and will now see the partner dashboard.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Referral Codes Table */}
       <Card>
