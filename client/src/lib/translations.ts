@@ -687,6 +687,11 @@ const translations = {
       quote: '"Com 30 anos a organizar viagens para a nossa comunidade, sabemos o que os clientes precisam quando chegam ao destino. A PalopConnect resolve o problema dos dados de forma simples e sem surpresas."',
       attribution: '— Marvela Rodrigues, Praiatur · Agência de Viagens & Operador Turístico, Praia, Cabo Verde',
       planLink: 'Planear viagem com Praiatur →',
+      milleniumBadge: 'Parceiro Oficial · Moçambique',
+      milleniumQuote: '"Traveling – it leaves you speechless, then turns you into a storyteller."',
+      milleniumAttribution: 'Millenium Travel · Agência de Viagens & Turismo, Maputo, Moçambique',
+      milleniumLink: 'Viajar com a Millenium Travel →',
+      milleniumFoundedCredential: 'Turismo em Moçambique',
     },
     partner: {
       areaTitle: 'Área de Parceiro',
@@ -1421,6 +1426,11 @@ const translations = {
       quote: '"With 30 years organising travel for our community, we know what clients need when they arrive at their destination. PalopConnect solves the data problem simply and without surprises."',
       attribution: '— Marvela Rodrigues, Praiatur · Travel Agency & Tour Operator, Praia, Cape Verde',
       planLink: 'Plan your trip with Praiatur →',
+      milleniumBadge: 'Official Partner · Mozambique',
+      milleniumQuote: '"Traveling – it leaves you speechless, then turns you into a storyteller."',
+      milleniumAttribution: 'Millenium Travel · Travel & Tourism Agency, Maputo, Mozambique',
+      milleniumLink: 'Travel with Millenium Travel →',
+      milleniumFoundedCredential: 'Tourism in Mozambique',
     },
     partner: {
       areaTitle: 'Partner Area',
