@@ -1,0 +1,98 @@
+# PALOP Connect — Admin Dashboard Punch-List
+
+**For:** Replit lead developer
+**From:** Artur (product/tech review)
+**Date:** 28 Jul 2026
+**Route reviewed (live):** `palopconnect.com/admin/dashboard`
+**Primary user:** Anabela (Commercial & Operations — non-technical). Optimise for her daily/weekly/monthly routine.
+**Method:** Live walkthrough of every tab (read-only, no actions triggered) + code review of `App.tsx`, `Auth.tsx`, `AdminDashboard.tsx`.
+
+**Entry point (confirmed, no change needed):** `Auth.tsx` routes by role on login — `admin → /admin/dashboard`, `partner → /partner/dashboard`, else `→ /orders`. Anabela signs in and lands on the dashboard automatically. **No admin link on the customer-facing site; no `/admin` redirect** — out of scope by decision. The only dependency is that her account has `role = 'admin'` (see P1-1).
+
+---
+
+## P0 — Correctness / must fix
+
+### P0-1 — "Failed delivery" is invisible in the headline metrics
+**Observed live:** The Overview KPI **"Pending eSIMs" shows `0`**, while a red banner directly below reads **"1 paid order with failed eSIM provisioning — manual intervention required."** The one signal that must never be missed (customer paid, received nothing) is not represented in the top-level numbers.
+**Impact:** Anabela's guide tells her to do a "2-min daily glance." At a glance the KPIs say `0` / all-clear while a customer is stranded.
+**Fix:**
+- Add a dedicated **"Failed deliveries"** KPI card that renders red when `> 0` (distinct from "Pending").
+- Surface a **persistent global alert bar** (above the tab strip) that shows the failed-delivery count from any tab, linking to the affected orders.
+**Where:** `AdminAnalytics` (KPI cards) + `AdminDashboard.tsx` (global alert above `<Tabs>`).
+
+### P0-2 — Non-admin access handling is contradictory + has a load race
+**Observed in code (`AdminDashboard.tsx`):** A `useEffect` redirects non-admins to `/`, **and** the render path also returns an "Access Denied" card. The redirect wins, so a non-admin is silently bounced home rather than shown the documented message. Additionally the guards disagree during role load: the effect uses `userRole && userRole !== 'admin'` (skips while role is `null`) but the render uses `userRole !== 'admin'` (treats `null` as non-admin) — brief flash / inconsistent state while the role resolves.
+**Impact:** Confusing/unpredictable for anyone without the role; fragile during slow role loads.
+**Fix:** Pick one behaviour. Recommend: while `loading || userRole == null` show a spinner; if resolved non-admin, show the Access-Denied card (no silent redirect); only redirect unauthenticated users to `/auth`.
+**Where:** `AdminDashboard.tsx` (the `useEffect` + the render guards).
+
+---
+
+## P1 — High-value usability
+
+### P1-1 — Ensure Anabela's account has `role = 'admin'`
+Because entry relies entirely on the role-based redirect in `Auth.tsx`, if her account isn't flagged `admin` she'll silently land on the customer `/orders` view with no way in.
+**Action:** Verify/set `role = 'admin'` on Anabela's account before handover, and confirm her first sign-in lands on `/admin/dashboard`.
+
+### P1-2 — Reorder tabs by how often she uses them (and match the guide)
+**Observed live order:** Orders, Users, Support, Catalog, Referrals, Commissions, Consignment. Users & Support (rarely touched) sit ahead of the money tabs.
+**Fix:** Reorder to daily → weekly → monthly: **Orders, Catalog, Referrals, Commissions, Consignment, Users, Support.** Update the guide to match.
+**Where:** `AdminDashboard.tsx` (`TabsList` / `TabsContent` order).
+
+### P1-3 — Promote "Needs Attention" to a persistent, global alert
+Today the failed-order banner only appears inside the Orders tab. It shows on load (Orders is default), but disappears once she navigates elsewhere.
+**Fix:** Render it above the tab strip so it's visible from every tab (ties into P0-1).
+**Where:** `AdminDashboard.tsx`.
+
+### P1-4 — Add a count badge + icons to the tabs
+**Fix:** Show a red count badge on **Orders** for failed deliveries (e.g. "Orders ⚠️1") and add small icons per tab for scannability. Consider visually grouping the partner tabs (Referrals / Commissions / Consignment).
+**Where:** `AdminDashboard.tsx` (`TabsTrigger`).
+
+---
+
+## P2 — Polish / productivity
+
+### P2-1 — The KPI band changes meaning per tab, in the same position
+Catalog shows catalog KPIs, Referrals shows referral KPIs, Orders/Commissions show the global six — same screen region, different numbers, no strong signal that the context changed.
+**Fix:** Keep a **fixed global header** (revenue / orders / failed deliveries) always visible; move tab-specific KPIs inside each tab's content area.
+
+### P2-2 — Supplier rates are stale vs the weekly cadence
+Catalog shows **"Last Updated 21/06/2026"** (~5 weeks old); the guide prescribes weekly "Fetch Live Prices." Also visible: **12 inactive plans** (23 of 35 active) and **3 low-margin alerts** (<20%).
+**Fix:** Add a "rates stale > N days" nudge on the Catalog tab (and optionally the global bar) so the weekly step isn't forgotten.
+
+### P2-3 — Commissions: reduce clicks on the monthly routine
+The Monthly Partner Summary requires Partner + Month + Year + Generate every time.
+**Fix:** Default to the **current month** and **all partners** so she lands directly on "what's owed this month," then filters only if needed.
+**Where:** `PartnerMonthlySummary`.
+
+### P2-4 — Language: default admin to PT and confirm translations
+The admin toggle defaults to **EN**, and several admin strings look hard-coded English ("Dynamic Catalog Management," "Orders Management," "Access Denied," "Admin Dashboard"). Anabela is PT-first.
+**Fix:** Default the admin UI to **PT** and confirm all admin components are translated (not English-only behind the toggle).
+**Where:** admin components + `AdminLanguageToggle`.
+
+---
+
+## Guide corrections (the written user guide)
+- **URL:** Remove "Where: palopconnect.com/admin" (that path 404s and isn't her route). Replace with: *"Sign in with your admin account on the normal sign-in page — you'll be taken straight to the dashboard."*
+- **Tab order:** Update to match the reordered tabs (P1-2).
+- **"Overview":** It's a persistent metrics band at the top, not a separate home screen/tab — reword so the mental model matches.
+- **Delivery:** Consider folding the guide into an in-app Help panel so it can't drift out of sync with the UI (the URL error already shows this risk).
+
+---
+
+## Not verified — needs a hands-on pass
+I triggered no actions (read-only), so these still need testing with a real (ideally test) order:
+- "Retry Provisioning" actually fixing a failed eSIM in one click.
+- Per-tab loading / empty / error states.
+- Export CSV output.
+- Responsive / mobile layout (reviewed at desktop width only).
+- Security & clarity of the partner "temporary password" creation flow.
+
+---
+
+### Suggested sequence
+1. P0-1 (failed-delivery KPI + global alert) and P0-2 (access-control) — correctness.
+2. P1-1 (Anabela's role) before handover.
+3. P1-2 → P1-4 (tab order, global alert, badges) — biggest daily-usability wins.
+4. P2 items + guide corrections as polish.
