@@ -1,206 +1,105 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/auth';
-import { useToast } from '@/hooks/use-toast';
 
 export interface TopUpOption {
   id: string;
   type: 'data' | 'validity' | 'both';
   name: string;
-  description: string;
-  data_amount?: string;
-  validity_days?: number;
+  data_amount?: string | null;
+  validity_days?: number | null;
   price: number;
   currency: string;
-  is_active: boolean;
   sort_order: number;
+}
+
+export interface TopUpOptionsResponse {
+  supported: boolean;
+  reason: string | null;
+  options: TopUpOption[];
 }
 
 export interface TopUpOrder {
   id: string;
   parent_order_id: string;
-  user_id: string;
-  topup_type: 'data' | 'validity' | 'both';
-  data_amount?: string;
-  validity_days?: number;
-  price: number;
-  currency: string;
-  status: 'pending' | 'completed' | 'failed' | 'cancelled';
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
   payment_status: 'pending' | 'succeeded' | 'failed' | 'cancelled';
-  created_at: string;
-  completed_at?: string;
-  applied_at?: string;
+  failure_reason?: string | null;
+  completed_at?: string | null;
 }
 
-export const useTopUpOrders = () => {
+// Options are resolved SERVER-SIDE for a specific parent order: the edge
+// function checks ownership, supplier support, and region match. The client
+// never decides what can be bought or at what price.
+export const useTopUpOptions = (parentOrderId: string | null, enabled: boolean) => {
+  return useQuery<TopUpOptionsResponse>({
+    queryKey: ['topup-options', parentOrderId],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('get-topup-options', {
+        body: { parent_order_id: parentOrderId },
+      });
+      if (error) throw error;
+      return data as TopUpOptionsResponse;
+    },
+    enabled: enabled && !!parentOrderId,
+    staleTime: 60_000,
+  });
+};
+
+export interface TopUpIntent {
+  clientSecret: string;
+  paymentIntentId: string;
+  topUpOrderId: string;
+  amount: number;
+  currency: string;
+}
+
+export const useCreateTopUpIntent = () => {
+  return useMutation<TopUpIntent, Error, { parentOrderId: string; optionId: string }>({
+    mutationFn: async ({ parentOrderId, optionId }) => {
+      const { data, error } = await supabase.functions.invoke('create-topup-payment-intent', {
+        body: { parent_order_id: parentOrderId, topup_option_id: optionId },
+      });
+      if (error) {
+        // Surface the server's message when available
+        const ctx = (error as any)?.context;
+        let msg = error.message;
+        try {
+          const body = await ctx?.json?.();
+          if (body?.error) msg = body.error;
+        } catch { /* keep default */ }
+        throw new Error(msg);
+      }
+      if (!data?.clientSecret) throw new Error('Could not start the top-up payment.');
+      return data as TopUpIntent;
+    },
+  });
+};
+
+// After payment, the Stripe webhook applies the top-up. Poll the row until it
+// reaches a terminal state so the customer sees the REAL outcome, never a
+// simulated one.
+export const useTopUpOrderStatus = (topUpOrderId: string | null) => {
   const { user } = useAuth();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
-
-  // Fetch available top-up options
-  const { data: topUpOptions = [], isLoading: optionsLoading } = useQuery({
-    queryKey: ['topup-options'],
+  return useQuery<TopUpOrder | null>({
+    queryKey: ['topup-order-status', topUpOrderId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('topup_options')
-        .select('*')
-        .eq('is_active', true)
-        .order('sort_order');
-
-      if (error) {
-        console.error('Error fetching top-up options:', error);
-        throw error;
-      }
-
-      return data as TopUpOption[];
-    },
-  });
-
-  // Fetch user's top-up orders
-  const { data: topUpOrders = [], isLoading: ordersLoading } = useQuery({
-    queryKey: ['topup-orders', user?.id],
-    queryFn: async () => {
-      if (!user) throw new Error('User not authenticated');
-
-      const { data, error } = await supabase
         .from('topup_orders')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching top-up orders:', error);
-        throw error;
+        .select('id, parent_order_id, status, payment_status, failure_reason, completed_at')
+        .eq('id', topUpOrderId!)
+        .maybeSingle();
+      if (error) throw error;
+      if (data && (data.status === 'completed' || data.status === 'failed')) {
+        queryClient.invalidateQueries({ queryKey: ['topup-orders'] });
       }
-
-      return data as TopUpOrder[];
+      return data as TopUpOrder | null;
     },
-    enabled: !!user,
+    enabled: !!topUpOrderId && !!user,
+    refetchInterval: (query) => {
+      const s = query.state.data?.status;
+      return s === 'completed' || s === 'failed' || s === 'cancelled' ? false : 3000;
+    },
   });
-
-  // Create top-up order mutation
-  const createTopUpOrderMutation = useMutation({
-    mutationFn: async ({
-      parentOrderId,
-      optionId
-    }: {
-      parentOrderId: string;
-      optionId: string;
-    }) => {
-      if (!user) throw new Error('User not authenticated');
-
-      // Get the selected option
-      const option = topUpOptions.find(opt => opt.id === optionId);
-      if (!option) throw new Error('Top-up option not found');
-
-      const topUpData = {
-        parent_order_id: parentOrderId,
-        user_id: user.id,
-        topup_type: option.type,
-        data_amount: option.data_amount,
-        validity_days: option.validity_days,
-        price: option.price,
-        currency: option.currency,
-      };
-
-      const { data, error } = await supabase
-        .from('topup_orders')
-        .insert(topUpData)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error creating top-up order:', error);
-        throw error;
-      }
-
-      return data;
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['topup-orders'] });
-      toast({
-        title: "Top-Up Order Created!",
-        description: `Your ${data.topup_type} top-up has been ordered. Processing payment...`,
-      });
-
-      // Simulate payment processing (in real implementation, integrate with payment provider)
-      setTimeout(() => {
-        updateTopUpOrderMutation.mutate({
-          topUpOrderId: data.id,
-          status: 'completed',
-          paymentStatus: 'succeeded'
-        });
-      }, 2000);
-    },
-    onError: (error: any) => {
-      console.error('Top-up order creation failed:', error);
-      toast({
-        title: "Top-Up Order Failed",
-        description: error.message || "Failed to create top-up order",
-        variant: "destructive",
-      });
-    }
-  });
-
-  // Update top-up order mutation
-  const updateTopUpOrderMutation = useMutation({
-    mutationFn: async ({
-      topUpOrderId,
-      status,
-      paymentStatus
-    }: {
-      topUpOrderId: string;
-      status?: string;
-      paymentStatus?: string;
-    }) => {
-      const updateData: any = {};
-      
-      if (status) updateData.status = status;
-      if (paymentStatus) updateData.payment_status = paymentStatus;
-      
-      if (status === 'completed') {
-        updateData.completed_at = new Date().toISOString();
-        updateData.applied_at = new Date().toISOString();
-      }
-
-      const { data, error } = await supabase
-        .from('topup_orders')
-        .update(updateData)
-        .eq('id', topUpOrderId)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error updating top-up order:', error);
-        throw error;
-      }
-
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['topup-orders'] });
-      toast({
-        title: "Top-Up Applied Successfully!",
-        description: "Your eSIM has been recharged and is ready to use.",
-      });
-    },
-    onError: (error: any) => {
-      console.error('Top-up order update failed:', error);
-      toast({
-        title: "Top-Up Update Failed",
-        description: error.message || "Failed to update top-up order",
-        variant: "destructive",
-      });
-    }
-  });
-
-  return {
-    topUpOptions,
-    topUpOrders,
-    optionsLoading,
-    ordersLoading,
-    createTopUpOrder: createTopUpOrderMutation.mutate,
-    isCreatingTopUp: createTopUpOrderMutation.isPending,
-  };
 };

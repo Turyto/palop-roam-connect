@@ -8,4 +8,5 @@
 - [Edge function authorization](edge-function-authz.md) — verify_jwt is not authorization; client-invokable fns must re-derive data server-side and gate on DB state.
 - [pdf-lib WinAnsi](pdf-lib-winansi.md) — standard fonts throw on non-WinAnsi chars (≈, →, smart quotes); sanitize dynamic text or PDFs silently fail.
 - [Referral trigger constraint landmine](referral-trigger-landmine.md) — live trigger bodies diverge from repo migrations; an AFTER-trigger constraint violation aborts order completion; partner vs customer code split.
+- [eSIM Access top-ups](esim-topups.md) — /esim/topup dedupes on transactionId (=PI id); anchor region to the order's purchased package code, never latest catalog row by plan_id.
 - [RLS admin visibility](rls-admin-visibility.md) — owner-only RLS silently hides rows from admin tools after ownership reassignment; add an admin policy first.

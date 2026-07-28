@@ -2,6 +2,7 @@ import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { provisionOrder } from '../_shared/esim-provision.ts'
 import { provisionESIMCardOrder } from '../_shared/esimcard-provision.ts'
+import { topUpESIM } from '../_shared/esim-topup.ts'
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
   apiVersion: '2024-04-10',
@@ -212,6 +213,13 @@ async function handlePaymentSucceeded(
 ): Promise<void> {
   console.log(`[stripe-webhook] handlePaymentSucceeded — paymentIntentId=${paymentIntent.id} amount=${paymentIntent.amount} currency=${paymentIntent.currency}`)
 
+  // Top-up payments live in topup_orders, not orders — route them separately
+  // so the plan-order path below is never disturbed.
+  if (paymentIntent.metadata?.kind === 'topup') {
+    await handleTopUpSucceeded(paymentIntent, supabase)
+    return
+  }
+
   const { data: order, error: fetchError } = await supabase
     .from('orders')
     .select('id, status, payment_status, esim_status, esim_package_id, customer_email, user_id, plan_id, plan_name, data_amount')
@@ -410,6 +418,177 @@ async function handlePaymentSucceeded(
   }
 }
 
+// ---------------------------------------------------------------------------
+// TOP-UP FULFILMENT — mirrors the plan-order guarantees:
+//  * row committed before charge (create-topup-payment-intent)
+//  * atomic claim so a Stripe retry can never buy twice
+//  * supplier transactionId = PaymentIntent id (supplier-side idempotency)
+//  * honest failure state + admin alert, never a fake success
+// ---------------------------------------------------------------------------
+async function handleTopUpSucceeded(
+  paymentIntent: Stripe.PaymentIntent,
+  supabase: ReturnType<typeof createClient>,
+): Promise<void> {
+  const { data: topUp, error: fetchError } = await supabase
+    .from('topup_orders')
+    .select('id, parent_order_id, user_id, status, payment_status, supplier_package_code, iccid, supplier_order_no')
+    .eq('payment_intent_id', paymentIntent.id)
+    .single()
+
+  if (fetchError || !topUp) {
+    // ACK (200) — retrying cannot conjure the row. Alert an admin instead.
+    console.error(`[stripe-webhook] TOPUP order not found for paymentIntentId=${paymentIntent.id} — acknowledging, alerting admin`)
+    try {
+      await supabase.functions.invoke('notify-provisioning-failure', {
+        body: {
+          order_id: null,
+          customer_email: (paymentIntent.receipt_email as string | null) ?? null,
+          payment_intent_id: paymentIntent.id,
+          error_message: `payment_intent.succeeded (kind=topup) but no topup_orders row matches payment_intent_id=${paymentIntent.id}. Manual recovery required.`,
+          error_type: 'topup_order_not_found',
+        },
+      })
+    } catch (e: any) {
+      console.error(`[stripe-webhook] topup order-not-found alert failed — ${e?.message}`)
+    }
+    return
+  }
+
+  // Mark paid (idempotent)
+  if (topUp.payment_status !== 'succeeded') {
+    const { error } = await supabase
+      .from('topup_orders')
+      .update({ payment_status: 'succeeded', updated_at: new Date().toISOString() })
+      .eq('id', topUp.id)
+    if (error) {
+      console.error(`[stripe-webhook] failed to mark topup paid — topup=${topUp.id} ${error.message}`)
+      throw error
+    }
+  }
+
+  if (topUp.status === 'completed') {
+    console.log(`[stripe-webhook] topup=${topUp.id} already completed — nothing to do`)
+    return
+  }
+
+  // Atomic claim: pending|failed|processing → processing, and never if a
+  // supplier order reference already exists (real money guard). 'processing'
+  // is claimable on purpose: a crash mid-fulfilment must be resumable by the
+  // next Stripe retry, and the supplier dedupes on transactionId (= PI id),
+  // so a re-attempt can never buy twice.
+  const { data: claimed, error: claimError } = await supabase
+    .from('topup_orders')
+    .update({ status: 'processing', updated_at: new Date().toISOString() })
+    .eq('id', topUp.id)
+    .is('supplier_order_no', null)
+    .in('status', ['pending', 'failed', 'processing'])
+    .select('id')
+  if (claimError) {
+    console.error(`[stripe-webhook] topup claim failed — topup=${topUp.id} ${claimError.message}`)
+    throw claimError
+  }
+  if (!claimed || claimed.length === 0) {
+    console.log(`[stripe-webhook] topup=${topUp.id} already claimed elsewhere — skipping`)
+    return
+  }
+
+  // Resolve the ICCID (stored at intent creation; fall back to the activation row).
+  let iccid = topUp.iccid as string | null
+  if (!iccid) {
+    const { data: act } = await supabase
+      .from('esim_activations')
+      .select('iccid')
+      .eq('order_id', topUp.parent_order_id)
+      .maybeSingle()
+    iccid = (act?.iccid as string | null) ?? null
+  }
+
+  const accessCode = Deno.env.get('ESIM_ACCESS_ACCESS_CODE') ?? ''
+  const secretKey = Deno.env.get('ESIM_ACCESS_SECRET_KEY') ?? ''
+
+  if (!iccid || !topUp.supplier_package_code || !accessCode || !secretKey) {
+    const reason = !iccid ? 'No ICCID for parent order' : !topUp.supplier_package_code ? 'No supplier package code on top-up' : 'eSIM Access credentials not configured'
+    await markTopUpFailed(supabase, topUp.id as string, paymentIntent, reason)
+    return
+  }
+
+  console.log(`[stripe-webhook] applying topup=${topUp.id} package=${topUp.supplier_package_code} iccid=${iccid}`)
+  const result = await topUpESIM(
+    { iccid, packageCode: topUp.supplier_package_code as string, transactionId: paymentIntent.id },
+    { accessCode, secretKey },
+  )
+
+  if (result.success) {
+    const now = new Date().toISOString()
+    const { error } = await supabase
+      .from('topup_orders')
+      .update({
+        status: 'completed',
+        supplier_order_no: result.supplierOrderNo ?? paymentIntent.id,
+        completed_at: now,
+        applied_at: now,
+        updated_at: now,
+      })
+      .eq('id', topUp.id)
+    if (error) {
+      // Supplier HAS applied the top-up but our row is stuck in 'processing'.
+      // Alert an admin and throw so Stripe retries; the retry re-claims the
+      // processing row and the supplier dedupes on transactionId.
+      console.error(`[stripe-webhook] topup=${topUp.id} applied but completion update failed — ${error.message}`)
+      try {
+        await supabase.functions.invoke('notify-provisioning-failure', {
+          body: {
+            order_id: null,
+            payment_intent_id: paymentIntent.id,
+            error_message: `Top-up ${topUp.id} WAS applied by the supplier but the completion update failed (${error.message}). Verify and mark completed manually if retries do not resolve it.`,
+            error_type: 'topup_completion_update_failed',
+          },
+        })
+      } catch (e: any) {
+        console.error(`[stripe-webhook] topup completion-failure alert failed — ${e?.message}`)
+      }
+      throw error
+    }
+    console.log(`[stripe-webhook] topup=${topUp.id} COMPLETED — supplierRef=${result.supplierOrderNo ?? 'n/a'}`)
+  } else {
+    console.error(`[stripe-webhook] topup=${topUp.id} supplier call failed — code=${result.errorCode} ${result.error}`)
+    await markTopUpFailed(supabase, topUp.id as string, paymentIntent, `${result.errorCode ?? ''} ${result.error ?? 'Supplier top-up failed'}`.trim())
+  }
+}
+
+// Honest failure: the customer HAS paid — record failed state and alert an
+// admin for manual recovery/refund. Never throws (Stripe must not retry into
+// a duplicate supplier spend; the claim guard blocks re-buys anyway).
+async function markTopUpFailed(
+  supabase: ReturnType<typeof createClient>,
+  topUpId: string,
+  paymentIntent: Stripe.PaymentIntent,
+  errorMessage: string,
+): Promise<void> {
+  try {
+    await supabase
+      .from('topup_orders')
+      .update({ status: 'failed', failure_reason: errorMessage.slice(0, 500), updated_at: new Date().toISOString() })
+      .eq('id', topUpId)
+      .neq('status', 'completed')
+  } catch (e: any) {
+    console.error(`[stripe-webhook] could not mark topup=${topUpId} failed — ${e?.message}`)
+  }
+  try {
+    await supabase.functions.invoke('notify-provisioning-failure', {
+      body: {
+        order_id: null,
+        customer_email: (paymentIntent.receipt_email as string | null) ?? null,
+        payment_intent_id: paymentIntent.id,
+        error_message: `TOP-UP failed after payment — topup_order=${topUpId}: ${errorMessage}. Customer paid; apply top-up manually or refund.`,
+        error_type: 'topup_failed_after_payment',
+      },
+    })
+  } catch (e: any) {
+    console.error(`[stripe-webhook] topup failure alert failed — topup=${topUpId} ${e?.message}`)
+  }
+}
+
 // Record a provisioning failure and alert an admin. Resets esim_status to
 // 'failed' so a later retry (Stripe or admin) can re-claim it. Always returns
 // (never throws) so Stripe is not retried into an infinite supplier-call loop.
@@ -460,6 +639,19 @@ async function handlePaymentFailed(
 
   console.log(`[stripe-webhook] handlePaymentFailed — paymentIntentId=${paymentIntent.id} code=${failureCode}`)
 
+  if (paymentIntent.metadata?.kind === 'topup') {
+    const { error } = await supabase
+      .from('topup_orders')
+      .update({ payment_status: 'failed', status: 'failed', failure_reason: `${failureCode}: ${failureMessage}`.slice(0, 500), updated_at: new Date().toISOString() })
+      .eq('payment_intent_id', paymentIntent.id)
+      .neq('payment_status', 'succeeded')
+    if (error) {
+      console.error(`[stripe-webhook] failed to mark topup failed — pi=${paymentIntent.id} ${error.message}`)
+      throw error
+    }
+    return
+  }
+
   const { error } = await supabase
     .from('orders')
     .update({
@@ -486,6 +678,19 @@ async function handlePaymentCanceled(
   supabase: ReturnType<typeof createClient>,
 ): Promise<void> {
   console.log(`[stripe-webhook] handlePaymentCanceled — paymentIntentId=${paymentIntent.id}`)
+
+  if (paymentIntent.metadata?.kind === 'topup') {
+    const { error } = await supabase
+      .from('topup_orders')
+      .update({ payment_status: 'cancelled', status: 'cancelled', updated_at: new Date().toISOString() })
+      .eq('payment_intent_id', paymentIntent.id)
+      .neq('payment_status', 'succeeded')
+    if (error) {
+      console.error(`[stripe-webhook] failed to mark topup cancelled — pi=${paymentIntent.id} ${error.message}`)
+      throw error
+    }
+    return
+  }
 
   const { error } = await supabase
     .from('orders')
