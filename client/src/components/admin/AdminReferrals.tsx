@@ -30,6 +30,8 @@ import {
   ToggleRight,
   ShoppingBag,
   Handshake,
+  CheckCircle2,
+  Undo2,
 } from "lucide-react";
 
 interface ReferralCodeRow {
@@ -49,7 +51,7 @@ interface ReferralCodeRow {
 interface RewardRow {
   id: string;
   referral_code: string;
-  amount: number;
+  reward_amount: number;
   status: string;
   created_at: string;
 }
@@ -98,7 +100,7 @@ const AdminReferrals = () => {
 
       const { data: rewards } = await supabase
         .from("referral_rewards")
-        .select("referral_code, amount, status");
+        .select("referral_code, reward_amount, status");
 
       const { data: orders } = await supabase
         .from("orders")
@@ -128,10 +130,10 @@ const AdminReferrals = () => {
           ),
           pendingRewards: codeRewards
             .filter((r) => r.status === "pending")
-            .reduce((s, r) => s + Number(r.amount), 0),
+            .reduce((s, r) => s + Number(r.reward_amount), 0),
           paidRewards: codeRewards
-            .filter((r) => r.status === "paid")
-            .reduce((s, r) => s + Number(r.amount), 0),
+            .filter((r) => r.status === "claimed")
+            .reduce((s, r) => s + Number(r.reward_amount), 0),
           recentOrders: codeOrders.slice(0, 10) as OrderRow[],
         } as ReferralCodeRow;
       });
@@ -143,11 +145,32 @@ const AdminReferrals = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("referral_rewards")
-        .select("id, referral_code, amount, status, created_at")
+        .select("id, referral_code, reward_amount, status, created_at")
         .order("created_at", { ascending: false })
         .limit(20);
       if (error) throw error;
       return (data ?? []) as RewardRow[];
+    },
+  });
+
+  const setRewardStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const { error } = await supabase
+        .from("referral_rewards")
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-referral-rewards"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-referral-codes"] });
+    },
+    onError: (e: any) => {
+      toast({
+        title: "Update failed",
+        description: e.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -337,8 +360,8 @@ const AdminReferrals = () => {
   const getRewardStatusBadge = (status: string) => {
     const colors: Record<string, string> = {
       pending: "bg-yellow-100 text-yellow-800",
-      paid: "bg-green-100 text-green-800",
-      cancelled: "bg-gray-100 text-gray-800",
+      claimed: "bg-green-100 text-green-800",
+      expired: "bg-gray-100 text-gray-800",
     };
     return (
       <Badge className={colors[status] ?? "bg-gray-100 text-gray-800"}>
@@ -775,6 +798,7 @@ const AdminReferrals = () => {
                   <TableHead>Amount</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Date</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -784,11 +808,40 @@ const AdminReferrals = () => {
                       {r.referral_code}
                     </TableCell>
                     <TableCell className="font-medium">
-                      €{Number(r.amount).toFixed(2)}
+                      €{Number(r.reward_amount).toFixed(2)}
                     </TableCell>
                     <TableCell>{getRewardStatusBadge(r.status)}</TableCell>
                     <TableCell className="text-xs text-gray-500">
                       {new Date(r.created_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {r.status === "pending" ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 border-palop-green text-palop-green hover:bg-palop-green/5"
+                          onClick={() => setRewardStatusMutation.mutate({ id: r.id, status: "claimed" })}
+                          disabled={setRewardStatusMutation.isPending}
+                          data-testid={`button-reward-mark-paid-${r.id}`}
+                        >
+                          <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                          Mark Paid
+                        </Button>
+                      ) : r.status === "claimed" ? (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 text-gray-500"
+                          onClick={() => setRewardStatusMutation.mutate({ id: r.id, status: "pending" })}
+                          disabled={setRewardStatusMutation.isPending}
+                          data-testid={`button-reward-mark-pending-${r.id}`}
+                        >
+                          <Undo2 className="h-3.5 w-3.5 mr-1" />
+                          Mark Pending
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-gray-400">—</span>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

@@ -471,17 +471,20 @@ async function handleTopUpSucceeded(
     return
   }
 
-  // Atomic claim: pending|failed|processing → processing, and never if a
-  // supplier order reference already exists (real money guard). 'processing'
-  // is claimable on purpose: a crash mid-fulfilment must be resumable by the
-  // next Stripe retry, and the supplier dedupes on transactionId (= PI id),
-  // so a re-attempt can never buy twice.
+  // Atomic claim: pending|failed|processing|cancelled → processing, and never
+  // if a supplier order reference already exists (real money guard).
+  // 'processing' is claimable on purpose: a crash mid-fulfilment must be
+  // resumable by the next Stripe retry, and the supplier dedupes on
+  // transactionId (= PI id), so a re-attempt can never buy twice.
+  // 'cancelled' is claimable because the nightly abandoned-checkout sweep can
+  // cancel a stale pending top-up whose payment later succeeds — a paid
+  // customer must still receive their data.
   const { data: claimed, error: claimError } = await supabase
     .from('topup_orders')
     .update({ status: 'processing', updated_at: new Date().toISOString() })
     .eq('id', topUp.id)
     .is('supplier_order_no', null)
-    .in('status', ['pending', 'failed', 'processing'])
+    .in('status', ['pending', 'failed', 'processing', 'cancelled'])
     .select('id')
   if (claimError) {
     console.error(`[stripe-webhook] topup claim failed — topup=${topUp.id} ${claimError.message}`)

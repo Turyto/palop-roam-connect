@@ -11,3 +11,4 @@
 - [eSIM Access top-ups](esim-topups.md) — /esim/topup dedupes on transactionId (=PI id); anchor region to the order's purchased package code, never latest catalog row by plan_id.
 - [Admin problem-order metrics](admin-problem-metrics.md) — all admin alert/KPI surfaces must use the shared failed-delivery hook; `provisioned` = delivered; failed provisioning = status `needs_attention`.
 - [RLS admin visibility](rls-admin-visibility.md) — owner-only RLS silently hides rows from admin tools after ownership reassignment; add an admin policy first.
+- [Referral rewards status contract](referral-rewards-status.md) — status CHECK allows only pending/claimed/expired ('paid' rejected); column is reward_amount, not amount; checkout sweep interplay.
