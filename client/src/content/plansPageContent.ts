@@ -1,4 +1,4 @@
-export type CoverageTab = 'europe' | 'south-africa' | 'south-america' | 'palop';
+export type CoverageTab = 'europe' | 'south-africa' | 'brazil' | 'palop';
 
 export interface PlanCard {
   id: string;
@@ -34,10 +34,11 @@ export const PLAN_PRICES: Record<string, number> = {
   'sa-3gb':     6.90,
   'sa-5gb':     8.90,
   'sa-10gb':   17.90,
-  // South America
-  'sam-3gb':   15.90,
-  'sam-5gb':   22.90,
-  'sam-10gb':  49.90,
+  // Brazil (eSIM Access, July 2026)
+  'br-3gb':     7.90,
+  'br-5gb':    12.90,
+  'br-10gb':   22.90,
+  'br-20gb':   47.90,
   // PALOP — Mozambique (eSIMCard supplier, not yet live)
   'mz-3gb':     9.90,
   'mz-5gb':    16.90,
@@ -89,12 +90,12 @@ export const regions: RegionMeta[] = [
     },
   },
   {
-    id: 'south-america',
-    tabLabel: { pt: 'América do Sul', en: 'South America' },
-    title: { pt: 'eSIM América do Sul', en: 'South America eSIM' },
+    id: 'brazil',
+    tabLabel: { pt: 'Brasil', en: 'Brazil' },
+    title: { pt: 'eSIM Brasil', en: 'Brazil eSIM' },
     coverageLine: {
-      pt: 'Cobertura: Argentina, Bolívia, Brasil, Chile, Colômbia, Costa Rica, Equador, El Salvador, Antilhas Francesas, Guatemala, Honduras, Nicarágua, Panamá, Paraguai, Peru, Porto Rico e Uruguai.',
-      en: 'Coverage: Argentina, Bolivia, Brazil, Chile, Colombia, Costa Rica, Ecuador, El Salvador, French Antilles, Guatemala, Honduras, Nicaragua, Panama, Paraguay, Peru, Puerto Rico and Uruguay.',
+      pt: 'Cobertura: Brasil.',
+      en: 'Coverage: Brazil.',
     },
   },
   {
@@ -152,7 +153,7 @@ const card = (
 
 const EU = { pt: 'Portugal + Europa', en: 'Portugal + Europe' };
 const SA = { pt: 'África do Sul', en: 'South Africa' };
-const SAM = { pt: 'América do Sul', en: 'South America' };
+const BR = { pt: 'Brasil', en: 'Brazil' };
 
 export const planCards: PlanCard[] = [
   // Europe — existing validated plans, new prices
@@ -187,19 +188,23 @@ export const planCards: PlanCard[] = [
     { pt: 'Ideal para estadias mais longas', en: 'Best for longer stays' },
     10, 30, SA),
 
-  // South America
-  card('sam-3gb', 'south-america',
-    { pt: 'América do Sul 3 GB', en: 'South America 3 GB' },
+  // Brazil
+  card('br-3gb', 'brazil',
+    { pt: 'Brasil 3 GB', en: 'Brazil 3 GB' },
     { pt: 'Ideal para chegada, mensagens e mapas', en: 'Great for arrival, messages and maps' },
-    3, 30, SAM),
-  card('sam-5gb', 'south-america',
-    { pt: 'América do Sul 5 GB', en: 'South America 5 GB' },
+    3, 30, BR),
+  card('br-5gb', 'brazil',
+    { pt: 'Brasil 5 GB', en: 'Brazil 5 GB' },
     { pt: 'Ideal para uso diário e videochamadas', en: 'Ideal for daily use and video calls' },
-    5, 30, SAM, { popular: true }),
-  card('sam-10gb', 'south-america',
-    { pt: 'América do Sul 10 GB', en: 'South America 10 GB' },
+    5, 30, BR, { popular: true }),
+  card('br-10gb', 'brazil',
+    { pt: 'Brasil 10 GB', en: 'Brazil 10 GB' },
     { pt: 'Ideal para estadias mais longas', en: 'Best for longer stays' },
-    10, 30, SAM),
+    10, 30, BR),
+  card('br-20gb', 'brazil',
+    { pt: 'Brasil 20 GB', en: 'Brazil 20 GB' },
+    { pt: 'Tranquilidade total', en: 'Total peace of mind' },
+    20, 30, BR),
 
   // PALOP — Mozambique (eSIMCard supplier)
   card('mz-3gb', 'palop',

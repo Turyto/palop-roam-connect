@@ -19,7 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 const CHECKOUT_PLAN_IDS = [
   'arrival', 'essential', 'comfort', 'freedom',
   'sa-3gb', 'sa-5gb', 'sa-10gb',
-  'sam-3gb', 'sam-5gb', 'sam-10gb',
+  'br-3gb', 'br-5gb', 'br-10gb', 'br-20gb',
   'gw-3gb', 'gw-5gb',
   'ao-3gb', 'ao-5gb',
   'mz-3gb', 'mz-5gb',

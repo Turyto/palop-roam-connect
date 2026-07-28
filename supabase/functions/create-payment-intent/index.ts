@@ -4,16 +4,9 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-// Hardcoded fallback package codes — mirror functions/get-esim-package so the
-// pending order always carries an esim_package_id even if the DB row is missing.
-const FALLBACK_PACKAGES: Record<string, string> = {
-  'arrival':   'PRC8B6GK2',
-  'essential': 'PV0Q6PZ7G',
-  'comfort':   'P29FDU5TL',
-  'freedom':   'P6PBYX5G4',
-};
-
-// Resolve the eSIM Access package code for a plan (DB row first, then fallback).
+// Resolve the supplier package code for a plan from the database only.
+// No hardcoded fallback: a missing esim_packages row means the plan is not
+// sellable and the payment is refused (fail loudly, never guess).
 async function resolveEsimPackageId(supabaseUrl: string, serviceKey: string, planId: string): Promise<string | null> {
   try {
     // Supplier-aware: a plan is sellable with EITHER an eSIM Access package
@@ -39,7 +32,7 @@ async function resolveEsimPackageId(supabaseUrl: string, serviceKey: string, pla
   } catch (e: any) {
     console.error(`[create-payment-intent] esim_packages lookup failed — ${e?.message}`);
   }
-  return FALLBACK_PACKAGES[planId] ?? null;
+  return null;
 }
 
 Deno.serve(async (req: Request): Promise<Response> => {
