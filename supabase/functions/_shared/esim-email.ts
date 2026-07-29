@@ -30,10 +30,12 @@ export function parseLpa(lpa: string | null): { smdp: string | null; matchingId:
 
 // ---------------------------------------------------------------------------
 // Per-country "útil no destino" content (PT). Inferred from the plan name;
-// falls back to Portugal/Europa (the 4 live bundles).
+// unknown destinations get a neutral, region-free email (never claim coverage).
 // ---------------------------------------------------------------------------
 interface CountryInfo {
   name: string;
+  /** Name with the PT article for "para X" sentences (e.g. "o Brasil"). Defaults to `name`. */
+  titleName?: string;
   currency: string;
   emergency: string;
   networks: string;
@@ -45,13 +47,19 @@ const COUNTRY_INFO: Array<{ match: RegExp; info: CountryInfo }> = [
   { match: /angola/i, info: { name: 'Angola', currency: 'Kwanza (AOA)', emergency: '113 (Polícia) · 115 (Bombeiros) · 116 (Ambulância)', networks: 'Unitel · Africell · Movicel' } },
   { match: /guin[eé]/i, info: { name: 'Guiné-Bissau', currency: 'Franco CFA (XOF) · 1 EUR ≈ 656 XOF', emergency: '117 (Polícia) · 118 (Bombeiros)', networks: 'Orange · MTN' } },
   { match: /s[aã]o\s*tom[eé]/i, info: { name: 'São Tomé e Príncipe', currency: 'Dobra (STN) · 1 EUR ≈ 24,5 STN', emergency: '112', networks: 'CST · Unitel STP' } },
+  { match: /[aá]frica\s*do\s*sul|south\s*africa/i, info: { name: 'África do Sul', titleName: 'a África do Sul', currency: 'Rand (ZAR) · 1 EUR ≈ 20 ZAR', emergency: '10111 (Polícia) · 10177 (Ambulância) · 112 (do telemóvel)', networks: 'Vodacom · MTN · Cell C · Telkom' } },
+  { match: /brasil|brazil/i, info: { name: 'Brasil', titleName: 'o Brasil', currency: 'Real (BRL) · 1 EUR ≈ 6 BRL', emergency: '190 (Polícia) · 192 (SAMU/Ambulância) · 193 (Bombeiros)', networks: 'Vivo · Claro · TIM' } },
+  { match: /\busa\b|\beua\b|united\s*states|estados\s*unidos/i, info: { name: 'Estados Unidos', titleName: 'os Estados Unidos', currency: 'Dólar (USD) · 1 EUR ≈ 1,1 USD', emergency: '911 (número único)', networks: 'T-Mobile · AT&T · Verizon' } },
+  { match: /portugal|europ[ae]|\beu\b/i, info: { name: 'Portugal e Europa', currency: 'Euro (EUR)', emergency: '112 (número único europeu)', networks: 'MEO · NOS · Vodafone e redes parceiras na UE' } },
 ];
 
+// Neutral fallback for plans we don't recognise — never claim a specific
+// region. `name` is empty; render sites must degrade to generic wording.
 const DEFAULT_COUNTRY: CountryInfo = {
-  name: 'Portugal e Europa',
-  currency: 'Euro (EUR)',
-  emergency: '112 (número único europeu)',
-  networks: 'MEO · NOS · Vodafone e redes parceiras na UE',
+  name: '',
+  currency: '',
+  emergency: '',
+  networks: '',
 };
 
 export function getCountryInfo(planName: string | null): CountryInfo {
@@ -61,6 +69,12 @@ export function getCountryInfo(planName: string | null): CountryInfo {
     }
   }
   return DEFAULT_COUNTRY;
+}
+
+/** "O seu eSIM para o Brasil está pronto" — or generic when the destination is unknown. */
+export function esimReadyTitle(country: CountryInfo): string {
+  const dest = country.titleName ?? country.name;
+  return dest ? `O seu eSIM para ${dest} está pronto` : 'O seu eSIM está pronto';
 }
 
 // ---------------------------------------------------------------------------
@@ -111,8 +125,9 @@ export async function buildEsimPackPdf(opts: {
     const lpaCode = opts.lpaCode ? sane(opts.lpaCode) : null;
     const webUrl = opts.webUrl ? sane(opts.webUrl) : null;
     const { qrPngBase64 } = opts;
-    const country = {
+    const country: CountryInfo = {
       name: sane(opts.country.name),
+      titleName: opts.country.titleName ? sane(opts.country.titleName) : undefined,
       currency: sane(opts.country.currency),
       emergency: sane(opts.country.emergency),
       networks: sane(opts.country.networks),
@@ -154,7 +169,7 @@ export async function buildEsimPackPdf(opts: {
     p1.drawLine({ start: { x: M, y }, end: { x: W - M, y }, thickness: 1, color: GREEN });
 
     y -= 64;
-    for (const line of wrap(`O seu eSIM para ${country.name} está pronto.`, helvBold, 26, W - 2 * M)) {
+    for (const line of wrap(`${esimReadyTitle(country)}.`, helvBold, 26, W - 2 * M)) {
       p1.drawText(line, { x: M, y, size: 26, font: helvBold, color: DARK });
       y -= 32;
     }
@@ -166,7 +181,7 @@ export async function buildEsimPackPdf(opts: {
     y -= 18;
     p1.drawText('Caro/a Viajante', { x: M, y, size: 14, font: helvBold, color: DARK });
     y -= 16;
-    p1.drawText(`1 eSIM · ${dataAmount || planName} · ${country.name} · PalopConnect`, { x: M, y, size: 11, font: helv, color: GREY });
+    p1.drawText(`1 eSIM · ${dataAmount || planName}${country.name ? ` · ${country.name}` : ''} · PalopConnect`, { x: M, y, size: 11, font: helv, color: GREY });
 
     y -= 44;
     p1.drawText('Como activar o seu eSIM em 3 passos:', { x: M, y, size: 14, font: helvBold, color: DARK });
@@ -190,7 +205,7 @@ export async function buildEsimPackPdf(opts: {
     y -= 12;
     p1.drawRectangle({ x: M, y: y - 96, width: W - 2 * M, height: 108, color: LIGHT });
     p1.drawText('BEM-VINDO À REDE PALOPCONNECT', { x: M + 16, y: y - 8, size: 10, font: helvBold, color: GREEN });
-    const welcome = `Caro/a viajante, este eSIM é o seu para ${country.name} — digitaliza o QR code na página seguinte, instala em menos de dois minutos, e aterra já conectado/a. Sem filas, sem roaming surpresa, sem complicações. Se tiver alguma questão, estamos aqui para ajudar. Boa viagem!`;
+    const welcome = `Caro/a viajante, este ${country.titleName ?? country.name ? `eSIM é o seu para ${country.titleName ?? country.name}` : 'é o seu eSIM de viagem'} — digitaliza o QR code na página seguinte, instala em menos de dois minutos, e aterra já conectado/a. Sem filas, sem roaming surpresa, sem complicações. Se tiver alguma questão, estamos aqui para ajudar. Boa viagem!`;
     let wy = y - 26;
     for (const line of wrap(welcome, helv, 10, W - 2 * M - 32)) {
       p1.drawText(line, { x: M + 16, y: wy, size: 10, font: helv, color: DARK });
@@ -218,7 +233,7 @@ export async function buildEsimPackPdf(opts: {
     // ---- Page 2 — QR + activation details + install steps + country tips ----
     const p2 = doc.addPage([W, H]);
     y = H - 60;
-    p2.drawText(country.name, { x: M, y, size: 20, font: helvBold, color: DARK });
+    p2.drawText(country.name || planName || 'O seu eSIM', { x: M, y, size: 20, font: helvBold, color: DARK });
     y -= 18;
     p2.drawText(`${dataAmount || ''}${dataAmount && planName ? ' · ' : ''}${planName}`, { x: M, y, size: 11, font: helv, color: GREY });
     y -= 10;
@@ -305,17 +320,19 @@ export async function buildEsimPackPdf(opts: {
 
     y = Math.min(ly, ry - 60) - 20;
 
-    // Country tips
-    p2.drawText(`ÚTIL EM ${country.name.toUpperCase()}`, { x: M, y, size: 10, font: helvBold, color: GREEN });
-    y -= 18;
-    const tips = [
-      `Moeda: ${country.currency}`,
-      `Emergências: ${country.emergency}`,
-      `Redes: ${country.networks}`,
-    ];
-    for (const t of tips) {
-      p2.drawText(`•  ${t}`, { x: M, y, size: 9.5, font: helv, color: DARK });
-      y -= 14;
+    // Country tips — only when we actually know the destination
+    if (country.name) {
+      p2.drawText(`ÚTIL EM ${country.name.toUpperCase()}`, { x: M, y, size: 10, font: helvBold, color: GREEN });
+      y -= 18;
+      const tips = [
+        `Moeda: ${country.currency}`,
+        `Emergências: ${country.emergency}`,
+        `Redes: ${country.networks}`,
+      ];
+      for (const t of tips) {
+        p2.drawText(`•  ${t}`, { x: M, y, size: 9.5, font: helv, color: DARK });
+        y -= 14;
+      }
     }
 
     p2.drawLine({ start: { x: M, y: 70 }, end: { x: W - M, y: 70 }, thickness: 0.5, color: GREY });
@@ -434,14 +451,14 @@ export async function sendProvisioningEmail(opts: {
 
         <tr><td style="background:linear-gradient(135deg,#14532d,#16a34a);padding:36px 40px;">
           <p style="margin:0 0 6px;color:#bbf7d0;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;">PALOP Connect · Documento de viagem</p>
-          <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:800;line-height:1.25;">O seu eSIM para ${country.name} está pronto.</h1>
+          <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:800;line-height:1.25;">${esimReadyTitle(country)}.</h1>
           <p style="margin:10px 0 0;color:rgba(255,255,255,.85);font-size:14px;">Internet imediata — sem chip físico, sem contrato, sem complicações.</p>
         </td></tr>
 
         <tr><td style="padding:28px 40px 8px;">
           <p style="margin:0;font-size:11px;color:#71717a;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Preparado para</p>
           <p style="margin:4px 0 0;font-size:16px;color:#18181b;font-weight:700;">Caro/a Viajante</p>
-          <p style="margin:2px 0 0;font-size:13px;color:#52525b;">1 eSIM${dataAmount ? ` · ${dataAmount}` : ''} · ${planName || 'PalopConnect'} · ${country.name}</p>
+          <p style="margin:2px 0 0;font-size:13px;color:#52525b;">1 eSIM${dataAmount ? ` · ${dataAmount}` : ''} · ${planName || 'PalopConnect'}${country.name ? ` · ${country.name}` : ''}</p>
         </td></tr>
 
         <tr><td style="padding:20px 40px 0;">
@@ -471,14 +488,14 @@ export async function sendProvisioningEmail(opts: {
           </div>
         </td></tr>
 
-        <tr><td style="padding:22px 40px 0;">
+        ${country.name ? `<tr><td style="padding:22px 40px 0;">
           <p style="margin:0 0 10px;font-size:12px;color:#16a34a;font-weight:800;text-transform:uppercase;letter-spacing:.06em;">Útil em ${country.name}</p>
           <table cellpadding="0" cellspacing="0" width="100%" style="font-size:12.5px;color:#3f3f46;line-height:1.7;">
             <tr><td style="padding:2px 0;">💱 <strong>Moeda:</strong> ${country.currency}</td></tr>
             <tr><td style="padding:2px 0;">🚨 <strong>Emergências:</strong> ${country.emergency}</td></tr>
             <tr><td style="padding:2px 0;">📶 <strong>Redes:</strong> ${country.networks}</td></tr>
           </table>
-        </td></tr>
+        </td></tr>` : ''}
 
         <tr><td style="padding:22px 40px 0;">
           <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px 20px;">
@@ -508,7 +525,7 @@ export async function sendProvisioningEmail(opts: {
 </html>`;
 
   const textBody = [
-    `O seu eSIM para ${country.name} está pronto — PALOP Connect`,
+    `${esimReadyTitle(country)} — PALOP Connect`,
     `Plano: ${planName || 'eSIM'}${dataAmount ? ` (${dataAmount})` : ''}`,
     smdp ? `SMDP+ Address: ${smdp}` : '',
     matchingId ? `Activation Code: ${matchingId}` : '',
@@ -528,14 +545,14 @@ export async function sendProvisioningEmail(opts: {
     attachments.push({ filename: 'esim-qr.png', content: qrPngBase64, content_id: 'esim-qr', content_type: 'image/png' });
   }
   if (pdfBase64) {
-    const countrySlug = country.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z]+/g, '-');
+    const countrySlug = (country.name || 'Viagem').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z]+/g, '-');
     attachments.push({ filename: `eSIM-Pack-PalopConnect-${countrySlug}.pdf`, content: pdfBase64, content_type: 'application/pdf' });
   }
 
   const payload: Record<string, unknown> = {
     from: 'BuéChama <esims@palopconnect.com>',
     to: [customerEmail],
-    subject: `O seu eSIM para ${country.name} está pronto — PALOP Connect`,
+    subject: `${esimReadyTitle(country)} — PALOP Connect`,
     html,
     text: textBody,
   };
