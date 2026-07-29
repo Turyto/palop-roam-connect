@@ -27,7 +27,7 @@ const CHECKOUT_PLAN_IDS = [
 ];
 
 const PlansCatalogTab = () => {
-  const { plans, isLoading, updatePlan, deletePlan } = usePlans();
+  const { plans, isLoading, updatePlan, bulkUpdateStatus, deletePlan } = usePlans();
   const { supplierRates } = useSupplierRates();
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
@@ -101,6 +101,8 @@ const PlansCatalogTab = () => {
       } catch (err: any) {
         if (err.code === "HAS_ORDERS") {
           skipped++;
+        } else {
+          toast.error(`Failed to delete a plan: ${err.message ?? "unknown error"}`);
         }
       }
     }
@@ -180,21 +182,17 @@ const PlansCatalogTab = () => {
         <BulkActionsToolbar
           selectedCount={selectedPlanIds.length}
           onActivateAll={() => {
-            selectedPlanIds.forEach(planId => {
-              const plan = plans.find(p => p.id === planId);
-              if (plan && plan.status !== "active") {
-                updatePlan({ id: planId, updates: { status: "active" } });
-              }
-            });
+            const ids = selectedPlanIds.filter(planId =>
+              plans.find(p => p.id === planId)?.status !== "active"
+            );
+            if (ids.length > 0) bulkUpdateStatus({ ids, status: "active" });
             setSelectedPlanIds([]);
           }}
           onDeactivateAll={() => {
-            selectedPlanIds.forEach(planId => {
-              const plan = plans.find(p => p.id === planId);
-              if (plan && plan.status !== "inactive") {
-                updatePlan({ id: planId, updates: { status: "inactive" } });
-              }
-            });
+            const ids = selectedPlanIds.filter(planId =>
+              plans.find(p => p.id === planId)?.status !== "inactive"
+            );
+            if (ids.length > 0) bulkUpdateStatus({ ids, status: "inactive" });
             setSelectedPlanIds([]);
           }}
           onDeleteAll={handleBulkDelete}

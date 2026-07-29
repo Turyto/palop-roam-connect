@@ -72,19 +72,65 @@ export const usePlans = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["plans"] });
-      toast({
-        title: "Success",
-        description: "Plan updated successfully",
-      });
+    // Optimistic update: flip the row in the cache immediately, roll back on error.
+    onMutate: async ({ id, updates }) => {
+      await queryClient.cancelQueries({ queryKey: ["plans"] });
+      const previous = queryClient.getQueryData<Plan[]>(["plans"]);
+      queryClient.setQueryData<Plan[]>(["plans"], (old = []) =>
+        old.map(p => (p.id === id ? { ...p, ...updates } : p))
+      );
+      return { previous };
     },
-    onError: (error: any) => {
+    onError: (error: any, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["plans"], context.previous);
+      }
       toast({
         title: "Error",
         description: error.message,
         variant: "destructive",
       });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["plans"] });
+    },
+  });
+
+  const bulkUpdateStatusMutation = useMutation({
+    mutationFn: async ({ ids, status }: { ids: string[]; status: string }) => {
+      const { error } = await supabase
+        .from("plans")
+        .update({ status })
+        .in("id", ids);
+      if (error) throw error;
+    },
+    onMutate: async ({ ids, status }) => {
+      await queryClient.cancelQueries({ queryKey: ["plans"] });
+      const previous = queryClient.getQueryData<Plan[]>(["plans"]);
+      const idSet = new Set(ids);
+      queryClient.setQueryData<Plan[]>(["plans"], (old = []) =>
+        old.map(p => (idSet.has(p.id) ? { ...p, status } : p))
+      );
+      return { previous };
+    },
+    onError: (error: any, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["plans"], context.previous);
+      }
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+    onSuccess: (_data, { ids, status }) => {
+      toast({
+        title: "Success",
+        description: `${ids.length} plan${ids.length !== 1 ? "s" : ""} ${status === "active" ? "activated" : "deactivated"}`,
+      });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["plans"] });
     },
   });
 
@@ -117,11 +163,15 @@ export const usePlans = () => {
 
   const deletePlanMutation = useMutation({
     mutationFn: async (id: string) => {
-      // Safety check: block hard delete if orders reference this plan
+      // Orders store the storefront slug in plan_id, not the plan UUID, so
+      // the safety check must cover both keys.
+      const plan = plans.find(p => p.id === id);
+      const keys = [id, ...(plan?.storefront_slug ? [plan.storefront_slug] : [])];
+
       const { count, error: countError } = await supabase
         .from('orders')
         .select('id', { count: 'exact', head: true })
-        .eq('plan_id', id);
+        .in('plan_id', keys);
 
       if (countError) throw countError;
 
@@ -134,9 +184,12 @@ export const usePlans = () => {
         throw err;
       }
 
-      // Cascade: remove provisioning mapping, supplier rates, then the plan
-      await supabase.from('esim_packages').delete().eq('plan_id', id);
-      await supabase.from('supplier_rates').delete().eq('plan_id', id);
+      // Cascade: remove provisioning mappings (both UUID and slug keys),
+      // supplier rates, then the plan
+      const { error: pkgError } = await supabase.from('esim_packages').delete().in('plan_id', keys);
+      if (pkgError) throw pkgError;
+      const { error: rateError } = await supabase.from('supplier_rates').delete().in('plan_id', keys);
+      if (rateError) throw rateError;
 
       const { error } = await supabase.from('plans').delete().eq('id', id);
       if (error) throw error;
@@ -162,6 +215,7 @@ export const usePlans = () => {
     error,
     refetch,
     updatePlan: updatePlanMutation.mutate,
+    bulkUpdateStatus: bulkUpdateStatusMutation.mutate,
     createPlan: createPlanMutation.mutate,
     deletePlan: deletePlanMutation.mutateAsync,
     isUpdating: updatePlanMutation.isPending,
