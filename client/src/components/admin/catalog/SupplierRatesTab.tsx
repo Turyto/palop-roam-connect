@@ -63,6 +63,7 @@ function buildComparisonRows(
       plan_id: lr.plan_id,
       plan_name: lr.plan_name,
       package_code: lr.package_code,
+      supplier: lr.supplier,
       stored_cost: storedCost,
       live_price: livePriceEur,   // store the EUR-converted price for display
       live_currency: 'EUR',
@@ -93,10 +94,10 @@ function buildComparisonRows(
 
 function DeltaBadge({ status, delta }: { status: ComparisonRow['status']; delta: number | null }) {
   if (status === 'no_package') {
-    return <span className="text-xs text-gray-400 italic">No package linked</span>;
+    return <span className="text-xs text-gray-400 italic">No package code set</span>;
   }
   if (status === 'no_data') {
-    return <Badge variant="outline" className="text-xs text-gray-400">No live data</Badge>;
+    return <Badge variant="outline" className="text-xs text-gray-400">No live data from supplier</Badge>;
   }
   if (status === 'same') {
     return (
@@ -177,7 +178,7 @@ const SupplierRatesTab = () => {
     if (row.live_price === null) return;
     setAcceptingId(row.plan_id);
     try {
-      await acceptRate({ planId: row.plan_id, livePrice: row.live_price, supplierName: 'eSIM Access' });
+      await acceptRate({ planId: row.plan_id, livePrice: row.live_price, supplierName: row.supplier === 'esimcard' ? 'eSIM Card' : 'eSIM Access' });
       toast({ title: 'Rate updated', description: `${row.plan_name} → €${row.live_price.toFixed(2)}` });
     } catch (e: any) {
       toast({ title: 'Failed to update rate', description: e.message, variant: 'destructive' });
@@ -193,7 +194,7 @@ const SupplierRatesTab = () => {
     for (const row of changedRows) {
       if (row.live_price === null) continue;
       try {
-        await acceptRate({ planId: row.plan_id, livePrice: row.live_price, supplierName: 'eSIM Access' });
+        await acceptRate({ planId: row.plan_id, livePrice: row.live_price, supplierName: row.supplier === 'esimcard' ? 'eSIM Card' : 'eSIM Access' });
         updated++;
       } catch { /* continue with others */ }
     }
@@ -341,7 +342,13 @@ const SupplierRatesTab = () => {
                 <TableRow key={compRow?.plan_id ?? rate?.id} className={isChanged ? 'bg-amber-50/40' : ''}>
                   <TableCell className="font-medium">{planName}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">{rate?.supplier_name ?? 'eSIM Access'}</Badge>
+                    <Badge variant="outline">
+                      {compRow?.supplier === 'esimcard'
+                        ? 'eSIM Card'
+                        : compRow?.supplier === 'esim_access'
+                          ? 'eSIM Access'
+                          : rate?.supplier_name ?? 'eSIM Access'}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     {rate ? (

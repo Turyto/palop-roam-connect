@@ -111,6 +111,49 @@ async function fetchAllPackages(accessCode, secretKey) {
   return map;
 }
 // ---------------------------------------------------------------------------
+// eSIM Card (portal.esimcard.com) — login then fetch per-country package
+// lists. Prices are plain USD numbers (no 10,000ths scaling).
+// Returns Map<packageId, { price, currency, name }>
+// ---------------------------------------------------------------------------
+const ESIMCARD_BASE_URL = 'https://portal.esimcard.com/api/developer/reseller';
+async function fetchESIMCardPackages(email, password, countryCodes) {
+  const map = new Map();
+  if (countryCodes.length === 0) return map;
+  try {
+    const loginRes = await fetch(`${ESIMCARD_BASE_URL}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const loginData = await loginRes.json().catch(()=>null);
+    const token = loginData?.access_token;
+    if (!loginRes.ok || !token) {
+      console.error(`[fetch-rates] esimcard login failed — status=${loginRes.status}`);
+      return map;
+    }
+    for (const code of countryCodes){
+      try {
+        const res = await fetch(`${ESIMCARD_BASE_URL}/packages/country/${encodeURIComponent(code)}`, {
+          headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+        });
+        const data = await res.json().catch(()=>null);
+        const list = Array.isArray(data?.data) ? data.data : [];
+        console.log(`[fetch-rates] esimcard country=${code} status=${res.status} packages=${list.length}`);
+        for (const pkg of list){
+          if (!pkg?.id) continue;
+          const price = typeof pkg.price === 'number' ? pkg.price : parseFloat(pkg.price ?? '0') || 0;
+          map.set(pkg.id, { price, currency: 'USD', name: pkg.name ?? pkg.id });
+        }
+      } catch (e) {
+        console.error(`[fetch-rates] esimcard country=${code} failed — ${e.message}`);
+      }
+    }
+  } catch (e) {
+    console.error(`[fetch-rates] esimcard fetch failed — ${e.message}`);
+  }
+  return map;
+}
+// ---------------------------------------------------------------------------
 // Main handler
 // ---------------------------------------------------------------------------
 Deno.serve(async (req)=>{
@@ -202,7 +245,7 @@ Deno.serve(async (req)=>{
     const activePlanIds = new Set((activePlans ?? []).map((p)=>p.id));
     console.log(`[fetch-rates] active plans: ${activePlanIds.size}`);
     // Load all esim_packages rows
-    const { data: allPackages, error: pkgError } = await db.from('esim_packages').select('plan_id, plan_name, esim_access_package_id');
+    const { data: allPackages, error: pkgError } = await db.from('esim_packages').select('plan_id, plan_name, esim_access_package_id, supplier, supplier_package_id, location_code');
     if (pkgError) {
       console.error(`[fetch-rates] esim_packages query failed — ${pkgError.message}`);
       return new Response(JSON.stringify({
@@ -219,17 +262,29 @@ Deno.serve(async (req)=>{
     // Keep only rows whose plan is active
     const packages = (allPackages ?? []).filter((row)=>activePlanIds.has(row.plan_id));
     console.log(`[fetch-rates] found ${packages.length} active plan–package mappings`);
-    // Fetch all live packages from supplier
-    const liveMap = await fetchAllPackages(accessCode, secretKey);
-    console.log(`[fetch-rates] supplier returned ${liveMap.size} packages total`);
+    // Fetch live packages from both suppliers in parallel
+    const esimcardEmail = Deno.env.get('ESIMCARD_EMAIL') ?? '';
+    const esimcardPassword = Deno.env.get('ESIMCARD_PASSWORD') ?? '';
+    const esimcardCountries = [...new Set(packages
+      .filter((r)=>r.supplier === 'esimcard' && r.location_code)
+      .map((r)=>r.location_code))];
+    const [liveMap, esimcardMap] = await Promise.all([
+      fetchAllPackages(accessCode, secretKey),
+      esimcardEmail && esimcardPassword
+        ? fetchESIMCardPackages(esimcardEmail, esimcardPassword, esimcardCountries)
+        : Promise.resolve(new Map())
+    ]);
+    console.log(`[fetch-rates] eSIM Access returned ${liveMap.size} packages, eSIM Card returned ${esimcardMap.size} packages`);
     // Build comparison result
     const rates = (packages ?? []).map((row)=>{
-      const code = row.esim_access_package_id ?? '';
-      const live = code ? liveMap.get(code) : undefined;
+      const isESIMCard = row.supplier === 'esimcard';
+      const code = (isESIMCard ? row.supplier_package_id : row.esim_access_package_id) ?? '';
+      const live = code ? (isESIMCard ? esimcardMap.get(code) : liveMap.get(code)) : undefined;
       return {
         plan_id: row.plan_id,
         plan_name: row.plan_name ?? row.plans?.name ?? '',
         package_code: code || null,
+        supplier: isESIMCard ? 'esimcard' : 'esim_access',
         live_price: live?.price ?? null,
         live_currency: live?.currency ?? null,
         live_name: live?.name ?? null,

@@ -256,7 +256,7 @@ export const useSupplierRates = () => {
       if (existing) {
         const { error } = await supabase
           .from('supplier_rates')
-          .update({ wholesale_cost: livePrice, last_checked: now, updated_at: now })
+          .update({ wholesale_cost: livePrice, supplier_name: supplierName, last_checked: now, updated_at: now })
           .eq('plan_id', planId);
         if (error) throw error;
       } else {
@@ -287,6 +287,7 @@ export type LiveRate = {
   plan_id: string;
   plan_name: string;
   package_code: string | null;
+  supplier?: 'esim_access' | 'esimcard';
   live_price: number | null;
   live_currency: string | null;
   live_price_found: boolean;
@@ -296,6 +297,7 @@ export type ComparisonRow = {
   plan_id: string;
   plan_name: string;
   package_code: string | null;
+  supplier?: 'esim_access' | 'esimcard';
   stored_cost: number | null;
   live_price: number | null;
   live_currency: string | null;
