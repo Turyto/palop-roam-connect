@@ -19,3 +19,6 @@ description: Durable rules for multi-supplier eSIM provisioning (eSIM Access + e
 ## eSIM Card inventory (my-esims)
 - List `GET /my-esims?page=N` (meta.lastPage) has no package/usage data; per-SIM `GET /my-esims/{id}` returns `in_use_packages/assigned_packages/completed_packages/revoked_packages` with `package_type_id`, `date_expiry`, `initial/rem_data_quantity` (GB units, `unlimited` flag). `packages/country/{ISO}` lists wholesale prices (plain USD).
 - Live-DB landmine (fixed 2026-07-29): `supplier_inventory_items.status` CHECK originally lacked `expired_used/expired_unused` even though the sync writes them — widen constraints before writing new status values.
+
+## eSIM Access errorCode 101013 "The system is busy, please try again later, [1]"
+Generic supplier-side refusal — seen during their scheduled maintenance windows (check https://esimaccess.statuspage.io/). Not a payload or balance problem; retry a few minutes after maintenance completes. Note: `/package/list` with only `locationCode` returns 0 rows even for sellable regions — query by `packageCode` to validate a package.

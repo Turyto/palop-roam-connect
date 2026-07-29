@@ -174,6 +174,18 @@ const StorefrontFields = ({ storefront, onChange }: StorefrontFieldsProps) => {
 
             <div className="flex items-center gap-2">
               <Checkbox
+                id="sf-available"
+                checked={storefront.is_available}
+                onCheckedChange={(v) => set({ is_available: v === true })}
+                data-testid="checkbox-available"
+              />
+              <Label htmlFor="sf-available" className="cursor-pointer">
+                Available for purchase (unchecked = shown as "Coming soon")
+              </Label>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Checkbox
                 id="sf-hot-deal"
                 checked={storefront.is_hot_deal}
                 onCheckedChange={(v) => set({ is_hot_deal: v === true })}

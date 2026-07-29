@@ -15,6 +15,16 @@ export type Plan = {
   storefront_slug: string | null;
   coverage_tab: string | null;
   is_hot_deal: boolean;
+  country_key: string | null;
+  data_gb: number | null;
+  validity_days: number | null;
+  subtitle_pt: string | null;
+  subtitle_en: string | null;
+  coverage_label_pt: string | null;
+  coverage_label_en: string | null;
+  is_popular: boolean;
+  is_available: boolean;
+  sort_order: number;
   created_at: string;
   updated_at: string;
 };
@@ -217,6 +227,7 @@ export const usePlans = () => {
     error,
     refetch,
     updatePlan: updatePlanMutation.mutate,
+    updatePlanAsync: updatePlanMutation.mutateAsync,
     bulkUpdateStatus: bulkUpdateStatusMutation.mutate,
     createPlan: createPlanMutation.mutate,
     deletePlan: deletePlanMutation.mutateAsync,

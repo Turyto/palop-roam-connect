@@ -24,6 +24,7 @@ interface StorefrontSettings {
   coverage_line_en: string;
   is_popular: boolean;
   is_hot_deal: boolean;
+  is_available: boolean;
 }
 
 const DEFAULT_STOREFRONT: StorefrontSettings = {
@@ -37,6 +38,7 @@ const DEFAULT_STOREFRONT: StorefrontSettings = {
   coverage_line_en: '',
   is_popular: false,
   is_hot_deal: false,
+  is_available: true,
 };
 
 // Coverage line shown on the store card, derived from the tab / PALOP country.
@@ -47,6 +49,61 @@ const COVERAGE_LABELS: Record<string, { pt: string; en: string }> = {
   'cabo-verde': { pt: 'Cabo Verde', en: 'Cabo Verde' },
   'guinea-bissau': { pt: 'Guiné-Bissau', en: 'Guinea-Bissau' },
   'angola': { pt: 'Angola', en: 'Angola' },
+};
+
+// Shared by the create-plan and edit-plan modals: validate the storefront
+// settings and turn them into the `plans` table columns.
+export const buildStorefrontPlanFields = (
+  storefront: StorefrontSettings,
+  opts: {
+    // Existing labels to keep when the tab/country did not change (edit flow) —
+    // prevents silently clobbering a customized coverage label on unrelated edits.
+    preserveLabels?: { pt: string | null; en: string | null };
+  } = {}
+): { error: string } | { error?: undefined; fields: Record<string, any> } => {
+  const onStore = storefront.coverage_tab !== 'none';
+
+  if (!onStore) {
+    // Hiding a plan is non-destructive: keep card details (GB, days, subtitles,
+    // labels, country) so re-showing it later restores everything. Only take it
+    // off the store page and out of purchase.
+    return { fields: { coverage_tab: null, is_available: false } };
+  }
+
+  if (onStore) {
+    if (!storefront.data_gb || Number(storefront.data_gb) <= 0 || !storefront.validity_days || Number(storefront.validity_days) <= 0) {
+      return { error: 'To show the plan on the store page, fill in Data (GB) and Validity (days).' };
+    }
+    if (storefront.coverage_tab === 'palop' && !storefront.country_key) {
+      return { error: 'PALOP plans need a country so they appear under the right flag.' };
+    }
+    if (storefront.coverage_tab === 'americas' && (!storefront.coverage_line_pt.trim() || !storefront.coverage_line_en.trim())) {
+      return { error: 'Americas plans need the coverage line (PT and EN) so customers know which country the plan covers.' };
+    }
+  }
+
+  const coverageLabel =
+    storefront.coverage_tab === 'americas'
+      ? { pt: storefront.coverage_line_pt.trim(), en: storefront.coverage_line_en.trim() }
+      : opts.preserveLabels?.pt && opts.preserveLabels?.en
+      ? { pt: opts.preserveLabels.pt, en: opts.preserveLabels.en }
+      : COVERAGE_LABELS[storefront.coverage_tab === 'palop' ? storefront.country_key : storefront.coverage_tab] ?? null;
+
+  return {
+    fields: {
+      coverage_tab: storefront.coverage_tab,
+      country_key: storefront.coverage_tab === 'palop' ? storefront.country_key : null,
+      data_gb: Number(storefront.data_gb),
+      validity_days: Number(storefront.validity_days),
+      subtitle_pt: storefront.subtitle_pt.trim() || null,
+      subtitle_en: storefront.subtitle_en.trim() || null,
+      coverage_label_pt: coverageLabel?.pt ?? null,
+      coverage_label_en: coverageLabel?.en ?? null,
+      is_popular: storefront.is_popular,
+      is_hot_deal: storefront.is_hot_deal,
+      is_available: storefront.is_available,
+    },
+  };
 };
 
 interface CreatePlanFormData {
@@ -95,30 +152,12 @@ export const useCreatePlan = (onSuccess: () => void) => {
   const onSubmit = async (data: CreatePlanFormData) => {
     setIsCreating(true);
     try {
-      const onStore = storefront.coverage_tab !== 'none';
-      if (onStore) {
-        if (!storefront.data_gb || Number(storefront.data_gb) <= 0 || !storefront.validity_days || Number(storefront.validity_days) <= 0) {
-          toast.error('To show the plan on the store page, fill in Data (GB) and Validity (days).');
-          setIsCreating(false);
-          return;
-        }
-        if (storefront.coverage_tab === 'palop' && !storefront.country_key) {
-          toast.error('PALOP plans need a country so they appear under the right flag.');
-          setIsCreating(false);
-          return;
-        }
-        if (storefront.coverage_tab === 'americas' && (!storefront.coverage_line_pt.trim() || !storefront.coverage_line_en.trim())) {
-          toast.error('Americas plans need the coverage line (PT and EN) so customers know which country the plan covers.');
-          setIsCreating(false);
-          return;
-        }
+      const storefrontResult = buildStorefrontPlanFields(storefront);
+      if (storefrontResult.error) {
+        toast.error(storefrontResult.error);
+        setIsCreating(false);
+        return;
       }
-
-      const coverageLabel = !onStore
-        ? null
-        : storefront.coverage_tab === 'americas'
-        ? { pt: storefront.coverage_line_pt.trim(), en: storefront.coverage_line_en.trim() }
-        : COVERAGE_LABELS[storefront.coverage_tab === 'palop' ? storefront.country_key : storefront.coverage_tab] ?? null;
 
       const newPlan = {
         name: data.name,
@@ -128,16 +167,7 @@ export const useCreatePlan = (onSuccess: () => void) => {
         coverage: selectedCountries,
         status: 'active' as const,
         // Storefront fields — coverage_tab null keeps the plan off the store page
-        coverage_tab: onStore ? storefront.coverage_tab : null,
-        country_key: onStore && storefront.coverage_tab === 'palop' ? storefront.country_key : null,
-        data_gb: onStore ? Number(storefront.data_gb) : null,
-        validity_days: onStore ? Number(storefront.validity_days) : null,
-        subtitle_pt: onStore ? storefront.subtitle_pt.trim() || null : null,
-        subtitle_en: onStore ? storefront.subtitle_en.trim() || null : null,
-        coverage_label_pt: coverageLabel?.pt ?? null,
-        coverage_label_en: coverageLabel?.en ?? null,
-        is_popular: onStore ? storefront.is_popular : false,
-        is_hot_deal: onStore ? storefront.is_hot_deal : false,
+        ...storefrontResult.fields,
         sort_order: 999, // new plans appear after the curated ones
       };
 

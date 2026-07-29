@@ -13,6 +13,8 @@ import { toast } from "sonner";
 import { usePlans, useSupplierRates, type Plan } from "@/hooks/usePlans";
 import { supabase } from "@/integrations/supabase/client";
 import SupplierInfoSection from "./edit-plan-modal/SupplierInfoSection";
+import StorefrontFields from "./create-plan-modal/StorefrontFields";
+import { buildStorefrontPlanFields, type StorefrontSettings } from "@/hooks/useCreatePlan";
 import TagsSection from "./edit-plan-modal/TagsSection";
 import CountrySelectionSection, {
   PALOP_CORE_COUNTRIES,
@@ -47,11 +49,24 @@ const PALOP_DEFAULT_COUNTRIES = [
 ];
 
 const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
-  const { updatePlan, isUpdating } = usePlans();
+  const { updatePlanAsync, isUpdating } = usePlans();
   const { supplierRates, refetch: refetchSupplierRates } = useSupplierRates();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [currentSupplierRate, setCurrentSupplierRate] = useState<any>(null);
+  const [storefront, setStorefront] = useState<StorefrontSettings>({
+    coverage_tab: 'none',
+    country_key: '',
+    data_gb: '',
+    validity_days: '',
+    subtitle_pt: '',
+    subtitle_en: '',
+    coverage_line_pt: '',
+    coverage_line_en: '',
+    is_popular: false,
+    is_hot_deal: false,
+    is_available: true,
+  });
 
   const {
     register,
@@ -100,6 +115,21 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
       });
 
       setSelectedTags(plan.tags || []);
+
+      // Load current storefront settings into the editable section
+      setStorefront({
+        coverage_tab: plan.coverage_tab ?? 'none',
+        country_key: plan.country_key ?? '',
+        data_gb: plan.data_gb != null ? String(plan.data_gb) : '',
+        validity_days: plan.validity_days != null ? String(plan.validity_days) : '',
+        subtitle_pt: plan.subtitle_pt ?? '',
+        subtitle_en: plan.subtitle_en ?? '',
+        coverage_line_pt: plan.coverage_label_pt ?? '',
+        coverage_line_en: plan.coverage_label_en ?? '',
+        is_popular: plan.is_popular ?? false,
+        is_hot_deal: plan.is_hot_deal ?? false,
+        is_available: plan.is_available ?? true,
+      });
 
       const existingCoverage = plan.coverage || [];
       const shouldPrePopulate = isPalopPlan(plan.name, plan.tags || []) && existingCoverage.length === 0;
@@ -180,15 +210,31 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
     if (!plan) return;
 
     try {
+      // Keep an existing coverage label when the tab/country didn't change,
+      // so unrelated edits never silently overwrite a customized label.
+      const tabUnchanged =
+        storefront.coverage_tab === (plan.coverage_tab ?? 'none') &&
+        (storefront.coverage_tab !== 'palop' || storefront.country_key === (plan.country_key ?? ''));
+      const storefrontResult = buildStorefrontPlanFields(storefront, {
+        preserveLabels: tabUnchanged
+          ? { pt: plan.coverage_label_pt, en: plan.coverage_label_en }
+          : undefined,
+      });
+      if (storefrontResult.error) {
+        toast.error(storefrontResult.error);
+        return;
+      }
+
       const updates = {
         name: data.name,
         retail_price: Number(data.retail_price),
         description: data.description,
         tags: selectedTags,
-        coverage: selectedCountries
+        coverage: selectedCountries,
+        ...storefrontResult.fields,
       };
 
-      updatePlan({ id: plan.id, updates });
+      await updatePlanAsync({ id: plan.id, updates });
 
       if (data.wholesale_cost !== undefined && data.wholesale_cost >= 0) {
         await updateSupplierRate(plan.id, data.wholesale_cost, data.supplier_name || 'Manual Entry');
@@ -347,6 +393,9 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
               rows={3}
             />
           </div>
+
+          {/* Store page settings — tab, card details, availability */}
+          <StorefrontFields storefront={storefront} onChange={setStorefront} />
 
           {/* Tags */}
           <TagsSection
