@@ -143,6 +143,255 @@ async function fetchESIMPage(
 }
 
 // ---------------------------------------------------------------------------
+// eSIM Card (portal.esimcard.com) — login, page through /my-esims, fetch
+// per-SIM details to get package/usage/expiry info.
+// ---------------------------------------------------------------------------
+const ESIMCARD_BASE_URL = 'https://portal.esimcard.com/api/developer/reseller';
+const ESIMCARD_DETAIL_CAP = 200; // safety cap on per-SIM detail fetches
+
+async function esimcardLogin(email: string, password: string): Promise<string | null> {
+  try {
+    const res = await fetch(`${ESIMCARD_BASE_URL}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data?.access_token) {
+      console.error(`[sync/esimcard] login failed — status=${res.status}`);
+      return null;
+    }
+    return data.access_token as string;
+  } catch (e: any) {
+    console.error(`[sync/esimcard] login exception — ${e.message}`);
+    return null;
+  }
+}
+
+function gbToBytes(qty: unknown, unit: unknown): number | null {
+  const n = typeof qty === 'number' ? qty : parseFloat(String(qty ?? ''));
+  if (!isFinite(n) || n < 0) return null;
+  const u = String(unit ?? 'GB').toUpperCase();
+  if (u === 'GB') return Math.round(n * 1073741824);
+  if (u === 'MB') return Math.round(n * 1048576);
+  if (u === 'KB') return Math.round(n * 1024);
+  return Math.round(n);
+}
+
+// Fetch all SIMs (list) then details per SIM. Throws on total failure so the
+// caller can record a failed sync run; per-SIM detail failures degrade to
+// list-level info only.
+async function fetchAllESIMCardSims(token: string): Promise<any[]> {
+  const authHeaders = { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' };
+  const sims: any[] = [];
+  let page = 1;
+  let lastPage = 1;
+  do {
+    const res = await fetch(`${ESIMCARD_BASE_URL}/my-esims?page=${page}`, { headers: authHeaders });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || data?.status !== true) {
+      throw new Error(`eSIM Card my-esims page ${page} failed (HTTP ${res.status})`);
+    }
+    const list: any[] = Array.isArray(data?.data) ? data.data : [];
+    sims.push(...list);
+    lastPage = data?.meta?.lastPage ?? 1;
+    console.log(`[sync/esimcard] list page=${page}/${lastPage} items=${list.length}`);
+    page++;
+  } while (page <= lastPage && page <= 50);
+
+  // Enrich with details (packages, usage, expiry)
+  const detailed: any[] = [];
+  for (const sim of sims.slice(0, ESIMCARD_DETAIL_CAP)) {
+    let detail: any = null;
+    try {
+      const res = await fetch(`${ESIMCARD_BASE_URL}/my-esims/${sim.id}`, { headers: authHeaders });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.status === true) detail = data.data;
+    } catch (e: any) {
+      console.error(`[sync/esimcard] detail fetch failed for sim=${sim.id} — ${e.message}`);
+    }
+    detailed.push({ sim, detail });
+  }
+  // Anything beyond the cap keeps list-level info only
+  for (const sim of sims.slice(ESIMCARD_DETAIL_CAP)) detailed.push({ sim, detail: null });
+  return detailed;
+}
+
+// Derive normalized status from the detail package buckets. When detail is
+// unavailable (fetch failed or beyond the detail cap), fall back to
+// list-level signals rather than destructively marking the SIM disabled.
+function esimcardStatus(detail: any, sim?: any): string {
+  if (!detail) {
+    if (sim?.installed_at) return 'active';
+    return 'available';
+  }
+  const inUse = Array.isArray(detail.in_use_packages) ? detail.in_use_packages : [];
+  const assigned = Array.isArray(detail.assigned_packages) ? detail.assigned_packages : [];
+  const completed = Array.isArray(detail.completed_packages) ? detail.completed_packages : [];
+  const revoked = Array.isArray(detail.revoked_packages) ? detail.revoked_packages : [];
+  if (inUse.length > 0) return 'active';
+  if (assigned.length > 0) return 'available'; // purchased, not yet activated
+  if (completed.length > 0) return 'expired_used';
+  if (revoked.length > 0) return 'disabled';
+  return 'disabled';
+}
+
+// Pick the most relevant package for display: in-use > assigned > completed > revoked
+function esimcardPrimaryPackage(detail: any): any | null {
+  if (!detail) return null;
+  for (const key of ['in_use_packages', 'assigned_packages', 'completed_packages', 'revoked_packages']) {
+    const arr = detail[key];
+    if (Array.isArray(arr) && arr.length > 0) return arr[0];
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// eSIM Card plan matching — esim_packages rows with supplier='esimcard',
+// keyed by supplier_package_id (the eSIM Card package_type_id).
+// ---------------------------------------------------------------------------
+async function buildESIMCardPlanLookup(
+  db: any,
+): Promise<Map<string, { plan_id: string; plan_name: string }>> {
+  const { data, error } = await db
+    .from('esim_packages')
+    .select('supplier_package_id, plan_id, plan_name')
+    .eq('supplier', 'esimcard');
+  if (error) {
+    console.error(`[sync/esimcard] esim_packages query failed — ${error.message}`);
+    return new Map();
+  }
+  const map = new Map<string, { plan_id: string; plan_name: string }>();
+  for (const row of data ?? []) {
+    if (!row.supplier_package_id) continue;
+    const key = String(row.supplier_package_id).trim();
+    const existing = map.get(key);
+    // Prefer UUID-keyed plan rows over storefront-slug rows for a stable id
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-/.test(row.plan_id ?? '');
+    if (!existing || isUuid) {
+      map.set(key, { plan_id: row.plan_id, plan_name: row.plan_name });
+    }
+  }
+  console.log(`[sync/esimcard] plan lookup ready — ${map.size} package ids mapped`);
+  return map;
+}
+
+// ---------------------------------------------------------------------------
+// Full eSIM Card sync phase — creates its own sync run, isolated from the
+// eSIM Access phase. Returns a per-supplier result summary.
+// ---------------------------------------------------------------------------
+async function runESIMCardSync(db: any): Promise<{
+  supplier: string; status: string; itemsFetched: number; error: string | null;
+}> {
+  const supplierName = 'esimcard';
+  const email = Deno.env.get('ESIMCARD_EMAIL') ?? '';
+  const password = Deno.env.get('ESIMCARD_PASSWORD') ?? '';
+  if (!email || !password) {
+    console.warn('[sync/esimcard] credentials not configured — skipping');
+    return { supplier: supplierName, status: 'skipped', itemsFetched: 0, error: 'eSIM Card credentials not configured' };
+  }
+
+  const { data: syncRun, error: syncInsertError } = await db
+    .from('supplier_inventory_syncs')
+    .insert({ supplier_name: supplierName, status: 'running' })
+    .select()
+    .single();
+  if (syncInsertError) {
+    console.error(`[sync/esimcard] sync run insert failed — ${syncInsertError.message}`);
+    return { supplier: supplierName, status: 'failed', itemsFetched: 0, error: syncInsertError.message };
+  }
+  const syncId = syncRun.id;
+
+  const fail = async (msg: string) => {
+    await db.from('supplier_inventory_syncs').update({
+      status: 'failed',
+      completed_at: new Date().toISOString(),
+      error_message: msg,
+      items_fetched: 0,
+    }).eq('id', syncId);
+    return { supplier: supplierName, status: 'failed', itemsFetched: 0, error: msg };
+  };
+
+  try {
+    const token = await esimcardLogin(email, password);
+    if (!token) return await fail('eSIM Card authentication failed');
+
+    const [detailedSims, planLookup] = await Promise.all([
+      fetchAllESIMCardSims(token),
+      buildESIMCardPlanLookup(db),
+    ]);
+    console.log(`[sync/esimcard] fetched ${detailedSims.length} SIMs`);
+
+    const now = new Date().toISOString();
+    const rows = detailedSims.map(({ sim, detail }: any) => {
+      const pkg = esimcardPrimaryPackage(detail);
+      const status = esimcardStatus(detail, sim);
+      const packageTypeId: string | null = pkg?.package_type_id != null ? String(pkg.package_type_id) : null;
+      const plan = packageTypeId ? planLookup.get(packageTypeId) ?? null : null;
+
+      const totalBytes = pkg && !pkg.unlimited
+        ? gbToBytes(pkg.initial_data_quantity, pkg.initial_data_unit) : null;
+      const remainingBytes = pkg && !pkg.unlimited
+        ? gbToBytes(pkg.rem_data_quantity, pkg.rem_data_unit) : null;
+      const usageBytes = totalBytes !== null && remainingBytes !== null
+        ? Math.max(0, totalBytes - remainingBytes) : null;
+
+      return {
+        supplier_name:         supplierName,
+        supplier_item_id:      String(sim.id),
+        order_no:              null,
+        supplier_package_code: packageTypeId,
+        package_name:          pkg?.package ?? sim.last_bundle ?? null,
+        iccid:                 sim.iccid ?? null,
+        lpa_code:              sim.qr_code_text ?? null,
+        esim_status:           sim.status ?? null,
+        smdp_status:           null,
+        status,
+        is_sellable:           status === 'available',
+        matched_plan_id:       plan?.plan_id ?? null,
+        matched_plan_name:     plan?.plan_name ?? null,
+        total_bytes:           totalBytes,
+        remaining_bytes:       remainingBytes,
+        usage_bytes:           usageBytes,
+        activated_at:          pkg?.date_activated ?? sim.installed_at ?? null,
+        expires_at:            pkg?.date_expiry ?? null,
+        created_at_supplier:   sim.created_at ?? null,
+        raw_payload:           { sim, detail },
+        sync_id:               syncId,
+        last_synced_at:        now,
+        updated_at:            now,
+      };
+    });
+
+    let upsertError: string | undefined;
+    const BATCH = 200;
+    for (let i = 0; i < rows.length; i += BATCH) {
+      const { error } = await db
+        .from('supplier_inventory_items')
+        .upsert(rows.slice(i, i + BATCH), { onConflict: 'supplier_name,supplier_item_id' });
+      if (error) {
+        console.error(`[sync/esimcard] upsert failed — ${error.message}`);
+        upsertError = error.message;
+        break;
+      }
+    }
+
+    const finalStatus = upsertError ? 'failed' : 'completed';
+    await db.from('supplier_inventory_syncs').update({
+      status: finalStatus,
+      completed_at: new Date().toISOString(),
+      items_fetched: rows.length,
+      error_message: upsertError ?? null,
+    }).eq('id', syncId);
+    console.log(`[sync/esimcard] finished — status=${finalStatus} items=${rows.length}`);
+    return { supplier: supplierName, status: finalStatus, itemsFetched: rows.length, error: upsertError ?? null };
+  } catch (e: any) {
+    console.error(`[sync/esimcard] exception — ${e.message}`);
+    return await fail(e.message ?? 'eSIM Card sync failed');
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Plan matching via esim_packages table
 // ---------------------------------------------------------------------------
 async function buildPlanLookup(
@@ -245,9 +494,19 @@ Deno.serve(async (req: Request): Promise<Response> => {
     // Credentials check
     // -----------------------------------------------------------------------
     if (!accessCode || !secretKey) {
-      console.error('[sync] eSIM Access credentials not set in environment');
-      return new Response(JSON.stringify({ success: false, error: 'eSIM Access credentials not configured' }), {
-        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      console.error('[sync] eSIM Access credentials not set — still attempting eSIM Card sync');
+      const esimcardResult = await runESIMCardSync(db);
+      const anyOk = esimcardResult.status === 'completed';
+      return new Response(JSON.stringify({
+        success: anyOk,
+        itemsFetched: esimcardResult.itemsFetched,
+        error: 'eSIM Access credentials not configured',
+        suppliers: [
+          { supplier: 'esim_access', status: 'failed', itemsFetched: 0, error: 'eSIM Access credentials not configured' },
+          esimcardResult,
+        ],
+      }), {
+        status: anyOk ? 200 : 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -313,8 +572,20 @@ Deno.serve(async (req: Request): Promise<Response> => {
         error_message: fetchError,
         items_fetched: 0,
       }).eq('id', syncId);
-      return new Response(JSON.stringify({ success: false, error: fetchError }), {
-        status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      // eSIM Access failed entirely — still try eSIM Card so one supplier
+      // being down doesn't hide the other's stock.
+      const esimcardResult = await runESIMCardSync(db);
+      const anyOk = esimcardResult.status === 'completed';
+      return new Response(JSON.stringify({
+        success: anyOk,
+        itemsFetched: esimcardResult.itemsFetched,
+        error: fetchError,
+        suppliers: [
+          { supplier: 'esim_access', status: 'failed', itemsFetched: 0, error: fetchError },
+          esimcardResult,
+        ],
+      }), {
+        status: anyOk ? 200 : 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -408,12 +679,22 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     console.log(`[sync] finished — status=${finalStatus} totalItems=${upsertRows.length} sync_id=${syncId}`);
 
+    // -----------------------------------------------------------------------
+    // Second supplier: eSIM Card — isolated; its failure never breaks the
+    // eSIM Access result above.
+    // -----------------------------------------------------------------------
+    const esimcardResult = await runESIMCardSync(db);
+
     return new Response(JSON.stringify({
-      success: finalStatus === 'completed',
+      success: finalStatus === 'completed' || esimcardResult.status === 'completed',
       syncId,
-      itemsFetched: upsertRows.length,
+      itemsFetched: upsertRows.length + esimcardResult.itemsFetched,
       status: finalStatus,
-      error: upsertError ?? fetchError ?? null,
+      error: upsertError ?? fetchError ?? esimcardResult.error ?? null,
+      suppliers: [
+        { supplier: 'esim_access', status: finalStatus, itemsFetched: upsertRows.length, error: upsertError ?? fetchError ?? null },
+        esimcardResult,
+      ],
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -15,3 +15,7 @@ description: Durable rules for multi-supplier eSIM provisioning (eSIM Access + e
 - Edge functions deployed via Management API `POST /v1/projects/<ref>/functions/deploy?slug=<fn>` with multipart metadata + files (include `_shared/*.ts`). All CORS must allow `sentry-trace, baggage`.
 - mz-3gb was upgraded from 15→30 days (user-approved, Jul 2026) because eSIMCard has no 15-day Mozambique package.
 - Real eSIMCard test provisioning still pending — reseller balance was $0; user chose to skip live test.
+
+## eSIM Card inventory (my-esims)
+- List `GET /my-esims?page=N` (meta.lastPage) has no package/usage data; per-SIM `GET /my-esims/{id}` returns `in_use_packages/assigned_packages/completed_packages/revoked_packages` with `package_type_id`, `date_expiry`, `initial/rem_data_quantity` (GB units, `unlimited` flag). `packages/country/{ISO}` lists wholesale prices (plain USD).
+- Live-DB landmine (fixed 2026-07-29): `supplier_inventory_items.status` CHECK originally lacked `expired_used/expired_unused` even though the sync writes them — widen constraints before writing new status values.

@@ -135,9 +135,18 @@ export const useSupplierInventory = (filters: SupplierInventoryFilters = {}) => 
       queryClient.invalidateQueries({ queryKey: ['supplier-inventory-items'] });
       queryClient.invalidateQueries({ queryKey: ['supplier-inventory-items-all'] });
       queryClient.invalidateQueries({ queryKey: ['supplier-inventory-syncs'] });
+      const suppliers: any[] = Array.isArray(data.suppliers) ? data.suppliers : [];
+      const label = (s: string) => (s === 'esimcard' ? 'eSIM Card' : 'eSIM Access');
+      const parts = suppliers.map((s) =>
+        s.status === 'completed'
+          ? `${label(s.supplier)}: ${s.itemsFetched} eSIMs`
+          : `${label(s.supplier)}: ${s.status === 'skipped' ? 'skipped' : 'failed'}`
+      );
+      const failed = suppliers.filter((s) => s.status === 'failed');
       toast({
-        title: 'Sync complete',
-        description: `${data.itemsFetched ?? 0} eSIMs fetched from eSIM Access`,
+        title: failed.length > 0 ? 'Sync partially complete' : 'Sync complete',
+        description: parts.length > 0 ? parts.join(' · ') : `${data.itemsFetched ?? 0} eSIMs fetched`,
+        variant: failed.length > 0 ? 'destructive' : undefined,
       });
     },
     onError: (error: any) => {

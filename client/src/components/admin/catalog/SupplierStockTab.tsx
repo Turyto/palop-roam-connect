@@ -252,8 +252,18 @@ function DetailsDrawer({ item, onClose }: { item: SupplierInventoryItem; onClose
 // ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
+const SUPPLIER_LABELS: Record<string, string> = {
+  esim_access: 'eSIM Access',
+  esimcard: 'eSIM Card',
+};
+
+function supplierLabel(name: string): string {
+  return SUPPLIER_LABELS[name] ?? name;
+}
+
 const SupplierStockTab = () => {
   const [filters, setFilters] = useState<SupplierInventoryFilters>({
+    supplier: 'all',
     status: 'all',
     matched: 'all',
     search: '',
@@ -340,6 +350,15 @@ const SupplierStockTab = () => {
       {/* Controls */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
+          <Select value={filters.supplier ?? 'all'} onValueChange={(v) => setFilters(f => ({ ...f, supplier: v }))}>
+            <SelectTrigger className="w-40" data-testid="filter-supplier"><SelectValue placeholder="Supplier" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All suppliers</SelectItem>
+              <SelectItem value="esim_access">eSIM Access</SelectItem>
+              <SelectItem value="esimcard">eSIM Card</SelectItem>
+            </SelectContent>
+          </Select>
+
           <Select value={filters.status ?? 'all'} onValueChange={(v) => setFilters(f => ({ ...f, status: v as any }))}>
             <SelectTrigger className="w-44" data-testid="filter-status"><SelectValue placeholder="Status" /></SelectTrigger>
             <SelectContent>
@@ -395,6 +414,7 @@ const SupplierStockTab = () => {
             <TableHeader>
               <TableRow>
                 <TableHead className="min-w-[160px]">Package Name</TableHead>
+                <TableHead className="min-w-[100px]">Supplier</TableHead>
                 <TableHead className="min-w-[140px]">ICCID</TableHead>
                 <TableHead className="min-w-[110px]">Supplier Ref</TableHead>
                 <TableHead className="min-w-[100px]">Status</TableHead>
@@ -424,6 +444,13 @@ const SupplierStockTab = () => {
                       {d.packageCode && (
                         <div className="text-xs text-gray-400 font-mono mt-0.5">{d.packageCode}</div>
                       )}
+                    </TableCell>
+
+                    {/* Supplier */}
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs whitespace-nowrap">
+                        {supplierLabel(item.supplier_name)}
+                      </Badge>
                     </TableCell>
 
                     {/* ICCID */}
