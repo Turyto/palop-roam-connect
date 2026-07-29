@@ -310,6 +310,8 @@ export const useLiveSupplierRates = () => {
   const [isFetching, setIsFetching] = useState(false);
   const [lastFetched, setLastFetched] = useState<Date | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [usdToEur, setUsdToEur] = useState<number | null>(null);
+  const [usdToEurFetchedAt, setUsdToEurFetchedAt] = useState<string | null>(null);
 
   const fetchLive = useCallback(async () => {
     setIsFetching(true);
@@ -327,6 +329,8 @@ export const useLiveSupplierRates = () => {
       }
       if (!data?.success) throw new Error(data?.error ?? 'Unknown error from edge function');
       setLiveRates(data.rates ?? []);
+      setUsdToEur(typeof data.usd_to_eur === 'number' ? data.usd_to_eur : null);
+      setUsdToEurFetchedAt(data.usd_to_eur_fetched_at ?? null);
       setLastFetched(new Date());
     } catch (e: any) {
       console.error('[useLiveSupplierRates]', e);
@@ -336,7 +340,7 @@ export const useLiveSupplierRates = () => {
     }
   }, []);
 
-  return { liveRates, isFetching, lastFetched, fetchError, fetchLive };
+  return { liveRates, isFetching, lastFetched, fetchError, fetchLive, usdToEur, usdToEurFetchedAt };
 };
 
 export const usePricingRules = () => {

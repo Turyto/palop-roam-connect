@@ -154,6 +154,53 @@ async function fetchESIMCardPackages(email, password, countryCodes) {
   return map;
 }
 // ---------------------------------------------------------------------------
+// USD -> EUR rate: cached in fx_rates, refreshed when older than 12h.
+// Falls back to the last stored rate if the FX API is unreachable.
+// ---------------------------------------------------------------------------
+const FX_REFRESH_MS = 12 * 60 * 60 * 1000;
+
+async function getUsdToEur(db) {
+  let stored = null;
+  try {
+    const { data } = await db.from('fx_rates').select('rate, fetched_at, source').eq('pair', 'USD_EUR').maybeSingle();
+    stored = data ?? null;
+  } catch (e) {
+    console.error(`[fetch-rates] fx_rates read failed — ${e.message}`);
+  }
+
+  const age = stored ? Date.now() - new Date(stored.fetched_at).getTime() : Infinity;
+  if (stored && age < FX_REFRESH_MS) {
+    return { rate: Number(stored.rate), fetched_at: stored.fetched_at, source: stored.source ?? null };
+  }
+
+  // Refresh from the FX API
+  try {
+    const res = await fetch('https://open.er-api.com/v6/latest/USD');
+    const data = await res.json().catch(() => null);
+    const fresh = data?.rates?.EUR;
+    if (res.ok && typeof fresh === 'number' && fresh > 0.3 && fresh < 3) {
+      const now = new Date().toISOString();
+      const { error } = await db.from('fx_rates').upsert(
+        { pair: 'USD_EUR', rate: fresh, source: 'open.er-api.com', fetched_at: now },
+        { onConflict: 'pair' },
+      );
+      if (error) console.error(`[fetch-rates] fx_rates upsert failed — ${error.message}`);
+      console.log(`[fetch-rates] refreshed USD_EUR rate = ${fresh}`);
+      return { rate: fresh, fetched_at: now, source: 'open.er-api.com' };
+    }
+    console.error(`[fetch-rates] FX API returned unusable payload — status=${res.status}`);
+  } catch (e) {
+    console.error(`[fetch-rates] FX API fetch failed — ${e.message}`);
+  }
+
+  // Fall back to whatever we have stored (may be stale — frontend flags it)
+  if (stored) {
+    return { rate: Number(stored.rate), fetched_at: stored.fetched_at, source: stored.source ?? null };
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
 // Main handler
 // ---------------------------------------------------------------------------
 Deno.serve(async (req)=>{
@@ -268,11 +315,12 @@ Deno.serve(async (req)=>{
     const esimcardCountries = [...new Set(packages
       .filter((r)=>r.supplier === 'esimcard' && r.location_code)
       .map((r)=>r.location_code))];
-    const [liveMap, esimcardMap] = await Promise.all([
+    const [liveMap, esimcardMap, fxRate] = await Promise.all([
       fetchAllPackages(accessCode, secretKey),
       esimcardEmail && esimcardPassword
         ? fetchESIMCardPackages(esimcardEmail, esimcardPassword, esimcardCountries)
-        : Promise.resolve(new Map())
+        : Promise.resolve(new Map()),
+      getUsdToEur(db)
     ]);
     console.log(`[fetch-rates] eSIM Access returned ${liveMap.size} packages, eSIM Card returned ${esimcardMap.size} packages`);
     // Build comparison result
@@ -295,6 +343,8 @@ Deno.serve(async (req)=>{
     return new Response(JSON.stringify({
       success: true,
       rates,
+      usd_to_eur: fxRate?.rate ?? null,
+      usd_to_eur_fetched_at: fxRate?.fetched_at ?? null,
       fetched_at: new Date().toISOString()
     }), {
       status: 200,

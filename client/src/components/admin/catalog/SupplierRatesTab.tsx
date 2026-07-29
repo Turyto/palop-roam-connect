@@ -15,19 +15,23 @@ import { useToast } from "@/hooks/use-toast";
 // Helpers
 // ---------------------------------------------------------------------------
 
-// eSIM Access invoices in USD. Use a fixed EUR/USD rate for comparison.
-// Update this when the rate drifts significantly.
-const USD_TO_EUR = 0.92;
+// Suppliers invoice in USD. The USD→EUR rate is fetched daily by the backend
+// (fx_rates table); this constant is only the last-resort fallback if the
+// backend didn't return a rate at all.
+const FALLBACK_USD_TO_EUR = 0.92;
+// Warn when the rate hasn't been refreshed in over 7 days.
+const RATE_STALE_MS = 7 * 24 * 60 * 60 * 1000;
 
-function toEur(price: number, currency: string | null): number {
+function toEur(price: number, currency: string | null, usdToEur: number): number {
   if (!currency || currency === 'EUR') return price;
-  if (currency === 'USD') return price * USD_TO_EUR;
+  if (currency === 'USD') return price * usdToEur;
   return price; // fallback — show as-is
 }
 
 function buildComparisonRows(
   supplierRates: any[],
   liveRates: any[],
+  usdToEur: number,
 ): ComparisonRow[] {
   // Build a map of plan_id → stored cost from supplier_rates
   const storedMap = new Map<string, { cost: number; supplier_name: string }>();
@@ -41,7 +45,7 @@ function buildComparisonRows(
     const storedCost = stored?.cost ?? null;
     const livePrice = lr.live_price;
     // Convert live price to EUR for an apples-to-apples delta
-    const livePriceEur = livePrice !== null ? toEur(livePrice, lr.live_currency) : null;
+    const livePriceEur = livePrice !== null ? toEur(livePrice, lr.live_currency, usdToEur) : null;
 
     let status: ComparisonRow['status'] = 'no_package';
     let delta: number | null = null;
@@ -128,7 +132,13 @@ function DeltaBadge({ status, delta }: { status: ComparisonRow['status']; delta:
 // ---------------------------------------------------------------------------
 const SupplierRatesTab = () => {
   const { supplierRates, isLoading, refetch, acceptRate, isAccepting } = useSupplierRates();
-  const { liveRates, isFetching, lastFetched, fetchError, fetchLive } = useLiveSupplierRates();
+  const { liveRates, isFetching, lastFetched, fetchError, fetchLive, usdToEur, usdToEurFetchedAt } = useLiveSupplierRates();
+
+  const effectiveRate = usdToEur ?? FALLBACK_USD_TO_EUR;
+  const rateFetchedTime = usdToEurFetchedAt ? new Date(usdToEurFetchedAt).getTime() : NaN;
+  const rateAgeMs = Number.isFinite(rateFetchedTime) ? Date.now() - rateFetchedTime : null;
+  // Missing rate or unparseable/over-7-day-old timestamp all count as stale.
+  const rateIsStale = usdToEur === null || rateAgeMs === null || rateAgeMs > RATE_STALE_MS;
   const { toast } = useToast();
 
   // Real delivery package codes live in esim_packages (keyed by plan id).
@@ -154,8 +164,8 @@ const SupplierRatesTab = () => {
   const hasLiveData = liveRates.length > 0;
 
   const comparisonRows = useMemo(
-    () => buildComparisonRows(supplierRates, hasLiveData ? liveRates : []),
-    [supplierRates, liveRates, hasLiveData],
+    () => buildComparisonRows(supplierRates, hasLiveData ? liveRates : [], effectiveRate),
+    [supplierRates, liveRates, hasLiveData, effectiveRate],
   );
 
   const changedRows = comparisonRows.filter(r => r.status === 'up' || r.status === 'down');
@@ -270,6 +280,21 @@ const SupplierRatesTab = () => {
             <span className="text-xs text-gray-400">
               Live data from {lastFetched.toLocaleTimeString()}
             </span>
+          )}
+          {hasLiveData && (
+            rateIsStale ? (
+              <Badge variant="outline" className="text-xs text-amber-700 border-amber-300 gap-1" data-testid="badge-fx-rate">
+                <AlertCircle className="h-3 w-3" />
+                {usdToEur === null
+                  ? `Exchange rate unavailable — using fallback 1 USD = €${FALLBACK_USD_TO_EUR.toFixed(2)}`
+                  : `Exchange rate outdated (1 USD = €${effectiveRate.toFixed(4)}, from ${new Date(usdToEurFetchedAt!).toLocaleDateString()})`}
+              </Badge>
+            ) : (
+              <span className="text-xs text-gray-400" data-testid="badge-fx-rate">
+                1 USD = €{effectiveRate.toFixed(4)}
+                {usdToEurFetchedAt && ` · updated ${new Date(usdToEurFetchedAt).toLocaleDateString()}`}
+              </span>
+            )
           )}
           {changedRows.length > 0 && (
             <Badge className="bg-amber-100 text-amber-700 text-xs">
