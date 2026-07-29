@@ -1,4 +1,18 @@
-export type CoverageTab = 'europe' | 'south-africa' | 'brazil' | 'palop';
+export type CoverageTab = 'europe' | 'south-africa' | 'americas' | 'palop';
+
+/** Store page tabs: the DB-backed coverage tabs plus the virtual Hot Deals tab. */
+export type StoreTab = CoverageTab | 'hot-deals';
+
+/** Metadata for the virtual Hot Deals tab (not a coverage_tab value in the DB). */
+export const hotDealsTab = {
+  id: 'hot-deals' as const,
+  tabLabel: { pt: 'Promoções', en: 'Hot Deals' },
+  title: { pt: 'Promoções', en: 'Hot Deals' },
+  coverageLine: {
+    pt: 'Seleção de planos em destaque — a cobertura de cada plano está indicada no próprio cartão.',
+    en: 'A selection of featured plans — each plan card shows its own coverage.',
+  },
+};
 
 export interface PlanCard {
   id: string;
@@ -15,6 +29,8 @@ export interface PlanCard {
   popular?: boolean;
   /** false = visible but not purchasable yet (supplier not live) */
   available: boolean;
+  /** true = also shown on the Hot Deals tab */
+  hotDeal?: boolean;
   href: string;
 }
 
@@ -90,12 +106,12 @@ export const regions: RegionMeta[] = [
     },
   },
   {
-    id: 'brazil',
-    tabLabel: { pt: 'Brasil', en: 'Brazil' },
-    title: { pt: 'eSIM Brasil', en: 'Brazil eSIM' },
+    id: 'americas',
+    tabLabel: { pt: 'Américas', en: 'Americas' },
+    title: { pt: 'eSIM Américas', en: 'Americas eSIM' },
     coverageLine: {
-      pt: 'Cobertura: Brasil.',
-      en: 'Coverage: Brazil.',
+      pt: 'Cobertura: Brasil e Estados Unidos — cada plano indica o país coberto no próprio cartão.',
+      en: 'Coverage: Brazil and the United States — each plan card shows the country it covers.',
     },
   },
   {
@@ -189,19 +205,19 @@ export const planCards: PlanCard[] = [
     10, 30, SA),
 
   // Brazil
-  card('br-3gb', 'brazil',
+  card('br-3gb', 'americas',
     { pt: 'Brasil 3 GB', en: 'Brazil 3 GB' },
     { pt: 'Ideal para chegada, mensagens e mapas', en: 'Great for arrival, messages and maps' },
     3, 30, BR),
-  card('br-5gb', 'brazil',
+  card('br-5gb', 'americas',
     { pt: 'Brasil 5 GB', en: 'Brazil 5 GB' },
     { pt: 'Ideal para uso diário e videochamadas', en: 'Ideal for daily use and video calls' },
     5, 30, BR, { popular: true }),
-  card('br-10gb', 'brazil',
+  card('br-10gb', 'americas',
     { pt: 'Brasil 10 GB', en: 'Brazil 10 GB' },
     { pt: 'Ideal para estadias mais longas', en: 'Best for longer stays' },
     10, 30, BR),
-  card('br-20gb', 'brazil',
+  card('br-20gb', 'americas',
     { pt: 'Brasil 20 GB', en: 'Brazil 20 GB' },
     { pt: 'Tranquilidade total', en: 'Total peace of mind' },
     20, 30, BR),

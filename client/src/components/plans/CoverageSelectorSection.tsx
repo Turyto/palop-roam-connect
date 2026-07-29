@@ -1,16 +1,25 @@
 import { useLanguage } from '@/contexts/language';
-import { CoverageTab, regions } from '@/content/plansPageContent';
+import { StoreTab, regions, hotDealsTab } from '@/content/plansPageContent';
 
 interface CoverageSelectorSectionProps {
-  selectedTab: CoverageTab;
-  onTabChange: (tab: CoverageTab) => void;
+  selectedTab: StoreTab;
+  onTabChange: (tab: StoreTab) => void;
+  /** Show the Hot Deals tab only when at least one visible plan is flagged. */
+  showHotDeals: boolean;
 }
 
-const CoverageSelectorSection = ({ selectedTab, onTabChange }: CoverageSelectorSectionProps) => {
+const CoverageSelectorSection = ({ selectedTab, onTabChange, showHotDeals }: CoverageSelectorSectionProps) => {
   const { t, lang } = useLanguage();
   const c = t.plansPage.coverage;
 
-  const selectedRegion = regions.find((r) => r.id === selectedTab) ?? regions[0];
+  const tabs = [
+    ...regions.map((r) => ({ id: r.id as StoreTab, tabLabel: r.tabLabel, coverageLine: r.coverageLine })),
+    ...(showHotDeals
+      ? [{ id: hotDealsTab.id as StoreTab, tabLabel: hotDealsTab.tabLabel, coverageLine: hotDealsTab.coverageLine }]
+      : []),
+  ];
+
+  const selectedRegion = tabs.find((r) => r.id === selectedTab) ?? tabs[0];
 
   return (
     <section className="py-10 bg-white border-b border-gray-100">
@@ -25,7 +34,7 @@ const CoverageSelectorSection = ({ selectedTab, onTabChange }: CoverageSelectorS
             role="tablist"
             aria-label="Coverage selector"
           >
-            {regions.map((region) => (
+            {tabs.map((region) => (
               <button
                 key={region.id}
                 role="tab"

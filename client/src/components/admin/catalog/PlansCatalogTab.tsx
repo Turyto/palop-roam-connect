@@ -217,6 +217,7 @@ const PlansCatalogTab = () => {
               <TableHead>Margin %</TableHead>
               <TableHead>Coverage</TableHead>
               <TableHead>Tags</TableHead>
+              <TableHead>Hot Deal</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
@@ -296,6 +297,23 @@ const PlansCatalogTab = () => {
                         </Badge>
                       )}
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {plan.coverage_tab ? (
+                      <Switch
+                        checked={plan.is_hot_deal}
+                        onCheckedChange={() =>
+                          updatePlan({
+                            id: plan.id,
+                            updates: { is_hot_deal: !plan.is_hot_deal },
+                          })
+                        }
+                        title="Show this plan on the store's Hot Deals tab"
+                        data-testid={`switch-hot-deal-${plan.id}`}
+                      />
+                    ) : (
+                      <span className="text-xs text-gray-400" title="Only plans shown on the store page can be hot deals">—</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Switch

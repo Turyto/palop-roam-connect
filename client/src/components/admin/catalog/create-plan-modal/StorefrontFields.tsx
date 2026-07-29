@@ -21,7 +21,7 @@ const TABS = [
   { value: "none", label: "Hidden (not on store page)" },
   { value: "europe", label: "Europe" },
   { value: "south-africa", label: "South Africa" },
-  { value: "brazil", label: "Brazil" },
+  { value: "americas", label: "Americas (Brazil, USA…)" },
   { value: "palop", label: "PALOP" },
 ];
 
@@ -80,6 +80,31 @@ const StorefrontFields = ({ storefront, onChange }: StorefrontFieldsProps) => {
             </div>
           )}
         </div>
+
+        {storefront.coverage_tab === "americas" && (
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="sf-coverage-pt">Coverage shown on card (Portuguese) *</Label>
+              <Input
+                id="sf-coverage-pt"
+                value={storefront.coverage_line_pt}
+                onChange={(e) => set({ coverage_line_pt: e.target.value })}
+                placeholder="Ex: Estados Unidos"
+                data-testid="input-coverage-pt"
+              />
+            </div>
+            <div>
+              <Label htmlFor="sf-coverage-en">Coverage shown on card (English) *</Label>
+              <Input
+                id="sf-coverage-en"
+                value={storefront.coverage_line_en}
+                onChange={(e) => set({ coverage_line_en: e.target.value })}
+                placeholder="e.g. United States"
+                data-testid="input-coverage-en"
+              />
+            </div>
+          </div>
+        )}
 
         {onStore && (
           <>
@@ -144,6 +169,18 @@ const StorefrontFields = ({ storefront, onChange }: StorefrontFieldsProps) => {
               />
               <Label htmlFor="sf-popular" className="cursor-pointer">
                 Mark as "Most popular"
+              </Label>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="sf-hot-deal"
+                checked={storefront.is_hot_deal}
+                onCheckedChange={(v) => set({ is_hot_deal: v === true })}
+                data-testid="checkbox-hot-deal"
+              />
+              <Label htmlFor="sf-hot-deal" className="cursor-pointer">
+                Show on the "Hot Deals" tab (plan also stays in its regional tab)
               </Label>
             </div>
           </>

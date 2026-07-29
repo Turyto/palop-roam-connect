@@ -23,12 +23,13 @@ export type StorefrontPlanRow = {
   country_key: string | null;
   is_popular: boolean;
   is_available: boolean;
+  is_hot_deal: boolean;
   sort_order: number;
 };
 
 const fmtPrice = (n: number) => `€${Number(n).toFixed(2).replace('.', ',')}`;
 
-const VALID_TABS: CoverageTab[] = ['europe', 'south-africa', 'brazil', 'palop'];
+const VALID_TABS: CoverageTab[] = ['europe', 'south-africa', 'americas', 'palop'];
 
 export const rowToPlanCard = (row: StorefrontPlanRow): PlanCard => {
   const id = row.storefront_slug || row.id;
@@ -51,6 +52,7 @@ export const rowToPlanCard = (row: StorefrontPlanRow): PlanCard => {
     },
     popular: row.is_popular,
     available: row.is_available,
+    hotDeal: row.is_hot_deal,
     href: `/purchase?plan=${id}`,
   };
 };
@@ -62,7 +64,7 @@ export const useStorefrontPlans = () => {
       const { data, error } = await supabase
         .from('plans')
         .select(
-          'id, name, retail_price, status, storefront_slug, name_pt, name_en, subtitle_pt, subtitle_en, coverage_label_pt, coverage_label_en, data_gb, validity_days, coverage_tab, country_key, is_popular, is_available, sort_order'
+          'id, name, retail_price, status, storefront_slug, name_pt, name_en, subtitle_pt, subtitle_en, coverage_label_pt, coverage_label_en, data_gb, validity_days, coverage_tab, country_key, is_popular, is_available, is_hot_deal, sort_order'
         )
         .eq('status', 'active')
         .not('coverage_tab', 'is', null)
@@ -92,7 +94,7 @@ export const useAvailableStorefrontPlans = () => {
       const { data, error } = await supabase
         .from('plans')
         .select(
-          'id, name, retail_price, status, storefront_slug, name_pt, name_en, subtitle_pt, subtitle_en, coverage_label_pt, coverage_label_en, data_gb, validity_days, coverage_tab, country_key, is_popular, is_available, sort_order'
+          'id, name, retail_price, status, storefront_slug, name_pt, name_en, subtitle_pt, subtitle_en, coverage_label_pt, coverage_label_en, data_gb, validity_days, coverage_tab, country_key, is_popular, is_available, is_hot_deal, sort_order'
         )
         .eq('status', 'active')
         .not('coverage_tab', 'is', null);

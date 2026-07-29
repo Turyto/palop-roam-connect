@@ -13,6 +13,8 @@ export type Plan = {
   status: string;
   retail_price: number;
   storefront_slug: string | null;
+  coverage_tab: string | null;
+  is_hot_deal: boolean;
   created_at: string;
   updated_at: string;
 };

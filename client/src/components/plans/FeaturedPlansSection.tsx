@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/language';
-import { palopCountries, CoverageTab, PlanCard } from '@/content/plansPageContent';
+import { palopCountries, StoreTab, PlanCard } from '@/content/plansPageContent';
 import { useStorefrontPlans } from '@/hooks/useStorefrontPlans';
 
 interface FeaturedPlansSectionProps {
-  selectedTab: CoverageTab;
+  selectedTab: StoreTab;
 }
 
 const FeaturedPlansSection = ({ selectedTab }: FeaturedPlansSectionProps) => {
@@ -13,7 +13,10 @@ const FeaturedPlansSection = ({ selectedTab }: FeaturedPlansSectionProps) => {
   const f = t.plansPage.featured;
   const { planCards, isLoading, error } = useStorefrontPlans();
 
-  const filteredPlans = planCards.filter((p) => p.coverage === selectedTab);
+  const filteredPlans =
+    selectedTab === 'hot-deals'
+      ? planCards.filter((p) => p.hotDeal)
+      : planCards.filter((p) => p.coverage === selectedTab);
 
   const renderCard = (plan: PlanCard) => (
     <div

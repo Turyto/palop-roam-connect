@@ -13,13 +13,17 @@ interface SupplierRate {
 }
 
 interface StorefrontSettings {
-  coverage_tab: string; // 'none' | 'europe' | 'south-africa' | 'brazil' | 'palop'
+  coverage_tab: string; // 'none' | 'europe' | 'south-africa' | 'americas' | 'palop'
   country_key: string;  // '' or a PALOP country key
   data_gb: string;
   validity_days: string;
   subtitle_pt: string;
   subtitle_en: string;
+  // Americas is a multi-country tab, so the card coverage line is typed in
+  coverage_line_pt: string;
+  coverage_line_en: string;
   is_popular: boolean;
+  is_hot_deal: boolean;
 }
 
 const DEFAULT_STOREFRONT: StorefrontSettings = {
@@ -29,14 +33,16 @@ const DEFAULT_STOREFRONT: StorefrontSettings = {
   validity_days: '',
   subtitle_pt: '',
   subtitle_en: '',
+  coverage_line_pt: '',
+  coverage_line_en: '',
   is_popular: false,
+  is_hot_deal: false,
 };
 
 // Coverage line shown on the store card, derived from the tab / PALOP country.
 const COVERAGE_LABELS: Record<string, { pt: string; en: string }> = {
   'europe': { pt: 'Portugal + Europa', en: 'Portugal + Europe' },
   'south-africa': { pt: 'África do Sul', en: 'South Africa' },
-  'brazil': { pt: 'Brasil', en: 'Brazil' },
   'mozambique': { pt: 'Moçambique', en: 'Mozambique' },
   'cabo-verde': { pt: 'Cabo Verde', en: 'Cabo Verde' },
   'guinea-bissau': { pt: 'Guiné-Bissau', en: 'Guinea-Bissau' },
@@ -101,11 +107,18 @@ export const useCreatePlan = (onSuccess: () => void) => {
           setIsCreating(false);
           return;
         }
+        if (storefront.coverage_tab === 'americas' && (!storefront.coverage_line_pt.trim() || !storefront.coverage_line_en.trim())) {
+          toast.error('Americas plans need the coverage line (PT and EN) so customers know which country the plan covers.');
+          setIsCreating(false);
+          return;
+        }
       }
 
-      const coverageLabel = onStore
-        ? COVERAGE_LABELS[storefront.coverage_tab === 'palop' ? storefront.country_key : storefront.coverage_tab] ?? null
-        : null;
+      const coverageLabel = !onStore
+        ? null
+        : storefront.coverage_tab === 'americas'
+        ? { pt: storefront.coverage_line_pt.trim(), en: storefront.coverage_line_en.trim() }
+        : COVERAGE_LABELS[storefront.coverage_tab === 'palop' ? storefront.country_key : storefront.coverage_tab] ?? null;
 
       const newPlan = {
         name: data.name,
@@ -124,6 +137,7 @@ export const useCreatePlan = (onSuccess: () => void) => {
         coverage_label_pt: coverageLabel?.pt ?? null,
         coverage_label_en: coverageLabel?.en ?? null,
         is_popular: onStore ? storefront.is_popular : false,
+        is_hot_deal: onStore ? storefront.is_hot_deal : false,
         sort_order: 999, // new plans appear after the curated ones
       };
 
