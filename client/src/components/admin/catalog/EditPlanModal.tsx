@@ -162,13 +162,18 @@ const EditPlanModal = ({ plan, isOpen, onClose }: EditPlanModalProps) => {
 
   const upsertESIMPackage = async (planId: string, packageId: string, planName: string) => {
     if (!packageId.trim()) return;
-    const { error } = await supabase
-      .from('esim_packages')
-      .upsert(
-        { plan_id: planId, plan_name: planName, esim_access_package_id: packageId.trim() },
-        { onConflict: 'plan_id' }
-      );
-    if (error) throw error;
+    // Checkout resolves packages by the storefront slug, while the admin
+    // catalog uses the plan UUID. Write BOTH keys so they can never drift.
+    const keys = [planId, ...(plan?.storefront_slug ? [plan.storefront_slug] : [])];
+    for (const key of keys) {
+      const { error } = await supabase
+        .from('esim_packages')
+        .upsert(
+          { plan_id: key, plan_name: planName, esim_access_package_id: packageId.trim(), supplier: 'esim_access' },
+          { onConflict: 'plan_id' }
+        );
+      if (error) throw error;
+    }
   };
 
   const onSubmit = async (data: EditPlanFormData) => {

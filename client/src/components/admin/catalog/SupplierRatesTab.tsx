@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RefreshCw, TrendingDown, TrendingUp, Minus, AlertCircle, CheckCheck, Clock } from "lucide-react";
 import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 
@@ -127,6 +129,24 @@ const SupplierRatesTab = () => {
   const { supplierRates, isLoading, refetch, acceptRate, isAccepting } = useSupplierRates();
   const { liveRates, isFetching, lastFetched, fetchError, fetchLive } = useLiveSupplierRates();
   const { toast } = useToast();
+
+  // Real delivery package codes live in esim_packages (keyed by plan id).
+  const { data: packageCodes = new Map<string, string>() } = useQuery({
+    queryKey: ["esim-package-codes"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("esim_packages")
+        .select("plan_id, esim_access_package_id, supplier_package_id");
+      if (error) throw error;
+      const map = new Map<string, string>();
+      for (const row of data ?? []) {
+        const code = row.esim_access_package_id ?? row.supplier_package_id;
+        if (code) map.set(row.plan_id, code);
+      }
+      return map;
+    },
+  });
+
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
   const [acceptingAll, setAcceptingAll] = useState(false);
 
@@ -360,7 +380,7 @@ const SupplierRatesTab = () => {
                   )}
 
                   <TableCell className="font-mono text-xs text-gray-500">
-                    {compRow?.package_code ?? rate?.supplier_plan_id ?? (
+                    {packageCodes.get(compRow?.plan_id ?? rate?.plan_id) ?? compRow?.package_code ?? (
                       <span className="text-gray-400 italic">Not specified</span>
                     )}
                   </TableCell>

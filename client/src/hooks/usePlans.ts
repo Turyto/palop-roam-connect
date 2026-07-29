@@ -12,6 +12,7 @@ export type Plan = {
   coverage: string[];
   status: string;
   retail_price: number;
+  storefront_slug: string | null;
   created_at: string;
   updated_at: string;
 };
