@@ -6,7 +6,7 @@ import HomeFooter from "@/components/home/HomeFooter";
 import PurchaseFormWithOrders from "@/components/PurchaseFormWithOrders";
 import PurchaseSteps from "@/components/PurchaseSteps";
 import SelectedPlanSummary from "@/components/SelectedPlanSummary";
-import { PLAN_PRICES, planCards } from "@/content/plansPageContent";
+import { useAvailableStorefrontPlans } from "@/hooks/useStorefrontPlans";
 
 type PurchaseStep = "checkout" | "payment";
 
@@ -26,6 +26,7 @@ const Purchase = () => {
   const planParam = searchParams.get('plan');
   const [currentStep, setCurrentStep] = useState<PurchaseStep>("checkout");
   const [selectedPlan, setSelectedPlan] = useState<ESIMPlan | null>(null);
+  const { purchasablePlans, isLoading: plansLoading, error: plansError } = useAvailableStorefrontPlans();
 
   useEffect(() => {
     if (!planParam) {
@@ -33,28 +34,26 @@ const Purchase = () => {
     }
   }, [planParam, navigate]);
 
-  // Pre-defined plans — public plans (from /plans page content) + legacy eSIM Access plans
+  // Purchasable plans — public storefront plans (from the plans table, managed
+  // in the admin panel) + legacy eSIM Access plans.
   const availablePlans: ESIMPlan[] = [
-    // Active public plans — derived from the plans page content source.
-    // Plans marked available:false (supplier not live yet) are intentionally
-    // excluded so they cannot be purchased via a direct URL.
-    ...planCards
-      .filter((p) => p.available)
-      .map((p): ESIMPlan => ({
-        id: p.id,
-        name: p.name.en,
-        data: p.data,
-        days: parseInt(p.validityDays, 10),
-        price: PLAN_PRICES[p.id],
-        currency: "EUR",
-        features: [
-          `${p.data} of Internet`,
-          `Valid for ${p.validityDays} days`,
-          `${p.coverageLabel.en} coverage`,
-          "Instant QR delivery",
-          "No contract required"
-        ]
-      })),
+    // Active storefront plans. Plans marked unavailable (supplier not live yet)
+    // are excluded by the hook so they cannot be purchased via a direct URL.
+    ...purchasablePlans.map((p): ESIMPlan => ({
+      id: p.id,
+      name: p.name.en,
+      data: p.data,
+      days: parseInt(p.validityDays, 10),
+      price: p.priceNumber,
+      currency: "EUR",
+      features: [
+        `${p.data} of Internet`,
+        `Valid for ${p.validityDays} days`,
+        `${p.coverageLabel.en} coverage`,
+        "Instant QR delivery",
+        "No contract required"
+      ]
+    })),
     // Legacy eSIM Access plans (preserved for backward compatibility)
     {
       id: "lite",
@@ -170,17 +169,21 @@ const Purchase = () => {
   ];
 
   useEffect(() => {
-    if (planParam) {
-      const plan = availablePlans.find(p => p.id === planParam);
-      if (plan) {
-        setSelectedPlan(plan);
-        setCurrentStep("checkout");
-      } else {
-        // Unknown or not-yet-available plan id — send back to the plans page
-        navigate('/plans', { replace: true });
-      }
+    if (!planParam) return;
+    // Legacy plans are always resolvable, even while (or if) the storefront
+    // fetch is loading or failed — checkout must never depend on it for them.
+    const plan = availablePlans.find(p => p.id === planParam);
+    if (plan) {
+      setSelectedPlan(plan);
+      setCurrentStep("checkout");
+      return;
     }
-  }, [planParam]);
+    // Only declare a plan unknown once storefront plans loaded successfully.
+    if (!plansLoading && !plansError) {
+      navigate('/plans', { replace: true });
+    }
+    // On error we keep the page and show the error state below.
+  }, [planParam, plansLoading, plansError, purchasablePlans.length]);
 
   const handleBackToPlans = () => {
     navigate('/plans');
@@ -198,6 +201,22 @@ const Purchase = () => {
 
       <main className="flex-grow">
         <div className="container mx-auto px-4 py-8 max-w-6xl">
+          {!selectedPlan && planParam && plansError && (
+            <div className="text-center py-16" data-testid="purchase-plans-error">
+              <p className="text-gray-700 font-medium mb-2">
+                Não foi possível carregar o plano. / Could not load the plan.
+              </p>
+              <p className="text-gray-500 text-sm mb-6">
+                Verifica a tua ligação e tenta novamente. / Check your connection and try again.
+              </p>
+              <button
+                onClick={() => window.location.reload()}
+                className="text-sm text-palop-green underline hover:opacity-75"
+              >
+                Tentar novamente / Try again
+              </button>
+            </div>
+          )}
           {selectedPlan && (
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
               <div className="lg:col-span-2">

@@ -1,9 +1,23 @@
 import { useLanguage } from '@/contexts/language';
-import { comparisonRows } from '@/content/plansPageContent';
+import { useStorefrontPlans } from '@/hooks/useStorefrontPlans';
 
 const SimpleComparisonSection = () => {
   const { t, lang } = useLanguage();
   const c = t.plansPage.comparison;
+  const { planCards } = useStorefrontPlans();
+
+  const comparisonRows = planCards
+    .filter((p) => p.coverage === 'europe')
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      data: p.data,
+      duration: p.validity,
+      coverage: p.coverageLabel,
+      price: p.price,
+    }));
+
+  if (comparisonRows.length === 0) return null;
 
   return (
     <section id="compare-plans" className="py-14 bg-gray-50 scroll-mt-20">

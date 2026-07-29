@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/language';
-import { planCards, palopCountries, CoverageTab, PlanCard } from '@/content/plansPageContent';
+import { palopCountries, CoverageTab, PlanCard } from '@/content/plansPageContent';
+import { useStorefrontPlans } from '@/hooks/useStorefrontPlans';
 
 interface FeaturedPlansSectionProps {
   selectedTab: CoverageTab;
@@ -10,6 +11,7 @@ interface FeaturedPlansSectionProps {
 const FeaturedPlansSection = ({ selectedTab }: FeaturedPlansSectionProps) => {
   const { t, lang } = useLanguage();
   const f = t.plansPage.featured;
+  const { planCards, isLoading, error } = useStorefrontPlans();
 
   const filteredPlans = planCards.filter((p) => p.coverage === selectedTab);
 
@@ -101,7 +103,23 @@ const FeaturedPlansSection = ({ selectedTab }: FeaturedPlansSectionProps) => {
         </div>
         <p className="text-center text-gray-500 max-w-md mx-auto mb-10 text-sm">{f.subtitle}</p>
 
-        {selectedTab === 'palop' ? (
+        {isLoading ? (
+          <div className="grid gap-6 max-w-4xl mx-auto grid-cols-1 md:grid-cols-3" data-testid="plans-loading">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="rounded-2xl border-2 border-gray-100 p-6 space-y-4 animate-pulse">
+                <div className="h-5 bg-gray-200 rounded w-2/3" />
+                <div className="h-10 bg-gray-200 rounded w-1/2" />
+                <div className="h-4 bg-gray-100 rounded w-full" />
+                <div className="h-4 bg-gray-100 rounded w-full" />
+                <div className="h-9 bg-gray-200 rounded w-full" />
+              </div>
+            ))}
+          </div>
+        ) : error ? (
+          <p className="text-center text-sm text-gray-500 py-10" data-testid="plans-error">
+            {f.loadErrorPlans}
+          </p>
+        ) : selectedTab === 'palop' ? (
           <div className="space-y-12 max-w-4xl mx-auto">
             {palopCountries.map((country) => {
               const countryPlans = filteredPlans.filter((p) => p.countryKey === country.key);

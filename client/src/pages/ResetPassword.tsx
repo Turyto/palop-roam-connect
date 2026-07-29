@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/language';
 import { Lock, AlertCircle, CheckCircle } from 'lucide-react';
 
 function getHashError() {
@@ -32,6 +33,8 @@ const ResetPassword = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
+  const a = t.auth;
   const [hashError] = useState(getHashError);
   // Auth "loading" can flip false before supabase-js finishes consuming the
   // recovery token from the URL hash. Keep showing the spinner while a token
@@ -47,16 +50,16 @@ const ResetPassword = () => {
     if (saving) return;
     if (password.length < 6) {
       toast({
-        title: 'Palavra-passe demasiado curta',
-        description: 'Utiliza pelo menos 6 caracteres. / Use at least 6 characters.',
+        title: a.passwordTooShortTitle,
+        description: a.passwordTooShortDesc,
         variant: 'destructive',
       });
       return;
     }
     if (password !== confirm) {
       toast({
-        title: 'As palavras-passe não coincidem',
-        description: 'Confirma que escreveste a mesma palavra-passe nos dois campos.',
+        title: a.passwordMismatchTitle,
+        description: a.passwordMismatchDesc,
         variant: 'destructive',
       });
       return;
@@ -65,14 +68,14 @@ const ResetPassword = () => {
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) {
-        toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+        toast({ title: a.errorTitle, description: error.message, variant: 'destructive' });
       } else {
         setDone(true);
       }
     } catch {
       toast({
-        title: 'Erro',
-        description: 'Ocorreu um erro. Tenta novamente. / Something went wrong, try again.',
+        title: a.errorTitle,
+        description: a.genericError,
         variant: 'destructive',
       });
     } finally {
@@ -95,7 +98,7 @@ const ResetPassword = () => {
   if (loading || (awaitingRecovery && !user)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">A carregar...</div>
+        <div className="text-lg">{a.loading}</div>
       </div>
     );
   }
@@ -107,16 +110,12 @@ const ResetPassword = () => {
         <Card className="w-full max-w-md border-amber-200">
           <CardContent className="pt-8 pb-8 text-center">
             <AlertCircle className="mx-auto mb-4 text-amber-500" size={44} />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">O link expirou</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">{a.resetExpiredTitle}</h2>
             <p className="text-gray-600 text-sm mb-6">
-              Os links de recuperação são válidos por 1 hora e de uso único.
-              Pede um novo link na página de acesso.
-              <span className="block mt-1 text-gray-400">
-                The reset link expired — request a new one from the sign-in page.
-              </span>
+              {a.resetExpiredDesc}
             </p>
             <Button asChild className="bg-palop-green hover:bg-palop-green/90">
-              <Link to="/auth">Pedir novo link</Link>
+              <Link to="/auth">{a.requestNewLink}</Link>
             </Button>
           </CardContent>
         </Card>
@@ -132,17 +131,13 @@ const ResetPassword = () => {
           <CardContent className="pt-8 pb-8 text-center">
             <Lock className="mx-auto mb-4 text-gray-400" size={44} />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              Recuperar palavra-passe
+              {a.resetNoSessionTitle}
             </h2>
             <p className="text-gray-600 text-sm mb-6">
-              Para definires uma nova palavra-passe, pede um link de recuperação
-              na página de acesso.
-              <span className="block mt-1 text-gray-400">
-                To set a new password, request a reset link from the sign-in page.
-              </span>
+              {a.resetNoSessionDesc}
             </p>
             <Button asChild className="bg-palop-green hover:bg-palop-green/90">
-              <Link to="/auth">Ir para a página de acesso</Link>
+              <Link to="/auth">{a.goToSignIn}</Link>
             </Button>
           </CardContent>
         </Card>
@@ -157,18 +152,17 @@ const ResetPassword = () => {
           <CardContent className="pt-8 pb-8 text-center">
             <CheckCircle className="mx-auto mb-4 text-palop-green" size={48} />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              Palavra-passe atualizada!
+              {a.resetDoneTitle}
             </h2>
             <p className="text-gray-600 text-sm mb-6">
-              Já podes usar a nova palavra-passe na próxima vez que entrares.
-              <span className="block mt-1 text-gray-400">Your password has been updated.</span>
+              {a.resetDoneDesc}
             </p>
             <Button
               onClick={() => navigate('/auth', { replace: true })}
               className="bg-palop-green hover:bg-palop-green/90"
               data-testid="button-reset-continue"
             >
-              Continuar
+              {a.continue}
             </Button>
           </CardContent>
         </Card>
@@ -180,23 +174,23 @@ const ResetPassword = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center pb-2">
-          <CardTitle className="text-2xl">Nova palavra-passe</CardTitle>
+          <CardTitle className="text-2xl">{a.resetTitle}</CardTitle>
           <CardDescription>
-            {user.email} · escolhe a tua nova palavra-passe
+            {user.email} · {a.resetSubtitle}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="new-password" className="block text-sm font-medium text-gray-700 mb-1">
-                Nova palavra-passe
+                {a.newPasswordLabel}
               </label>
               <Input
                 id="new-password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Pelo menos 6 caracteres"
+                placeholder={a.newPasswordPlaceholder}
                 required
                 minLength={6}
                 autoComplete="new-password"
@@ -206,14 +200,14 @@ const ResetPassword = () => {
             </div>
             <div>
               <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 mb-1">
-                Confirmar palavra-passe
+                {a.confirmPasswordLabel}
               </label>
               <Input
                 id="confirm-password"
                 type="password"
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
-                placeholder="Repete a palavra-passe"
+                placeholder={a.confirmPasswordPlaceholder}
                 required
                 minLength={6}
                 autoComplete="new-password"
@@ -227,7 +221,7 @@ const ResetPassword = () => {
               disabled={saving}
               data-testid="button-save-password"
             >
-              {saving ? 'A guardar...' : 'Guardar nova palavra-passe'}
+              {saving ? a.saving : a.savePassword}
             </Button>
           </form>
         </CardContent>

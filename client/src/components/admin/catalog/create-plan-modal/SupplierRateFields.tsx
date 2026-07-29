@@ -131,7 +131,7 @@ const SupplierRateFields = ({ supplierRates, onSupplierRatesChange }: SupplierRa
                 <div className="flex items-center gap-2 mb-1">
                   <Zap className="h-4 w-4 text-amber-500" />
                   <Label htmlFor={`esim_access_package_id_${index}`} className="text-sm font-medium">
-                    eSIM Access Package Code
+                    Supplier Package Code
                   </Label>
                   <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
                     Required for delivery
@@ -145,7 +145,7 @@ const SupplierRateFields = ({ supplierRates, onSupplierRatesChange }: SupplierRa
                   className="font-mono text-sm"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  The package code from the eSIM Access dashboard. Without this, paid orders will not receive an eSIM.
+                  The package code from the supplier's dashboard (eSIM Access or eSIM Card). Without this, paid orders will not receive an eSIM.
                 </p>
                 {!rate.esim_access_package_id && (
                   <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">

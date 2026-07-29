@@ -7,6 +7,7 @@ import { useCreatePlanLogic } from "./create-plan-modal/CreatePlanFormLogic";
 import TagsSection from "./edit-plan-modal/TagsSection";
 import CountrySelectionSection from "./edit-plan-modal/CountrySelectionSection";
 import SupplierRateFields from "./create-plan-modal/SupplierRateFields";
+import StorefrontFields from "./create-plan-modal/StorefrontFields";
 import PlanBasicInfoFields from "./create-plan-modal/PlanBasicInfoFields";
 
 interface CreatePlanModalProps {
@@ -28,6 +29,8 @@ const CreatePlanModal = ({ isOpen, onClose }: CreatePlanModalProps) => {
     setSelectedCountries,
     supplierRates,
     setSupplierRates,
+    storefront,
+    setStorefront,
     isCreating,
     handleClose
   } = useCreatePlan(onClose);
@@ -75,6 +78,14 @@ const CreatePlanModal = ({ isOpen, onClose }: CreatePlanModalProps) => {
             selectedCountries={selectedCountries}
             onCountryToggle={handleCountryToggle}
             showPalopInfo={showPalopInfo}
+          />
+
+          <Separator />
+
+          {/* Store page visibility & display */}
+          <StorefrontFields
+            storefront={storefront}
+            onChange={setStorefront}
           />
 
           <Separator />

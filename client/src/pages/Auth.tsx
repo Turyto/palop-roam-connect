@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/auth';
+import { useLanguage } from '@/contexts/language';
 import AuthForm from '@/components/AuthForm';
 
 function getHashError() {
@@ -13,6 +14,8 @@ function getHashError() {
 
 const Auth = () => {
   const { user, userRole, roleError, loading } = useAuth();
+  const { t } = useLanguage();
+  const a = t.auth;
   const navigate = useNavigate();
   const [hashError] = useState(getHashError);
 
@@ -33,7 +36,7 @@ const Auth = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">A carregar...</div>
+        <div className="text-lg">{a.loading}</div>
       </div>
     );
   }
@@ -43,16 +46,16 @@ const Auth = () => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="max-w-sm text-center p-6 bg-white rounded-lg shadow-sm border border-gray-100">
           <p className="text-gray-800 font-medium mb-1">
-            Não foi possível carregar o tipo de conta.
+            {a.roleErrorTitle}
           </p>
           <p className="text-gray-500 text-sm mb-4">
-            Could not load your account type. Please try again or contact support.
+            {a.roleErrorDesc}
           </p>
           <button
             onClick={() => window.location.reload()}
             className="text-sm text-palop-green underline hover:opacity-75"
           >
-            Tentar novamente / Try again
+            {a.tryAgain}
           </button>
         </div>
       </div>
@@ -62,7 +65,7 @@ const Auth = () => {
   if (user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">A redirecionar...</div>
+        <div className="text-lg">{a.redirecting}</div>
       </div>
     );
   }
