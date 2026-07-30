@@ -25,7 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, RefreshCw, Users, Crown, User, Trash2, Loader2 } from "lucide-react";
+import { Search, RefreshCw, Users, Crown, User, Handshake, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { toast as sonnerToast } from "sonner";
 
@@ -74,12 +74,16 @@ const AdminUsersTable = () => {
   const getRoleIcon = (role: string) =>
     role === "admin"
       ? <Crown className="h-4 w-4 text-yellow-600" />
-      : <User className="h-4 w-4 text-blue-600" />;
+      : role === "partner"
+        ? <Handshake className="h-4 w-4 text-emerald-600" />
+        : <User className="h-4 w-4 text-blue-600" />;
 
   const getRoleBadge = (role: string) =>
     role === "admin"
       ? <Badge variant="default">Admin</Badge>
-      : <Badge variant="secondary">Customer</Badge>;
+      : role === "partner"
+        ? <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-emerald-200">Partner</Badge>
+        : <Badge variant="secondary">Customer</Badge>;
 
   const filteredUsers = users.filter(
     (u) =>
@@ -89,7 +93,7 @@ const AdminUsersTable = () => {
 
   // Users that can be selected for deletion (not current user, not admins)
   const selectableUsers = filteredUsers.filter(
-    (u) => u.id !== currentUser?.id && u.role !== "admin"
+    (u) => u.id !== currentUser?.id && u.role !== "admin" && u.role !== "partner"
   );
 
   const handleSelectUser = (userId: string, checked: boolean) => {
@@ -166,7 +170,7 @@ const AdminUsersTable = () => {
   };
 
   const isSelectable = (user: Profile) =>
-    user.id !== currentUser?.id && user.role !== "admin";
+    user.id !== currentUser?.id && user.role !== "admin" && user.role !== "partner";
 
   if (loading) {
     return (
@@ -305,7 +309,7 @@ const AdminUsersTable = () => {
                           </Button>
                         ) : (
                           <span
-                            title={user.id === currentUser?.id ? "Cannot delete your own account" : "Admin accounts cannot be deleted here"}
+                            title={user.id === currentUser?.id ? "Cannot delete your own account" : user.role === "partner" ? "Partner accounts cannot be deleted here" : "Admin accounts cannot be deleted here"}
                             className="inline-flex items-center justify-center w-8 h-8"
                           >
                             <Trash2 className="h-4 w-4 text-gray-200" />

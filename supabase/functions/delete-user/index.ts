@@ -81,8 +81,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
       .eq('id', user_id)
       .single();
 
-    if (targetProfile?.role === 'admin') {
-      return new Response(JSON.stringify({ error: 'Admin accounts cannot be deleted via this tool. Demote to customer first.' }), {
+    if (targetProfile?.role === 'admin' || targetProfile?.role === 'partner') {
+      return new Response(JSON.stringify({ error: `${targetProfile.role === 'admin' ? 'Admin' : 'Partner'} accounts cannot be deleted via this tool. Demote to customer first.` }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
