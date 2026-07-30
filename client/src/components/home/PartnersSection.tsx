@@ -2,6 +2,7 @@ import { useLanguage } from '@/contexts/language';
 
 const praiaturLogo = '/praiatur-logo.png';
 const milleniumLogo = '/millenium-travel-logo.jpg';
+const palopianosLogo = '/palopianos-logo.png?v=2';
 
 interface PartnerCard {
   id: string;
@@ -42,6 +43,17 @@ export default function PartnersSection() {
       linkLabel: p.milleniumLink,
       href: 'http://milleniumtravel.co.mz',
     },
+    {
+      id: 'palopianos',
+      logo: palopianosLogo,
+      logoAlt: 'Palopianos — Turismo Sustentável PALOP',
+      badge: p.palopianosBadge,
+      credentials: [p.palopianosCredential],
+      quote: p.palopianosQuote,
+      attribution: p.palopianosAttribution,
+      linkLabel: p.palopianosLink,
+      href: 'https://www.palopianos.com/',
+    },
   ];
 
   return (
@@ -55,7 +67,7 @@ export default function PartnersSection() {
           <p className="text-sm text-gray-500">{p.subheading}</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {partners.map((partner) => (
             <div
               key={partner.id}

@@ -750,6 +750,11 @@ const translations = {
       milleniumAttribution: 'Millenium Travel · Agência de Viagens & Turismo, Maputo, Moçambique',
       milleniumLink: 'Viajar com a Millenium Travel →',
       milleniumFoundedCredential: 'Turismo em Moçambique',
+      palopianosBadge: 'Parceiro Oficial · PALOP',
+      palopianosCredential: 'Turismo Sustentável',
+      palopianosQuote: '"Viagens sustentáveis e experiências autênticas pelos Países Africanos de Língua Portuguesa."',
+      palopianosAttribution: 'Palopianos · Turismo Sustentável',
+      palopianosLink: 'Descobrir com Palopianos →',
     },
     partner: {
       areaTitle: 'Área de Parceiro',
@@ -1547,6 +1552,11 @@ const translations = {
       milleniumAttribution: 'Millenium Travel · Travel & Tourism Agency, Maputo, Mozambique',
       milleniumLink: 'Travel with Millenium Travel →',
       milleniumFoundedCredential: 'Tourism in Mozambique',
+      palopianosBadge: 'Official Partner · PALOP',
+      palopianosCredential: 'Sustainable Tourism',
+      palopianosQuote: '"Sustainable journeys and authentic experiences across Portuguese-speaking African countries."',
+      palopianosAttribution: 'Palopianos · Sustainable Tourism',
+      palopianosLink: 'Discover with Palopianos →',
     },
     partner: {
       areaTitle: 'Partner Area',
